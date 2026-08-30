@@ -1,0 +1,7 @@
+node_modules/
+.next/
+coverage/
+src/generated/prisma/
+pnpm-lock.yaml
+next-env.d.ts
+docs/Initial Project Spec.pdf

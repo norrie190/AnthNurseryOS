@@ -1,0 +1,6 @@
+allowBuilds:
+  '@prisma/engines': true
+  prisma: true
+  unrs-resolver: true
+minimumReleaseAgeExclude:
+  - zod@4.5.4

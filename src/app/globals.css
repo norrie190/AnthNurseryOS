@@ -1,0 +1,35 @@
+:root {
+  color-scheme: light;
+  background: #f7f8f5;
+  color: #192119;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+main {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 2rem;
+}
+
+.foundation-message {
+  max-width: 40rem;
+}
+
+.foundation-message h1 {
+  margin: 0 0 0.75rem;
+}
+
+.foundation-message p {
+  margin: 0;
+  line-height: 1.5;
+}
