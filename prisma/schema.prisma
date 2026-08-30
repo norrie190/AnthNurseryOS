@@ -1,5 +1,5 @@
 // Domain models are introduced only when their MVP phase begins.
-// This establishes the SQLite/Prisma migration boundary without prematurely
+// This establishes the PostgreSQL and Prisma migration boundary without prematurely
 // committing to a plant, care, breeding, or financial data model.
 
 generator client {
@@ -8,5 +8,5 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }

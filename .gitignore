@@ -15,10 +15,9 @@ coverage/
 .env.*.local
 !.env.example
 
-# Local database files and generated Prisma client
-prisma/*.db
-prisma/*.db-journal
+# Generated Prisma client
 src/generated/prisma/
+*.tsbuildinfo
 
 # Logs and operating-system files
 *.log

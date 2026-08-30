@@ -95,6 +95,7 @@ A Plant has zero or one PlantPurchase record. No record is needed when the plant
 | `id`                | Yes      | Internal purchase record ID.                      |
 | `plantId`           | Yes      | Unique link to the purchased Plant.               |
 | `seller`            | No       | Seller or source name.                            |
+| `orderReference`    | No       | Seller order number or reference.                 |
 | `purchaseDate`      | No       | Date the plant was purchased.                     |
 | `plantPriceMinor`   | No       | Plant price in the currency's integer minor unit. |
 | `shippingCostMinor` | No       | Shipping cost in integer minor units.             |

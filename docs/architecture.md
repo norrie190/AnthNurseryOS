@@ -12,7 +12,9 @@ The app uses Next.js with React and TypeScript. Keeping the frontend and server 
 
 Features will live in `src/modules`. For example, when Plant Management starts, its components, validation, rules, and data access should sit together in a `plants` module. This should stop the app becoming one large folder of unrelated files as more nursery areas are added.
 
-Prisma with SQLite is the starting database setup. SQLite means there is no separate database server to maintain while the app is only for one person. Prisma gives us a typed schema and proper migrations. If the project later needs a hosted or multi user database, the same data layer gives us a sensible route to PostgreSQL.
+Prisma with PostgreSQL 18 is the database foundation. Development, testing, and production use the same database engine so local migrations and database behaviour match the eventual production environment. Docker Compose runs PostgreSQL locally with a persistent named volume. The development and test databases are separate but run in the same local container.
+
+SQLite was used briefly during the empty foundation stage because it required no database server. It was removed before any application models or migrations were created, so there is no application data or migration history to convert.
 
 Zod is there for checking data at the edges of the app. Vitest and Testing Library are used for tests. Styling starts with ordinary CSS so the UI can develop naturally before deciding whether a design system is actually needed.
 
@@ -45,7 +47,7 @@ The `components`, `lib`, and `modules` folders are not being created just to mak
 
 ## Database starting point
 
-Prisma and SQLite are configured, but there are no application tables or migrations yet. Database design comes immediately before Plant Management. At that point the Plant fields, IDs, statuses, archive behaviour, and relationships need to be agreed before a schema is written.
+Prisma and PostgreSQL 18 are configured, but there are no application tables or migrations yet. Database design comes immediately before Plant Management. At that point the Plant fields, IDs, statuses, archive behaviour, and relationships need to be agreed before a schema is written.
 
 The original project specification already gives a few important rules for later work. Historical records need to be kept through archive or status logic rather than deletion. Care should be stored as events, and values such as last watered or last fertilised should be worked out from those events instead of being separate editable fields. When breeding is built, real breeding events and possible future crosses should be separate. Seedlings should use the main Plant record and link back to their origin rather than becoming a disconnected set of records.
 

@@ -7,7 +7,8 @@ The MVP is being built in small reviewable stages. Each stage should leave the p
 - Next.js and strict TypeScript
 - ESLint and Prettier
 - Vitest and Testing Library
-- Prisma with SQLite
+- Prisma with PostgreSQL 18
+- Docker Compose development and test databases
 - Environment and developer commands
 - README and development guidance
 
