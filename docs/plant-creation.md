@@ -2,7 +2,7 @@
 
 ## Scope
 
-This milestone implements `createPlant` behind the scenes. There are no server actions, forms, list queries, update/archive/restore operations or photo uploads. The five approved models are unchanged. Automatic references use the separate sequence migration described in `database-migrations.md`.
+This document describes `createPlant` behind the scenes. The browser form and server action now reuse it; their boundary is described in `plant-browser-flow.md`. There are still no update/archive/restore operations or photo uploads. The five approved models are unchanged. Automatic references use the separate sequence migration described in `database-migrations.md`.
 
 The operation is exported from `src/modules/plants/plant-service.ts`. Database code is server only. `src/lib/prisma.ts` supplies the shared client on first use, and the Plant module owns validation, formatting and errors. There is no generic repository or service framework.
 
@@ -55,7 +55,7 @@ Failure rolls back all Plant and related writes. The allocated number is not ret
 
 Malformed input produces VALIDATION_FAILED. Conflicting parent roles or missing linked parents produce INVALID_PARENT. Missing and archived Locations produce LOCATION_UNAVAILABLE. Prisma unique, foreign key and transaction conflict errors become CONFLICT with the original error retained as `cause`.
 
-Unexpected database and infrastructure errors are rethrown unchanged, rather than disguised as ordinary user input errors. A future server action must log technical details on the server and choose a safe public message. Nothing here sends raw database diagnostics to a browser.
+Unexpected database and infrastructure errors are rethrown unchanged, rather than disguised as ordinary user input errors. The server action logs technical details on the server and returns a safe public message. Nothing here sends raw database diagnostics to a browser.
 
 ## Verification
 

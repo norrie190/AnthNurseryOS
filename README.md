@@ -35,7 +35,9 @@ npx pnpm@11.19.0 db:generate
 npx pnpm@11.19.0 dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000). The responsive application shell and routes for the current MVP areas are ready to review. Pages remain placeholders. The Plant creation data layer is implemented behind the scenes, but there is no Add Plant form or server action yet.
+Then open [http://127.0.0.1:3000/plants](http://127.0.0.1:3000/plants) and choose Add Plant. The form records a Plant through the existing creation service and opens its detail page after saving. The ANT reference is assigned automatically. The full Plant list and other nursery features remain later work.
+
+The development and local production commands listen on `127.0.0.1` only. There is no authentication yet, so do not expose the app through a public tunnel or network proxy. This is a local nursery workflow for now, not a deployment ready public service.
 
 `db:up` starts PostgreSQL 18 and waits for it to accept connections. The first start creates both `anth_nursery` and `anth_nursery_test`. Database files are kept in a named Docker volume, so `db:down` stops the container without removing the data.
 
@@ -91,7 +93,7 @@ tests/          Shared test setup and helpers
 docs/           Project notes and technical documentation
 ```
 
-The Plant creation code lives in `src/modules/plants`. Shared Prisma connection setup is in `src/lib/prisma.ts`. Other feature folders will appear when their work starts.
+The Plant creation code, form, read queries and detail view live in `src/modules/plants`. Routes remain in `src/app/plants`. Shared Prisma connection setup is in `src/lib/prisma.ts`. Other feature folders will appear when their work starts.
 
 ## Database workflow
 
@@ -124,3 +126,9 @@ Sequence numbers are deliberately not rolled back. Running the database tests ad
 Both tests and the test migration command require a local `TEST_DATABASE_URL` with a database name ending in `_test`, distinct from the development database name. Only the optional `schema=public` URL parameter is supported. Neither command falls back to `DATABASE_URL`.
 
 Run `test`, `test:db`, `lint`, `format`, `typecheck`, `db:validate`, `db:generate`, and `build` before handing over a database milestone.
+
+## Reviewing Add Plant
+
+The browser workflow and manual checks are described in [docs/plant-browser-flow.md](docs/plant-browser-flow.md). Automated coverage uses Vitest, Testing Library and the separate test database. There is no Playwright suite or special browser fixture route.
+
+Do not save demo Plants in the development app to test the form. A successful save creates a real nursery record and consumes an ANT reference. To preserve ANT-0001 for the first real Plant, use the automated tests for creation and limit browser checks to navigation and deliberately invalid input until that real record is ready.

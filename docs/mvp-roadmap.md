@@ -59,18 +59,16 @@ Build Plant Management in small vertical slices rather than one large change.
 
 Planned checkpoints:
 
-1. Plant validation and creation data layer, implemented for review
-2. Plant list with useful empty, loading, and error states
-3. Add Plant
-4. Plant details
-5. Edit Plant
-6. Archive and restore Plant
-7. Parentage and purchase information
-8. Plant photos after the storage approach is agreed
+1. Plant validation and creation data layer, complete and committed
+2. Add Plant through the browser and view the saved Plant, current review
+3. Plant list with useful empty, loading, and error states
+4. Edit Plant, including parentage and purchase changes
+5. Archive and restore Plant
+6. Plant photos after the storage approach is agreed
 
 Each checkpoint should include the tests needed for its rules and regressions.
 
-The current milestone is `feat: add plant creation data layer`. It adds strict creation input, the Prisma runtime connection, automatic ANT allocation through a new sequence migration, atomic Plant/Parentage/Purchase creation and tests. Parentage and purchase can already be supplied to the internal operation; their UI remains later work. No server actions, forms, updates, archive/restore operations or photo handling are included. See `plant-creation.md` for the operation contract.
+The current milestone is `feat: add plant creation form and detail page`. It connects an Add Plant form to the existing creation service through a server action, then redirects to a simple detail page. Optional parentage, purchase and Location selection are included. A small `/plants` entry page provides the Add Plant link without starting the full list. No schema changes, editing, archive/restore operations or photo handling are included. See `plant-creation.md` for the service contract and `plant-browser-flow.md` for the browser boundary and review steps.
 
 ## 5. Care tracking
 

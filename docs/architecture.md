@@ -47,7 +47,7 @@ The `components`, `lib`, and `modules` folders are not being created just to mak
 
 ## Database starting point
 
-The approved Plant Management schema and initial migration are committed. They contain only Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, and PlantStatus. The next milestone adds the creation data layer and a separate sequence migration. There are no Plant forms, server actions, update or archive operations yet.
+The approved Plant Management schema, initial migration and separate reference sequence migration are committed. They contain only Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. The creation data layer is committed, and the browser creation form and simple detail page are the current review milestone. No update or archive operations are implemented.
 
 Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. Timestamps use `timestamptz` with millisecond precision, while the purchase date uses a calendar `date`. Foreign keys restrict deletion and ID updates so referenced nursery records cannot disappear through a cascade. Schema limitations and rules reserved for the migration or data layer are recorded in `docs/plant-data-model.md`.
 
@@ -68,6 +68,20 @@ Purchase dates are calendar dates, not instants to shift between timezones. Curr
 The original project specification already gives a few important rules for later work. Historical records need to be kept through archive or status logic rather than deletion. Care should be stored as events, and values such as last watered or last fertilised should be worked out from those events instead of being separate editable fields. When breeding is built, real breeding events and possible future crosses should be separate. Seedlings should use the main Plant record and link back to their origin rather than becoming a disconnected set of records.
 
 The reviewed Plant Management design is kept in `docs/plant-data-model.md` before it is translated into Prisma. This keeps product decisions separate from the implementation details of a particular database tool and gives the schema migration a clear review point.
+
+## Plant browser workflow
+
+`/plants` is a small entry page, not a full list. `/plants/new` loads the Add Plant form, while `/plants/[plantId]` reads the saved record by internal UUID. The visible ANT reference remains the main identifier on the detail page. Route files compose the page; feature components, form parsing, the server action and read queries stay in `src/modules/plants`.
+
+The form uses React state and `useActionState`, without a form library. Submission captures FormData before disabling controls and dispatches the action in a transition. This avoids the automatic form reset after an unsuccessful action, preserving parent modes and the purchase checkbox as well as text. A pending state and a local submission guard prevent ordinary repeated clicks. They are not durable idempotency protection.
+
+The action only handles the browser boundary. It reads an explicit set of form fields, interprets parent modes and the optional purchase section, converts amounts using decimal strings and bigint, and calls the existing `createPlant`. Business validation, sequence allocation and the transaction remain in that service. Expected errors become safe field or form messages. Unexpected errors retain their server diagnostics and return a generic message. Redirect runs outside the error catch, after the service succeeds.
+
+The new and detail routes use Next's `connection()` before database reads so their content is loaded for each request, not during a production build. Three small server only queries load a single Plant, available parent options and usable Locations. There is no repository framework, shared query cache or cache invalidation machinery.
+
+GBP is the default browser currency. Runtime internationalisation data supplies other currency choices and decimal precision; the existing service remains responsible for recognising currency codes and enforcing integer bounds. Amounts are not rounded into validity. Blank remains unknown, while zero remains a known zero cost.
+
+There is no authentication in this milestone. The local run commands bind to loopback to avoid exposing write actions to other machines by default. Authentication and a deployment security review are required before any public use. Full workflow details and test boundaries are in `docs/plant-browser-flow.md`.
 
 ## Keeping it tidy as it grows
 
