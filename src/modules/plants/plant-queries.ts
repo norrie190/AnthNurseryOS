@@ -4,6 +4,22 @@ import { getPrisma } from '../../lib/prisma';
 import type { PlantSelectOption } from './plant-form-state';
 import { plantStatusLabels } from './plant-form-state';
 
+export async function getPlantList() {
+  return getPrisma().plant.findMany({
+    where: { archivedAt: null },
+    select: {
+      id: true,
+      reference: true,
+      name: true,
+      status: true,
+      location: { select: { name: true } },
+      createdAt: true,
+    },
+    orderBy: [{ createdAt: 'desc' }, { reference: 'asc' }],
+  });
+}
+export type PlantListItem = Awaited<ReturnType<typeof getPlantList>>[number];
+
 export async function getPlantById(plantId: string) {
   if (!z.uuid().safeParse(plantId).success) return null;
   return getPrisma().plant.findUnique({

@@ -1,0 +1,144 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.collection {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  min-width: 0;
+}
+
+.columns,
+.row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 1fr) minmax(0, 2fr) minmax(7rem, 1fr) minmax(0, 1.3fr) minmax(
+      7rem,
+      1fr
+    );
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.columns {
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-medium) var(--radius-medium) 0 0;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.list li + li {
+  border-top: 1px solid var(--border);
+}
+
+.row {
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  text-decoration: none;
+  border-radius: var(--radius-small);
+}
+
+.row:hover,
+.row:focus-visible {
+  background: var(--accent-soft);
+}
+
+.row:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.reference {
+  color: var(--accent-strong);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  overflow-wrap: anywhere;
+}
+
+.name,
+.location {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.location,
+.added {
+  color: var(--text-muted);
+}
+
+.mobileLabel {
+  display: none;
+}
+
+@media (max-width: 64rem) {
+  .collection {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .columns {
+    display: none;
+  }
+
+  .list {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .list li,
+  .list li + li {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-medium);
+    background: var(--surface);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem 1rem;
+    padding: 1.1rem;
+    border-radius: var(--radius-medium);
+  }
+
+  .reference {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .name {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    margin-bottom: 0.35rem;
+  }
+
+  .status {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .location,
+  .added {
+    grid-column: 1 / -1;
+    font-size: 0.85rem;
+  }
+
+  .mobileLabel {
+    display: inline;
+  }
+}

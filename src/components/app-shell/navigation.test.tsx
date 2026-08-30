@@ -23,6 +23,7 @@ describe('DesktopNavigation', () => {
 
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Plants' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Plants' })).toHaveAttribute('href', '/plants');
     expect(screen.getByRole('link', { name: 'Care' })).toHaveAttribute('href', '/care');
     expect(screen.getByRole('link', { name: 'Equipment' })).toHaveAttribute('href', '/equipment');
     expect(screen.getByRole('link', { name: 'Expenses' })).toHaveAttribute('href', '/expenses');

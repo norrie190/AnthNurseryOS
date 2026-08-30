@@ -47,7 +47,7 @@ The `components`, `lib`, and `modules` folders are not being created just to mak
 
 ## Database starting point
 
-The approved Plant Management schema, initial migration and separate reference sequence migration are committed. They contain only Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. The creation data layer is committed, and the browser creation form and simple detail page are the current review milestone. No update or archive operations are implemented.
+The approved Plant Management schema, initial migration and separate reference sequence migration are committed. They contain only Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. The creation data layer, browser form and simple detail page are committed. The Plant list is the current review milestone. No update or archive operations are implemented.
 
 Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. Timestamps use `timestamptz` with millisecond precision, while the purchase date uses a calendar `date`. Foreign keys restrict deletion and ID updates so referenced nursery records cannot disappear through a cascade. Schema limitations and rules reserved for the migration or data layer are recorded in `docs/plant-data-model.md`.
 
@@ -71,13 +71,17 @@ The reviewed Plant Management design is kept in `docs/plant-data-model.md` befor
 
 ## Plant browser workflow
 
-`/plants` is a small entry page, not a full list. `/plants/new` loads the Add Plant form, while `/plants/[plantId]` reads the saved record by internal UUID. The visible ANT reference remains the main identifier on the detail page. Route files compose the page; feature components, form parsing, the server action and read queries stay in `src/modules/plants`.
+`/plants` lists non archived Plants and links to their detail pages. `/plants/new` loads the Add Plant form, while `/plants/[plantId]` reads the saved record by internal UUID. The visible ANT reference remains the main identifier on the list and detail page. Route files compose the page; feature components, form parsing, the server action and read queries stay in `src/modules/plants`.
 
 The form uses React state and `useActionState`, without a form library. Submission captures FormData before disabling controls and dispatches the action in a transition. This avoids the automatic form reset after an unsuccessful action, preserving parent modes and the purchase checkbox as well as text. A pending state and a local submission guard prevent ordinary repeated clicks. They are not durable idempotency protection.
 
 The action only handles the browser boundary. It reads an explicit set of form fields, interprets parent modes and the optional purchase section, converts amounts using decimal strings and bigint, and calls the existing `createPlant`. Business validation, sequence allocation and the transaction remain in that service. Expected errors become safe field or form messages. Unexpected errors retain their server diagnostics and return a generic message. Redirect runs outside the error catch, after the service succeeds.
 
-The new and detail routes use Next's `connection()` before database reads so their content is loaded for each request, not during a production build. Three small server only queries load a single Plant, available parent options and usable Locations. There is no repository framework, shared query cache or cache invalidation machinery.
+The list, new and detail routes use Next's `connection()` before database reads so their content is loaded for each request, not during a production build. Four small server only queries load the Plant list, a single Plant, available parent options and usable Locations. There is no repository framework, shared query cache or cache invalidation machinery.
+
+`getPlantList` selects just the internal ID, reference, name, status, Location name and creation timestamp. It excludes records with `archivedAt` set, without excluding Sold or Deceased Plants that have not been archived. Ordering is `createdAt` descending, then the unique reference ascending for equal timestamps. Reference ordering is a deterministic text tie break, not a replacement for the creation date or a numeric sequence sort.
+
+The list is a semantic list of links laid out in columns on desktop and stacked cards on narrower screens. It renders the records once, with one keyboard focus target per Plant. The existing status labels and badge styles are reused. The current detail route, creation action and schema are unchanged. Returning through the Plants links reads the list again, so a newly created Plant appears without a new cache layer. The existing route error boundary handles read failures and a small loading state covers pending Plant routes.
 
 GBP is the default browser currency. Runtime internationalisation data supplies other currency choices and decimal precision; the existing service remains responsible for recognising currency codes and enforcing integer bounds. Amounts are not rounded into validity. Blank remains unknown, while zero remains a known zero cost.
 

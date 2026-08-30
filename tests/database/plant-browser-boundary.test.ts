@@ -10,6 +10,7 @@ import type { CreatedPlant } from '../../src/modules/plants/plant-service';
 import { initialPlantFormState } from '../../src/modules/plants/plant-form-state';
 import {
   getPlantById,
+  getPlantList,
   getPlantParentOptions,
   getUsableLocationOptions,
 } from '../../src/modules/plants/plant-queries';
@@ -84,6 +85,14 @@ test.each([false, true])(
           queryTransaction = tx;
           saved = await getPlantById(created.id);
           expect(saved?.reference).toBe(created.reference);
+          expect(await getPlantList()).toContainEqual({
+            id: created.id,
+            reference: created.reference,
+            name: created.name,
+            status: created.status,
+            createdAt: created.createdAt,
+            location: withDetails ? { name: saved!.location!.name } : null,
+          });
           throw new RollbackFixture(created);
         });
       } catch (error) {
@@ -195,4 +204,75 @@ test('the action returns safe validation without allocating on malformed or miss
     { last_value: bigint; is_called: boolean }[]
   >`SELECT last_value, is_called FROM public.plant_reference_sequence`;
   expect(after).toEqual(before);
+});
+
+test('lists only non archived Plants, newest first with reference breaking date ties', async () => {
+  const prefix = `test-${randomUUID()}`;
+  try {
+    await realTransaction(async (tx) => {
+      // Fixed fixture dates establish ordering without consuming the ANT sequence.
+      const older = await tx.plant.create({
+        data: {
+          reference: `${prefix}-9999`,
+          createdAt: new Date('2020-01-01T12:00:00Z'),
+        },
+      });
+      const location = await tx.location.create({
+        data: {
+          name: prefix,
+          archivedAt: new Date(),
+        },
+      });
+      const tiedLater = await tx.plant.create({
+        data: {
+          reference: `${prefix}-0003`,
+          status: 'DECEASED',
+          locationId: location.id,
+          createdAt: new Date('2020-01-02T12:00:00Z'),
+        },
+      });
+      const tiedFirst = await tx.plant.create({
+        data: {
+          reference: `${prefix}-0002`,
+          status: 'SOLD',
+          createdAt: new Date('2020-01-02T12:00:00Z'),
+        },
+      });
+      const newest = await tx.plant.create({
+        data: {
+          reference: `${prefix}-0001`,
+          status: 'QUARANTINE',
+          createdAt: new Date('2020-01-03T12:00:00Z'),
+        },
+      });
+      const archived = await tx.plant.create({
+        data: {
+          reference: `${prefix}-0004`,
+          archivedAt: new Date(),
+          createdAt: new Date('2020-01-04T12:00:00Z'),
+        },
+      });
+      queryTransaction = tx;
+      const listed = (await getPlantList()).filter((plant) => plant.reference.startsWith(prefix));
+      expect(listed.map((plant) => plant.id)).toEqual([
+        newest.id,
+        tiedFirst.id,
+        tiedLater.id,
+        older.id,
+      ]);
+      expect(listed.some((plant) => plant.id === archived.id)).toBe(false);
+      expect(listed[2].location).toEqual({ name: prefix });
+      expect(listed[3]).toEqual({
+        id: older.id,
+        reference: older.reference,
+        name: null,
+        status: 'GROWING',
+        createdAt: older.createdAt,
+        location: null,
+      });
+      throw new RollbackFixture();
+    });
+  } catch (error) {
+    if (!(error instanceof RollbackFixture)) throw error;
+  }
 });

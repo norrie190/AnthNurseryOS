@@ -1,8 +1,8 @@
-# Adding a Plant in the browser
+# Plant browsing and creation
 
 ## Scope
 
-This is the first usable Plant Management workflow. It adds `/plants`, `/plants/new` and `/plants/[plantId]`. The first route is an entry page with an Add Plant link, not a Plant list. The detail route uses the internal UUID, with the ANT reference prominent on the page.
+Plant Management now includes `/plants`, `/plants/new` and `/plants/[plantId]`. The list shows saved non archived Plants, with an Add Plant link and a link to each record. The detail route uses the internal UUID, with the ANT reference prominent on the page. The form and detail slice is committed; the list is the current review milestone.
 
 The existing database models, migrations, ANT sequence and `createPlant` service are unchanged. Editing, archiving, restoring, photos, Location management and other nursery features are not part of this milestone.
 
@@ -30,11 +30,17 @@ The detail page uses the recorded currency for display. An unknown amount says N
 
 ## Reads
 
+`getPlantList` returns only the ID for linking, reference, optional name, status, Location name and created date. It selects Plants where `archivedAt` is null. Sold, Deceased and Quarantine are still included when not archived. An archived Location does not hide a Plant or erase its recorded location.
+
+The default order is newest `createdAt` first, then reference ascending for equal timestamps. Reference is unique, so this order is deterministic. This is a text tie break, not numeric ANT sorting. No configurable sort, filters or pagination are included.
+
+On desktop the list has Reference, Plant, Status, Location and Added columns. Each full row is a normal link, so keyboard navigation and opening in another tab work without a click handler. At narrower widths the same markup stacks into cards with reference and status at the top. Name and Location fallbacks are Unnamed Plant and No location. Dates use Europe/London, matching the detail page. An empty collection shows No Plants yet and an Add Plant link rather than empty columns.
+
 `getPlantById` loads one Plant with its Location, parentage, linked parent identifiers and purchase. Invalid UUIDs and missing records lead to a not found page. Database read failures show a safe retry screen rather than being treated as missing Plants.
 
 `getPlantParentOptions` selects only the fields needed to label options, including status and archive information. `getUsableLocationOptions` selects non archived Locations and their immediate parent name for useful labels. It does not implement hierarchy management or inherited archive behaviour.
 
-Both database backed pages run at request time using `connection()`. No cache or invalidation layer is needed. Linked parents point to their own UUID detail routes.
+All three database backed pages run at request time using `connection()`. Following Plants or Back to Plants after a creation reads the current list. No cache or invalidation layer is needed. Linked parents point to their own UUID detail routes. The existing safe route error screen also handles list failures; database errors must not become a misleading empty state. A small loading message appears while a Plant route is pending.
 
 ## Automated checks
 
@@ -46,7 +52,11 @@ The current Prisma/pg combination emits a pg deprecation warning when the detail
 
 There is no repository browser framework in this milestone. No browser fixture exception, test route, alternate database app or new dependency has been introduced. A future Playwright setup should be agreed separately.
 
+List tests cover empty, single and multiple records, labels, fallbacks, dates, link targets and repeated request reads. Database tests check archive exclusion, all non archived statuses, deterministic date/reference ordering and retrieving a Plant created by the real creation service. These fixtures use the same guarded test database and rollback discipline as the existing tests.
+
 ## Manual review
+
+For browsing, open `/plants`, check a Plant already saved in the nursery, follow its row to the detail page, and use Back to Plants to return. Follow Add Plant and confirm the form opens without submitting it. Check the list at desktop and mobile widths. This is a read only review: do not insert demo Plants, change existing records or consume development reference numbers to exercise the list.
 
 Start the app with `npx pnpm@11.19.0 dev` and open `http://127.0.0.1:3000/plants`. Follow Add Plant. Check the form on desktop and a narrow screen, including both optional sections and the no Locations message.
 

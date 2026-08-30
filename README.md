@@ -35,7 +35,7 @@ npx pnpm@11.19.0 db:generate
 npx pnpm@11.19.0 dev
 ```
 
-Then open [http://127.0.0.1:3000/plants](http://127.0.0.1:3000/plants) and choose Add Plant. The form records a Plant through the existing creation service and opens its detail page after saving. The ANT reference is assigned automatically. The full Plant list and other nursery features remain later work.
+Then open [http://127.0.0.1:3000/plants](http://127.0.0.1:3000/plants) to browse your saved Plants or choose Add Plant. The list shows non archived records, newest first. Select a row to open its detail page. The form records a Plant through the existing creation service and opens its detail page after saving. The ANT reference is assigned automatically. Editing, archive controls, photos and other nursery features remain later work.
 
 The development and local production commands listen on `127.0.0.1` only. There is no authentication yet, so do not expose the app through a public tunnel or network proxy. This is a local nursery workflow for now, not a deployment ready public service.
 
@@ -127,8 +127,10 @@ Both tests and the test migration command require a local `TEST_DATABASE_URL` wi
 
 Run `test`, `test:db`, `lint`, `format`, `typecheck`, `db:validate`, `db:generate`, and `build` before handing over a database milestone.
 
-## Reviewing Add Plant
+## Reviewing Plant Management
 
 The browser workflow and manual checks are described in [docs/plant-browser-flow.md](docs/plant-browser-flow.md). Automated coverage uses Vitest, Testing Library and the separate test database. There is no Playwright suite or special browser fixture route.
+
+To review the list, open `/plants`, select an existing Plant, return using Back to Plants, then check that Add Plant opens the form. The list uses columns on desktop and stacked cards on narrow screens. Existing records are enough for this read only check; there is no need to create a new Plant.
 
 Do not save demo Plants in the development app to test the form. A successful save creates a real nursery record and consumes an ANT reference. To preserve ANT-0001 for the first real Plant, use the automated tests for creation and limit browser checks to navigation and deliberately invalid input until that real record is ready.

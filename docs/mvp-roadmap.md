@@ -60,15 +60,15 @@ Build Plant Management in small vertical slices rather than one large change.
 Planned checkpoints:
 
 1. Plant validation and creation data layer, complete and committed
-2. Add Plant through the browser and view the saved Plant, current review
-3. Plant list with useful empty, loading, and error states
+2. Add Plant through the browser and view the saved Plant, complete and committed
+3. Plant list with useful empty, loading, and error states, current review
 4. Edit Plant, including parentage and purchase changes
 5. Archive and restore Plant
 6. Plant photos after the storage approach is agreed
 
 Each checkpoint should include the tests needed for its rules and regressions.
 
-The current milestone is `feat: add plant creation form and detail page`. It connects an Add Plant form to the existing creation service through a server action, then redirects to a simple detail page. Optional parentage, purchase and Location selection are included. A small `/plants` entry page provides the Add Plant link without starting the full list. No schema changes, editing, archive/restore operations or photo handling are included. See `plant-creation.md` for the service contract and `plant-browser-flow.md` for the browser boundary and review steps.
+The current milestone is `feat: add plant list`. It replaces the `/plants` entry page with a responsive list of non archived Plants from PostgreSQL. Records open their existing UUID detail pages, and Add Plant remains available at the top. The default order is newest first, with reference as a stable tie break. Empty, loading and error states are covered. Search, filters, configurable sorting, pagination, editing, archive controls and photos remain outside this milestone. No schema or migration changes are needed. See `plant-browser-flow.md` for the browsing behaviour and review steps.
 
 ## 5. Care tracking
 
