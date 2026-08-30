@@ -2,7 +2,7 @@
 
 ## Status of this document
 
-This is the approved Plant Management data design. The Prisma schema and first migration are committed. The creation data layer and a separate ANT sequence migration are implemented for the next review. Their behaviour is documented in `plant-creation.md`.
+This is the approved Plant Management data design. The Prisma schema, migrations, creation data layer and initial browsing workflow are committed. Edit Plant is implemented for review without changing these models. Creation and update behaviour are documented in `plant-creation.md` and `plant-editing.md`.
 
 This stage includes Plant, PlantParentage, PlantPurchase, PlantPhoto, and Location only. Care, observations, breeding, pollen, seed batches, seedlings, ancestry, and sales remain outside the schema until their own phases.
 
@@ -175,4 +175,4 @@ The first migration adds three PostgreSQL check constraints to reject negative c
 
 Creation now generates references, rejects caller supplied identity and timestamps, validates parent roles and existing parent IDs, and rejects archived or missing Locations. Blank parentage does not create an empty record. Omitting purchase creates no purchase record, while an explicit empty purchase group preserves the fact that a purchase is being recorded with unknown details.
 
-Reference immutability during updates will be enforced when updates are implemented. Direct privileged SQL is not prevented from editing references by a trigger. Ancestry and Location cycles, parentage editing, and the single primary photo rule remain for their later stages. Database tests exercise the implemented constraints and creation behaviour against the separate PostgreSQL test database without keeping fixture records.
+The update service enforces identity and reference immutability, parentage choice rules and ancestry cycle prevention. Direct privileged SQL is not prevented from editing references or introducing cycles by a trigger. Location cycle validation and the single primary photo rule remain for their later stages. Database tests exercise the implemented constraints, creation and editing against the separate PostgreSQL test database without keeping fixture records.

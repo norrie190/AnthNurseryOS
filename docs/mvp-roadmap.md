@@ -61,14 +61,14 @@ Planned checkpoints:
 
 1. Plant validation and creation data layer, complete and committed
 2. Add Plant through the browser and view the saved Plant, complete and committed
-3. Plant list with useful empty, loading, and error states, current review
-4. Edit Plant, including parentage and purchase changes
+3. Plant list with useful empty, loading, and error states, complete and committed
+4. Edit Plant, including parentage and purchase changes, current review
 5. Archive and restore Plant
 6. Plant photos after the storage approach is agreed
 
 Each checkpoint should include the tests needed for its rules and regressions.
 
-The current milestone is `feat: add plant list`. It replaces the `/plants` entry page with a responsive list of non archived Plants from PostgreSQL. Records open their existing UUID detail pages, and Add Plant remains available at the top. The default order is newest first, with reference as a stable tie break. Empty, loading and error states are covered. Search, filters, configurable sorting, pagination, editing, archive controls and photos remain outside this milestone. No schema or migration changes are needed. See `plant-browser-flow.md` for the browsing behaviour and review steps.
+The current milestone is `feat: add plant editing`. The detail page links to `/plants/[plantId]/edit`, which saves through a restricted update service and returns to the same detail route. Identity and ANT references remain unchanged. Parentage cycle checks and stale edit protection keep related changes safe. Purchase details and current Location can be changed or cleared explicitly without deleting records. Archive controls, photos, search and other nursery features remain outside this milestone. No schema or migration changes are needed. See `plant-editing.md` for the rules and verification approach.
 
 ## 5. Care tracking
 

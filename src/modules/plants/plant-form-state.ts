@@ -24,6 +24,7 @@ export type PlantFormField = keyof PlantFormValues;
 export type PlantFormState = {
   message: string;
   fieldErrors: Partial<Record<PlantFormField, string>>;
+  stale?: boolean;
 };
 export const initialPlantFormState: PlantFormState = { message: '', fieldErrors: {} };
 

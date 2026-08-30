@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { CreatePlantInput } from './plant-input';
+import type { UpdatePlantInput } from './plant-update-input';
 import { parseMoneyInput, currencyDecimalPlaces } from './plant-money';
 import {
   initialPlantFormValues,
@@ -94,6 +95,75 @@ export function parsePlantFormData(
       notes: values.notes,
       parentage,
       purchase,
+    },
+  };
+}
+
+export function parsePlantEditFormData(
+  formData: FormData,
+  expectedUpdatedAt: string,
+): { success: true; input: UpdatePlantInput } | { success: false; state: PlantFormState } {
+  // The browser submits a complete visible form, not a sparse service patch. Missing
+  // controls must not acquire creation defaults and accidentally clear saved data.
+  const required: PlantFormField[] = [
+    'name',
+    'status',
+    'locationId',
+    'notes',
+    'seedParentMode',
+    'pollenParentMode',
+  ];
+  for (const role of ['seed', 'pollen'] as const) {
+    const mode = formData.get(`${role}ParentMode`);
+    if (mode === 'existing') required.push(`${role}ParentPlantId`);
+    if (mode === 'external') required.push(`${role}ParentName`);
+  }
+  if (formData.get('recordPurchase') === 'on') {
+    required.push(
+      'seller',
+      'orderReference',
+      'purchaseDate',
+      'plantPrice',
+      'shippingCost',
+      'otherCost',
+      'currency',
+    );
+  }
+  if (required.some((field) => !formData.has(field))) {
+    return {
+      success: false,
+      state: {
+        message:
+          'The edit form was incomplete. Your entries have been kept. Reload before trying again.',
+        fieldErrors: {},
+      },
+    };
+  }
+  const parsed = parsePlantFormData(formData);
+  if (!parsed.success) return parsed;
+  const source = parsed.input;
+  const parentage: NonNullable<UpdatePlantInput['parentage']> = {};
+  for (const role of ['seed', 'pollen'] as const) {
+    const mode = formData.get(`${role}ParentMode`);
+    parentage[`${role}Parent`] =
+      mode === 'existing'
+        ? { kind: 'plant', plantId: source.parentage?.[`${role}ParentPlantId`] ?? '' }
+        : mode === 'external'
+          ? { kind: 'external', name: source.parentage?.[`${role}ParentName`] ?? '' }
+          : { kind: 'unknown' };
+  }
+  return {
+    success: true,
+    input: {
+      expectedUpdatedAt,
+      name: source.name,
+      status: source.status,
+      locationId: source.locationId,
+      notes: source.notes,
+      parentage,
+      ...(source.purchase
+        ? { purchase: { ...source.purchase, currency: source.purchase.currency ?? undefined } }
+        : {}),
     },
   };
 }

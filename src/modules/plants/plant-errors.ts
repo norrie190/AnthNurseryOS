@@ -1,5 +1,11 @@
 export type PlantErrorCode =
-  'VALIDATION_FAILED' | 'INVALID_PARENT' | 'LOCATION_UNAVAILABLE' | 'CONFLICT';
+  | 'VALIDATION_FAILED'
+  | 'INVALID_PARENT'
+  | 'LOCATION_UNAVAILABLE'
+  | 'CONFLICT'
+  | 'NOT_FOUND'
+  | 'ANCESTRY_CYCLE'
+  | 'STALE_UPDATE';
 
 export type PlantFieldIssue = { field: string; message: string };
 

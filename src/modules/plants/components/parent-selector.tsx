@@ -12,9 +12,17 @@ type ParentSelectorProps = {
   onChange: (field: PlantFormField, value: string) => void;
   errors: PlantFormState['fieldErrors'];
   options: readonly PlantSelectOption[];
+  emptyMessage?: string;
 };
 
-export function ParentSelector({ role, values, onChange, errors, options }: ParentSelectorProps) {
+export function ParentSelector({
+  role,
+  values,
+  onChange,
+  errors,
+  options,
+  emptyMessage = 'No existing Plants yet. Choose Unknown or enter an external name.',
+}: ParentSelectorProps) {
   const mode = `${role}ParentMode` as const;
   const plantId = `${role}ParentPlantId` as const;
   const name = `${role}ParentName` as const;
@@ -48,11 +56,7 @@ export function ParentSelector({ role, values, onChange, errors, options }: Pare
           {errors[mode]}
         </p>
       )}
-      {options.length === 0 && (
-        <p className={styles.hint}>
-          No existing Plants yet. Choose Unknown or enter an external name.
-        </p>
-      )}
+      {options.length === 0 && <p className={styles.hint}>{emptyMessage}</p>}
       {values[mode] === 'existing' && (
         <div className={styles.field}>
           <label htmlFor={`plant-${plantId}`}>Existing {role} parent</label>

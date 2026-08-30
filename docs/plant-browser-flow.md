@@ -2,9 +2,9 @@
 
 ## Scope
 
-Plant Management now includes `/plants`, `/plants/new` and `/plants/[plantId]`. The list shows saved non archived Plants, with an Add Plant link and a link to each record. The detail route uses the internal UUID, with the ANT reference prominent on the page. The form and detail slice is committed; the list is the current review milestone.
+Plant Management includes `/plants`, `/plants/new` and `/plants/[plantId]`. The list shows saved non archived Plants, with an Add Plant link and a link to each record. The detail route uses the internal UUID, with the ANT reference prominent on the page. These slices are committed. Edit Plant is the current review milestone, with its behaviour documented separately in `plant-editing.md`.
 
-The existing database models, migrations, ANT sequence and `createPlant` service are unchanged. Editing, archiving, restoring, photos, Location management and other nursery features are not part of this milestone.
+The existing database models, migrations, ANT sequence and creation behaviour are unchanged. The detail page now also links to `/plants/[plantId]/edit`. Add and Edit reuse the Plant form. Archiving, restoring, photos, Location management and other nursery features are not included.
 
 ## Form and server boundary
 

@@ -2,7 +2,7 @@
 
 ## Scope
 
-This document describes `createPlant` behind the scenes. The browser form and server action now reuse it; their boundary is described in `plant-browser-flow.md`. There are still no update/archive/restore operations or photo uploads. The five approved models are unchanged. Automatic references use the separate sequence migration described in `database-migrations.md`.
+This document describes `createPlant` behind the scenes. The browser form and server action reuse it; their boundary is described in `plant-browser-flow.md`. Editing is documented separately in `plant-editing.md`. Archive/restore operations and photo uploads remain outside the current scope. The five approved models are unchanged. Automatic references use the separate sequence migration described in `database-migrations.md`.
 
 The operation is exported from `src/modules/plants/plant-service.ts`. Database code is server only. `src/lib/prisma.ts` supplies the shared client on first use, and the Plant module owns validation, formatting and errors. There is no generic repository or service framework.
 
@@ -31,7 +31,7 @@ Strict Zod objects reject unknown keys at every input level. Callers cannot supp
 
 Optional text is trimmed, with blank text becoming null. Embedded null characters are rejected because PostgreSQL text cannot store them. IDs are trimmed, validated as UUIDs and normalised to lowercase. A missing ID is unknown; a supplied blank or malformed ID is an error.
 
-Linked parents must already exist. Sold, deceased and archived parents remain valid historical links. One existing Plant may be both seed and pollen parent. The child receives its own UUID from Prisma, with a defensive self parent check before related writes. No ancestry traversal is implemented; cycle prevention for editing existing parentage belongs to a later milestone.
+Linked parents must already exist. Sold, deceased and archived parents remain valid historical links. One existing Plant may be both seed and pollen parent. The child receives its own UUID from Prisma, with a defensive self parent check before related writes. Creation needs no ancestry traversal. The separate update operation checks cycles when existing parentage is edited.
 
 A supplied Location must exist and not be archived. A local `FOR SHARE` query locks the selected row until the transaction ends, preventing its archive state from changing between the check and assignment. This does not add Location management or inherited archive rules for parent locations.
 
@@ -51,7 +51,7 @@ Failure rolls back all Plant and related writes. The allocated number is not ret
 
 ## Errors
 
-`PlantError` contains a code, safe message, field issues where applicable, and an underlying cause where available. The implemented codes are VALIDATION_FAILED, INVALID_PARENT, LOCATION_UNAVAILABLE and CONFLICT. A Plant not found code can be added when an operation actually looks up an existing target Plant.
+`PlantError` contains a code, safe message, field issues where applicable, and an underlying cause where available. Creation uses VALIDATION_FAILED, INVALID_PARENT, LOCATION_UNAVAILABLE and CONFLICT. Editing adds NOT_FOUND, ANCESTRY_CYCLE and STALE_UPDATE to the same small error type.
 
 Malformed input produces VALIDATION_FAILED. Conflicting parent roles or missing linked parents produce INVALID_PARENT. Missing and archived Locations produce LOCATION_UNAVAILABLE. Prisma unique, foreign key and transaction conflict errors become CONFLICT with the original error retained as `cause`.
 
@@ -61,4 +61,4 @@ Unexpected database and infrastructure errors are rethrown unchanged, rather tha
 
 Unit tests cover normalisation, protected fields, parent conflicts, cost bounds, currency, calendar dates, formatting beyond four digits and error behaviour. Database tests exercise the actual creation operation, optional records, historical parents, archived Locations, simultaneous creation, permanent sequence advancement and rollback after a related SQL failure. Fixtures are rolled back, but test sequence values are intentionally consumed. The original database constraint tests remain in place.
 
-Reference changes through normal updates cannot yet be tested because no update operation exists. It must reject identity fields when that later checkpoint is implemented. Direct privileged SQL remains outside the application's immutability protection.
+The separate update tests verify that identity and references remain unchanged and that edit input rejects protected fields. Direct privileged SQL remains outside the application's immutability protection.

@@ -1,47 +1,19 @@
 import { z } from 'zod';
 import { PlantStatus } from '../../generated/prisma/enums';
 import { PlantError } from './plant-errors';
+import {
+  plantTextSchema,
+  plantIdSchema,
+  plantCostSchema,
+  plantCurrencySchema,
+  plantPurchaseDateSchema,
+} from './plant-field-schemas';
 
-const optionalText = z
-  .string()
-  .trim()
-  .refine((value) => !value.includes('\0'), {
-    message: 'Text cannot contain a null character.',
-  })
-  .nullish()
-  .transform((value) => value || null);
-const optionalId = z
-  .string()
-  .trim()
-  .uuid()
-  .toLowerCase()
-  .nullish()
-  .transform((value) => value ?? null);
-const optionalCost = z
-  .number()
-  .int()
-  .min(0)
-  .max(2_147_483_647)
-  .nullish()
-  .transform((value) => value ?? null);
-const currencies = new Set(Intl.supportedValuesOf('currency'));
-const currency = z
-  .string()
-  .trim()
-  .toUpperCase()
-  .regex(/^[A-Z]{3}$/)
-  .refine(
-    (value) => currencies.has(value),
-    'Use a currency code recognised by the runtime, such as GBP or EUR.',
-  )
-  .default('GBP');
-const purchaseDate = z.iso
-  .date()
-  .refine((value) => !value.startsWith('0000-'), {
-    message: 'Use a calendar date with a year from 0001 to 9999.',
-  })
-  .nullish()
-  .transform((value) => value ?? null);
+const optionalText = plantTextSchema.nullish().transform((value) => value ?? null);
+const optionalId = plantIdSchema.nullish().transform((value) => value ?? null);
+const optionalCost = plantCostSchema.nullish().transform((value) => value ?? null);
+const currency = plantCurrencySchema.default('GBP');
+const purchaseDate = plantPurchaseDateSchema.nullish().transform((value) => value ?? null);
 
 const parentageSchema = z
   .strictObject({

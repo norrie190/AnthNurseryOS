@@ -132,7 +132,10 @@ export function PlantDetail({ plant }: { plant: PlantDetailRecord }) {
         )}
       </section>
       <div className={styles.actions}>
-        <Link href="/plants/new" className={styles.primaryButton}>
+        <Link href={`/plants/${plant.id}/edit`} className={styles.primaryButton}>
+          Edit Plant
+        </Link>
+        <Link href="/plants/new" className={styles.secondaryLink}>
           Add another Plant
         </Link>
         <Link href="/plants" className={styles.secondaryLink}>

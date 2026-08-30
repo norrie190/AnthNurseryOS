@@ -29,3 +29,12 @@ export function formatPlantMoney(minor: number | null, currency: string): string
     minor / 10 ** currencyDecimalPlaces(currency),
   );
 }
+
+export function formatMoneyInput(minor: number | null, currency: string): string {
+  if (minor === null) return '';
+  const places = currencyDecimalPlaces(currency);
+  const digits = BigInt(minor)
+    .toString()
+    .padStart(places + 1, '0');
+  return places ? `${digits.slice(0, -places)}.${digits.slice(-places)}` : digits;
+}

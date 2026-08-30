@@ -47,7 +47,7 @@ The `components`, `lib`, and `modules` folders are not being created just to mak
 
 ## Database starting point
 
-The approved Plant Management schema, initial migration and separate reference sequence migration are committed. They contain only Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. The creation data layer, browser form and simple detail page are committed. The Plant list is the current review milestone. No update or archive operations are implemented.
+The approved Plant Management schema, initial migration and separate reference sequence migration are committed. They contain only Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. The creation data layer, browser form, detail page and Plant list are committed. Edit Plant is implemented for review. Archive operations remain outside this milestone.
 
 Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. Timestamps use `timestamptz` with millisecond precision, while the purchase date uses a calendar `date`. Foreign keys restrict deletion and ID updates so referenced nursery records cannot disappear through a cascade. Schema limitations and rules reserved for the migration or data layer are recorded in `docs/plant-data-model.md`.
 
@@ -61,7 +61,7 @@ The migration includes three cost check constraints and `NULLS NOT DISTINCT` on 
 
 A standalone PostgreSQL sequence allocates ANT numbers safely across concurrent transactions. Formatting uses bigint values without rounding and pads to at least four digits. The full reference stays on Plant. Allocation order need not match commit order, and failed transactions leave gaps. Neither archive nor row deletion rewinds the sequence. Resetting a database or restoring an older backup can lose sequence history, so future imports and restores must take reference allocation into account.
 
-Plant, parentage and purchase writes use one short Prisma transaction. The selected Location is checked with `FOR SHARE` so its archive state cannot change between the check and assignment. Parent links must already exist; archived and historical parents remain valid. Creation cannot add a cycle to an otherwise valid graph because the child has a fresh UUID and links only to existing parents. Parentage editing and its cycle protection remain a later checkpoint.
+Plant, parentage and purchase writes use one short Prisma transaction. The selected Location is checked with `FOR SHARE` so its archive state cannot change between the check and assignment. Parent links must already exist; archived and historical parents remain valid. Creation cannot add a cycle to an otherwise valid graph because the child has a fresh UUID and links only to existing parents. Editing adds the separate cycle protection described below.
 
 Purchase dates are calendar dates, not instants to shift between timezones. Currency validation uses the Node runtime's `Intl.supportedValuesOf('currency')` list rather than a new dependency. That list follows the runtime's currency data and is not an exhaustive historical currency catalogue. The complete input, transaction and error contract is in `docs/plant-creation.md`.
 
@@ -86,6 +86,16 @@ The list is a semantic list of links laid out in columns on desktop and stacked 
 GBP is the default browser currency. Runtime internationalisation data supplies other currency choices and decimal precision; the existing service remains responsible for recognising currency codes and enforcing integer bounds. Amounts are not rounded into validity. Blank remains unknown, while zero remains a known zero cost.
 
 There is no authentication in this milestone. The local run commands bind to loopback to avoid exposing write actions to other machines by default. Authentication and a deployment security review are required before any public use. Full workflow details and test boundaries are in `docs/plant-browser-flow.md`.
+
+## Plant editing
+
+`updatePlant` is a separate server only operation in the Plant module. It shares scalar validation with creation, but keeps its own strict patch semantics: omitted means preserve and explicit null clears nullable fields. Identity, reference, createdAt and archivedAt are never assigned by the update. Plant, parentage and purchase changes are atomic and editing never allocates an ANT number.
+
+Existing parentage mutations obtain one PostgreSQL transaction advisory lock before locking the target Plant. A recursive query follows linked parents through both roles, deduplicating Plant IDs with UNION, and rejects any proposed parent that reaches the target. This prevents cycles across simultaneous edits to different Plants without adding ancestry tables or a generic lock service. Future existing parentage writers must follow the same protocol. Transactions use Read Committed so validation after a lock wait sees the latest committed relationships.
+
+The target Plant uses FOR NO KEY UPDATE. Its updatedAt is compared to the original expectedUpdatedAt while locked. Each accepted save advances it to at least the previous timestamp plus one millisecond, including related only changes. Stale edits fail without automatic merge or retry. No version column is needed for this milestone. New Location assignments use the existing FOR SHARE check, while a currently assigned archived Location may be preserved.
+
+The shared Plant form supports Add and Edit without a form framework. `/plants/[plantId]/edit` reuses the existing reads and preloads values, parent modes and exact decimal money. The action performs only browser boundary work. The original token stays paired with retained values; a server rerender cannot quietly refresh it. Existing purchases can have fields cleared but cannot be deleted. Complete behaviour and test boundaries are in `plant-editing.md`.
 
 ## Keeping it tidy as it grows
 

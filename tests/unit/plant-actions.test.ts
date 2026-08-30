@@ -7,6 +7,7 @@ import { initialPlantFormState } from '../../src/modules/plants/plant-form-state
 
 vi.mock('next/navigation', () => ({ redirect: vi.fn() }));
 vi.mock('../../src/modules/plants/plant-service', () => ({ createPlant: vi.fn() }));
+vi.mock('../../src/modules/plants/plant-update-service', () => ({ updatePlant: vi.fn() }));
 const redirectSignal = new Error('redirect signal');
 
 beforeEach(() => {
