@@ -2,9 +2,9 @@
 
 ## Project direction
 
-The main source of truth is `docs/Initial Project Spec.pdf`. If an architecture decision is made, write it down in `docs/architecture.md` so it is clear later why it was chosen.
+The working product source of truth is `docs/projectspec.md`, and the delivery order is in `docs/mvp-roadmap.md`. `docs/Initial Project Spec.pdf` is retained as the original source document. Feature specific decisions belong in the relevant design document, such as `docs/plant-data-model.md`. If an architecture decision is made, write it down in `docs/architecture.md` so it is clear later why it was chosen.
 
-Build the MVP one piece at a time. Do not start breeding, pollen, seed batches, seedlings, ancestry, sales, environmental integrations, or other future ideas early just because the structure could support them. The current foundation stage does not include Plant CRUD or any other nursery workflow.
+Build the MVP one piece at a time. Do not start breeding, pollen, seed batches, seedlings, ancestry, sales, environmental integrations, or other future ideas early just because the structure could support them. Do not implement a feature before its data design and roadmap checkpoint have been reviewed.
 
 Important nursery history should not be permanently deleted. When those records are added, use clear statuses or archive fields instead.
 
@@ -12,7 +12,7 @@ Important nursery history should not be permanently deleted. When those records 
 
 Use strict TypeScript for application code. Routes and page composition belong in `src/app`. When a feature starts, keep its UI, rules, validation, and data access together in `src/modules/<feature>/` rather than spreading them around the app.
 
-Only add to `src/components` when a UI component is genuinely shared. Only add to `src/lib` when something is shared infrastructure. Keep database access and other server-only code out of client components.
+Only add to `src/components` when a UI component is genuinely shared. Only add to `src/lib` when something is shared infrastructure. Keep database access and other server only code out of client components.
 
 Use Zod at input and integration boundaries. Prefer named functions and proper domain types over loosely shaped objects. The database schema lives in `prisma/schema.prisma`; `src/generated/prisma` is generated code and should never be edited by hand.
 
@@ -20,7 +20,7 @@ Use Zod at input and integration boundaries. Prefer named functions and proper d
 
 Migrations are part of the project's history. Review them and commit them, but do not edit an applied migration. Make a new one instead.
 
-Use archival or status changes rather than destructive operations in the app. Time-based nursery information, such as care and observations, should keep its history as events rather than overwriting old records. Do not add database tables for a future feature before the relevant phase starts; add the smallest useful bit of schema at the time.
+Use archival or status changes rather than destructive operations in the app. Time based nursery information, such as care and observations, should keep its history as events rather than overwriting old records. Do not add database tables for a future feature before the relevant phase starts; add the smallest useful bit of schema at the time.
 
 ## Quality and documentation
 

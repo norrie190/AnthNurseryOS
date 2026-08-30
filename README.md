@@ -1,10 +1,10 @@
 # Anth Nursery OS
 
-This is a plant nursery management system I am building around my own Anthurium collection and breeding programme. I want it to become something I can genuinely use in the nursery, while also being a well-built portfolio project.
+This is a plant nursery management system I am building around my own Anthurium collection and breeding programme. I want it to become something I can genuinely use in the nursery, while also being a well built portfolio project.
 
 The MVP will cover plants, care tracking, equipment, expenses, and a dashboard. Breeding, pollen, seed batches, seedlings, and ancestry will come later as their own phases rather than being squeezed into the first version.
 
-The original project requirements are in [docs/Initial Project Spec.pdf](docs/Initial%20Project%20Spec.pdf). Technical decisions are written down in [docs/architecture.md](docs/architecture.md) as the project develops.
+The working requirements are in [docs/projectspec.md](docs/projectspec.md), with the development stages in [docs/mvp-roadmap.md](docs/mvp-roadmap.md). The original [project specification PDF](docs/Initial%20Project%20Spec.pdf) is kept for reference. Technical decisions are written down in [docs/architecture.md](docs/architecture.md) as the project develops.
 
 ## What it uses
 
@@ -62,11 +62,11 @@ npx pnpm@11.19.0 test
 
 ```text
 src/
-  app/          Next.js routes, layouts, and route-specific styles
+  app/          Next.js routes, layouts, and route specific styles
   components/   The shared application shell and other reusable UI
   lib/          Shared infrastructure code
   modules/      Individual feature areas, such as plants or care
-  generated/    Prisma-generated files; do not edit these by hand
+  generated/    Prisma generated files; do not edit these by hand
 prisma/         Database schema and migrations
 tests/          Shared test setup and helpers
 docs/           Project notes and technical documentation
@@ -76,6 +76,6 @@ Some of these folders do not exist yet on purpose. They will be added when the f
 
 ## Database workflow
 
-Prisma is connected to a local SQLite database for development. The schema is intentionally empty right now because database design is its own next stage. I do not want to guess at the Plant model before the fields, IDs, statuses, archival rules, and relationships have been properly worked through.
+Prisma is connected to a local SQLite database for development. The schema is intentionally empty while the first Plant model is reviewed. The proposed fields, relationships, and rules are in [docs/plant-data-model.md](docs/plant-data-model.md).
 
 When a database change is agreed, update `prisma/schema.prisma`, create a named migration, check the generated SQL, add tests where they help, and commit the schema, migration, and related code together. Do not edit anything in `src/generated/prisma` by hand.
