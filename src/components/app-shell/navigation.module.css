@@ -1,0 +1,205 @@
+.sidebar {
+  position: fixed;
+  z-index: 30;
+  inset: 0 auto 0 0;
+  display: flex;
+  width: 15rem;
+  flex-direction: column;
+  padding: 1.25rem 0.9rem 1rem;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  padding: 0 0.35rem;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.brandMark {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.8rem;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+.brand strong,
+.brand small,
+.profile strong,
+.profile small {
+  display: block;
+}
+
+.brand strong {
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+
+.brand small {
+  margin-top: 0.16rem;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.navigation {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 2.2rem;
+}
+
+.navigationLink {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-small);
+  color: #4e584f;
+  font-size: 0.87rem;
+  font-weight: 520;
+  text-decoration: none;
+  transition:
+    color 140ms ease,
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.navigationLink:hover {
+  color: var(--text);
+  background: var(--surface-muted);
+}
+
+.navigationLink:focus-visible,
+.brand:focus-visible,
+.menuButton:focus-visible {
+  outline: 3px solid rgb(49 93 58 / 25%);
+  outline-offset: 2px;
+}
+
+.navigationLink.activeLink {
+  border-color: #d6ded4;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  font-weight: 650;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: auto;
+  padding: 1rem 0.35rem 0.1rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.profile strong {
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.profile small {
+  margin-top: 0.18rem;
+  font-size: 0.7rem;
+}
+
+.mobileNavigation {
+  display: none;
+}
+
+.menuButton {
+  display: inline-grid;
+  width: 2.65rem;
+  height: 2.65rem;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.mobileMenuLayer {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: rgb(20 28 21 / 40%);
+  cursor: pointer;
+}
+
+.mobileMenu {
+  position: absolute;
+  z-index: 1;
+  inset: 0 0 0 auto;
+  display: flex;
+  width: min(20rem, calc(100vw - 2rem));
+  flex-direction: column;
+  padding: 0.7rem 0.9rem 1rem;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: -18px 0 45px rgb(16 29 18 / 14%);
+}
+
+.mobileMenuHeader {
+  display: flex;
+  min-height: 3.1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobileMenu .navigation {
+  margin-top: 2rem;
+}
+
+@media (max-width: 56.25rem) {
+  .sidebar {
+    display: none;
+  }
+
+  .mobileNavigation {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .mobileNavigation > .brand {
+    display: none;
+  }
+}
+
+@media (max-width: 40rem) {
+  .mobileNavigation {
+    flex: 1;
+    justify-content: space-between;
+  }
+
+  .mobileNavigation > .brand {
+    display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navigationLink {
+    transition: none;
+  }
+}

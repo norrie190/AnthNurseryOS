@@ -16,6 +16,14 @@ Prisma with SQLite is the starting database setup. SQLite means there is no sepa
 
 Zod is there for checking data at the edges of the app. Vitest and Testing Library are used for tests. Styling starts with ordinary CSS so the UI can develop naturally before deciding whether a design system is actually needed.
 
+## Application shell
+
+The main layout is shared by every route. It uses a fixed sidebar on larger screens and a slide-out menu on smaller screens, so each feature can keep the same navigation without rebuilding it. The navigation is the only client-side part of the shell because it needs the current route and the mobile menu state. The rest stays server-rendered by default.
+
+Shared colours, spacing, borders, and type values are kept as CSS variables in `src/app/globals.css`. Individual components use CSS Modules so their layout rules stay with them. Lucide React supplies the simple line icons used throughout the shell. This avoids drawing and maintaining our own icons, while keeping them consistent and accessible.
+
+Only the current MVP areas are shown in the main navigation: Dashboard, Plants, Care, Equipment, and Expenses. Later features should be added when their phase starts, rather than appearing as empty promises in the app now. Search, notifications, and theme controls are present only as disabled layout placeholders and have no behaviour yet.
+
 ## Folder structure
 
 ```text

@@ -4,10 +4,11 @@ import { describe, expect, it } from 'vitest';
 import HomePage from './page';
 
 describe('HomePage', () => {
-  it('renders the application foundation message', () => {
+  it('shows the dashboard as the current nursery overview', () => {
     render(<HomePage />);
 
-    expect(screen.getByRole('heading', { name: 'Anth Nursery OS' })).toBeInTheDocument();
-    expect(screen.getByText('The application foundation is ready.')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(screen.getByText('Nursery overview')).toBeInTheDocument();
+    expect(screen.getByText(/daily view of the nursery, with useful totals/i)).toBeInTheDocument();
   });
 });

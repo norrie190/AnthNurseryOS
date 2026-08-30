@@ -1,10 +1,12 @@
+import { PagePlaceholder } from '@/components/page-placeholder/page-placeholder';
+
 export default function HomePage() {
   return (
-    <main>
-      <section className="foundation-message" aria-labelledby="page-title">
-        <h1 id="page-title">Anth Nursery OS</h1>
-        <p>The application foundation is ready.</p>
-      </section>
-    </main>
+    <PagePlaceholder
+      eyebrow="Nursery overview"
+      title="Dashboard"
+      description="This will become the daily view of the nursery, with useful totals, recent activity and work that needs attention."
+      nextStep="The dashboard layout will be built after the core nursery features have real data to summarise."
+    />
   );
 }

@@ -8,7 +8,7 @@ The original project requirements are in [docs/Initial Project Spec.pdf](docs/In
 
 ## What it uses
 
-The app is built with Next.js, React, and TypeScript. Prisma and SQLite are set up for the database, although there are no plant or nursery tables yet. Zod will be used to validate data coming into the app. ESLint and Prettier keep the code consistent, and Vitest with Testing Library is used for tests.
+The app is built with Next.js, React, and TypeScript. Prisma and SQLite are set up for the database, although there are no plant or nursery tables yet. Zod will be used to validate data coming into the app. Lucide provides the interface icons. ESLint and Prettier keep the code consistent, and Vitest with Testing Library is used for tests.
 
 ## Before starting
 
@@ -31,7 +31,7 @@ npx pnpm@11.19.0 db:generate
 npx pnpm@11.19.0 dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000). At the moment it is only a small starting page to prove the app is running. None of the nursery features have been built yet.
+Then open [http://localhost:3000](http://localhost:3000). The responsive application shell and routes for the current MVP areas are ready to review. The pages are still placeholders and none of the nursery features have been built yet.
 
 ## Commands
 
@@ -63,7 +63,7 @@ npx pnpm@11.19.0 test
 ```text
 src/
   app/          Next.js routes, layouts, and route-specific styles
-  components/   Shared UI components, once there is a real need for them
+  components/   The shared application shell and other reusable UI
   lib/          Shared infrastructure code
   modules/      Individual feature areas, such as plants or care
   generated/    Prisma-generated files; do not edit these by hand
