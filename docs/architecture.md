@@ -47,7 +47,11 @@ The `components`, `lib`, and `modules` folders are not being created just to mak
 
 ## Database starting point
 
-Prisma and PostgreSQL 18 are configured, but there are no application tables or migrations yet. Database design comes immediately before Plant Management. At that point the Plant fields, IDs, statuses, archive behaviour, and relationships need to be agreed before a schema is written.
+The approved Plant Management schema and initial migration are implemented in PostgreSQL 18. The migration has been applied to the local development and test databases. It contains only Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, and PlantStatus. Plant CRUD and all later features remain outside this stage.
+
+Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. Timestamps use `timestamptz` with millisecond precision, while the purchase date uses a calendar `date`. Foreign keys restrict deletion and ID updates so referenced nursery records cannot disappear through a cascade. Schema limitations and rules reserved for the migration or data layer are recorded in `docs/plant-data-model.md`.
+
+The migration includes three cost check constraints and `NULLS NOT DISTINCT` on the Location name index. Those SQL details are documented in `docs/database-migrations.md` and must survive future migrations. Database tests use the PostgreSQL driver as a development dependency and roll back every test transaction. A shared URL guard restricts tests and test migrations to a separate local database. Unit and UI tests remain independent of PostgreSQL.
 
 The original project specification already gives a few important rules for later work. Historical records need to be kept through archive or status logic rather than deletion. Care should be stored as events, and values such as last watered or last fertilised should be worked out from those events instead of being separate editable fields. When breeding is built, real breeding events and possible future crosses should be separate. Seedlings should use the main Plant record and link back to their origin rather than becoming a disconnected set of records.
 

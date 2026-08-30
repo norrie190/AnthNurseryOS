@@ -20,11 +20,15 @@ Use Zod at input and integration boundaries. Prefer named functions and proper d
 
 Migrations are part of the project's history. Review them and commit them, but do not edit an applied migration. Make a new one instead.
 
+The initial migration includes custom cost checks and Location name uniqueness behaviour that Prisma cannot fully express. Preserve these when reviewing later migrations. The details are in `docs/database-migrations.md`; do not replace migration deployment with `prisma db push`.
+
 Use archival or status changes rather than destructive operations in the app. Time based nursery information, such as care and observations, should keep its history as events rather than overwriting old records. Do not add database tables for a future feature before the relevant phase starts; add the smallest useful bit of schema at the time.
 
 ## Quality and documentation
 
 Before handing over a milestone, run `pnpm lint`, `pnpm format`, `pnpm test`, `pnpm db:validate`, and `pnpm build`. Tests should be focused on useful rules and regressions, and should not depend on real external services.
+
+Also run `pnpm typecheck`. For database changes, apply reviewed migrations to the separate local test database with `pnpm db:migrate:test`, then run `pnpm test:db`. Database fixtures must be isolated in transactions that are rolled back. Do not point tests at development or production, reset a database, or truncate nursery tables.
 
 Update `README.md` if the developer workflow changes. Update `docs/architecture.md` when a real architectural or persistence decision is made. Keep the app accessible: use semantic HTML, support keyboard use, make contrast readable, and do not rely on colour alone for status.
 

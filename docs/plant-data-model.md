@@ -2,7 +2,7 @@
 
 ## Status of this document
 
-This is the proposed Plant Management model for final review. It records the product decisions before any Prisma models or migrations are written.
+This is the approved Plant Management data design. The approved Prisma schema and first migration have been implemented. The migration has been applied to the local development and test databases and is ready for the final Git review.
 
 This stage includes Plant, PlantParentage, PlantPurchase, PlantPhoto, and Location only. Care, observations, breeding, pollen, seed batches, seedlings, ancestry, and sales remain outside the schema until their own phases.
 
@@ -160,3 +160,17 @@ Location names do not need to be globally unique because two different racks may
 ## Deliberately not included
 
 The first migration must not include CareEvent, Observation, BreedingEvent, BreedingPlan, Pollen, SeedBatch, Seedling, Ancestry, Sale, or other future models. Migrations for those records will be added when their feature design is reviewed.
+
+## Prisma schema review notes
+
+The schema keeps the approved fields and optional values, including optional `originalFilename`. Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. The visible `reference` has a unique constraint but no default or automatic numbering yet.
+
+Timestamps use PostgreSQL `timestamptz` with millisecond precision. `purchaseDate` uses PostgreSQL `date` because it represents a calendar date rather than an instant. Prisma supplies `updatedAt` when it writes a record; this is not a database trigger. Currency has a maximum of three characters and defaults to `GBP`; checking that it is a valid ISO currency code belongs in input validation.
+
+Every foreign key uses `Restrict` for deletion and ID updates. Changing `archivedAt` does not delete or disconnect any related record. These constraints prevent deletion of referenced records, but they are not a complete ban on direct database deletion. The application must still use archive and status operations.
+
+Unique constraints cover Plant references, the Plant link in parentage and purchase records, photo storage keys, and names among locations with the same parent, including root locations. Additional indexes cover the current Location link, both linked parent roles, and photos ordered within a Plant. No indexes for later features are included.
+
+The first migration adds three PostgreSQL check constraints to reject negative costs while permitting null and zero. It also adds `NULLS NOT DISTINCT` to the existing Location unique index, so root names are unique without making names globally unique. These rules are kept in the migration SQL because Prisma cannot fully express them. No preview feature is needed. The rationale and preservation rules are in `database-migrations.md`.
+
+Reference generation and immutability, conflicting linked and named parents, self references, ancestry and location cycles, archived Location assignment, and the single primary photo rule remain for the relevant validation and data layer stages. Database tests now exercise the implemented constraints and relationships against the separate PostgreSQL test database without keeping fixture records.

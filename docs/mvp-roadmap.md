@@ -39,7 +39,10 @@ docs: define initial plant data model
 
 ### Database checkpoint
 
+The approved schema and first migration are implemented and applied locally. Database tests and the final changes are being reviewed before the commit. Plant CRUD has not started.
+
 - Add only the approved Plant Management models to Prisma
+- Review the actual Prisma schema before generating any migration
 - Create and review the first migration
 - Add schema and domain rule tests where useful
 - Do not add care, breeding, seed, pollen, observation, or sales tables
