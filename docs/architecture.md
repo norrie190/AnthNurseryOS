@@ -47,11 +47,23 @@ The `components`, `lib`, and `modules` folders are not being created just to mak
 
 ## Database starting point
 
-The approved Plant Management schema and initial migration are implemented in PostgreSQL 18. The migration has been applied to the local development and test databases. It contains only Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, and PlantStatus. Plant CRUD and all later features remain outside this stage.
+The approved Plant Management schema and initial migration are committed. They contain only Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, and PlantStatus. The next milestone adds the creation data layer and a separate sequence migration. There are no Plant forms, server actions, update or archive operations yet.
 
 Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. Timestamps use `timestamptz` with millisecond precision, while the purchase date uses a calendar `date`. Foreign keys restrict deletion and ID updates so referenced nursery records cannot disappear through a cascade. Schema limitations and rules reserved for the migration or data layer are recorded in `docs/plant-data-model.md`.
 
-The migration includes three cost check constraints and `NULLS NOT DISTINCT` on the Location name index. Those SQL details are documented in `docs/database-migrations.md` and must survive future migrations. Database tests use the PostgreSQL driver as a development dependency and roll back every test transaction. A shared URL guard restricts tests and test migrations to a separate local database. Unit and UI tests remain independent of PostgreSQL.
+The migration includes three cost check constraints and `NULLS NOT DISTINCT` on the Location name index. Those SQL details and the later reference sequence are documented in `docs/database-migrations.md` and must survive future migrations. Database tests exercise both direct SQL constraints and the real Prisma creation operation, with fixture transactions rolled back. A shared URL guard restricts tests and test migrations to a separate local database. Unit and UI tests remain independent of PostgreSQL.
+
+## Plant creation data layer
+
+`src/modules/plants` owns Plant input validation, reference formatting, creation and expected errors. `createPlant` is a server only operation, not a server action. Its strict input schema rejects IDs, references, timestamps and arbitrary nested Prisma operations. The implementation maps allowed fields explicitly and relies on the existing UUID defaults.
+
+`src/lib/prisma.ts` creates the shared Prisma client on first use, using `@prisma/adapter-pg` with the existing Prisma version. Development reuses the client across module reloads. The client and creation operation have `server-only` boundaries. No generic repository or service framework is introduced.
+
+A standalone PostgreSQL sequence allocates ANT numbers safely across concurrent transactions. Formatting uses bigint values without rounding and pads to at least four digits. The full reference stays on Plant. Allocation order need not match commit order, and failed transactions leave gaps. Neither archive nor row deletion rewinds the sequence. Resetting a database or restoring an older backup can lose sequence history, so future imports and restores must take reference allocation into account.
+
+Plant, parentage and purchase writes use one short Prisma transaction. The selected Location is checked with `FOR SHARE` so its archive state cannot change between the check and assignment. Parent links must already exist; archived and historical parents remain valid. Creation cannot add a cycle to an otherwise valid graph because the child has a fresh UUID and links only to existing parents. Parentage editing and its cycle protection remain a later checkpoint.
+
+Purchase dates are calendar dates, not instants to shift between timezones. Currency validation uses the Node runtime's `Intl.supportedValuesOf('currency')` list rather than a new dependency. That list follows the runtime's currency data and is not an exhaustive historical currency catalogue. The complete input, transaction and error contract is in `docs/plant-creation.md`.
 
 The original project specification already gives a few important rules for later work. Historical records need to be kept through archive or status logic rather than deletion. Care should be stored as events, and values such as last watered or last fertilised should be worked out from those events instead of being separate editable fields. When breeding is built, real breeding events and possible future crosses should be separate. Seedlings should use the main Plant record and link back to their origin rather than becoming a disconnected set of records.
 

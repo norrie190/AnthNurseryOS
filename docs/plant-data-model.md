@@ -2,7 +2,7 @@
 
 ## Status of this document
 
-This is the approved Plant Management data design. The approved Prisma schema and first migration have been implemented. The migration has been applied to the local development and test databases and is ready for the final Git review.
+This is the approved Plant Management data design. The Prisma schema and first migration are committed. The creation data layer and a separate ANT sequence migration are implemented for the next review. Their behaviour is documented in `plant-creation.md`.
 
 This stage includes Plant, PlantParentage, PlantPurchase, PlantPhoto, and Location only. Care, observations, breeding, pollen, seed batches, seedlings, ancestry, and sales remain outside the schema until their own phases.
 
@@ -51,7 +51,7 @@ Archive state remains separate from status. A plant can therefore stay `DECEASED
 
 ### Plant reference rules
 
-- References are generated automatically in ascending order.
+- References are allocated automatically in ascending order by a PostgreSQL sequence. Concurrent creations can commit in a different order, and rolled back transactions leave gaps.
 - The first references are `ANT-0001`, `ANT-0002`, and `ANT-0003`.
 - Four digits are the minimum padding, so the format can continue naturally beyond `ANT-9999`.
 - A unique database constraint protects the reference from duplication.
@@ -59,7 +59,7 @@ Archive state remains separate from status. A plant can therefore stay `DECEASED
 - Archived references are never reused.
 - The complete formatted reference is stored separately from the internal ID.
 
-The internal ID should be a generated opaque string. This keeps database relationships independent from the human readable numbering scheme.
+The internal ID is a Prisma generated UUID. This keeps database relationships independent from the human readable numbering scheme. The new sequence starts at 1 because both databases were empty. Future imports of existing ANT references must coordinate with the sequence. It must not be reset to fill gaps or reuse a missing record's number.
 
 ## PlantParentage
 
@@ -153,7 +153,7 @@ Location names do not need to be globally unique because two different racks may
 - Archiving a linked parent Plant does not remove it from another plant's parentage.
 - Archiving a Location does not erase it from historical records. The UI should prevent assigning new plants to an archived Location.
 - Plant names can be empty. The UI can display the permanent reference with a fallback such as `Unnamed Plant` or `NOID`.
-- Dates and times are stored consistently in UTC. Date only values are presented as dates in the user's local timezone.
+- Timestamps are stored consistently in UTC. Date only values retain their original calendar date without timezone conversion.
 - Calculated values such as total acquisition cost are derived rather than duplicated in the database.
 - Database and application validation will reject invalid status values, negative money amounts, duplicate references, and invalid self references.
 
@@ -163,7 +163,7 @@ The first migration must not include CareEvent, Observation, BreedingEvent, Bree
 
 ## Prisma schema review notes
 
-The schema keeps the approved fields and optional values, including optional `originalFilename`. Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. The visible `reference` has a unique constraint but no default or automatic numbering yet.
+The schema keeps the approved fields and optional values, including optional `originalFilename`. Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. The visible `reference` has a unique constraint and no column default. The creation operation obtains its number from the separately migrated sequence and supplies the formatted reference.
 
 Timestamps use PostgreSQL `timestamptz` with millisecond precision. `purchaseDate` uses PostgreSQL `date` because it represents a calendar date rather than an instant. Prisma supplies `updatedAt` when it writes a record; this is not a database trigger. Currency has a maximum of three characters and defaults to `GBP`; checking that it is a valid ISO currency code belongs in input validation.
 
@@ -173,4 +173,6 @@ Unique constraints cover Plant references, the Plant link in parentage and purch
 
 The first migration adds three PostgreSQL check constraints to reject negative costs while permitting null and zero. It also adds `NULLS NOT DISTINCT` to the existing Location unique index, so root names are unique without making names globally unique. These rules are kept in the migration SQL because Prisma cannot fully express them. No preview feature is needed. The rationale and preservation rules are in `database-migrations.md`.
 
-Reference generation and immutability, conflicting linked and named parents, self references, ancestry and location cycles, archived Location assignment, and the single primary photo rule remain for the relevant validation and data layer stages. Database tests now exercise the implemented constraints and relationships against the separate PostgreSQL test database without keeping fixture records.
+Creation now generates references, rejects caller supplied identity and timestamps, validates parent roles and existing parent IDs, and rejects archived or missing Locations. Blank parentage does not create an empty record. Omitting purchase creates no purchase record, while an explicit empty purchase group preserves the fact that a purchase is being recorded with unknown details.
+
+Reference immutability during updates will be enforced when updates are implemented. Direct privileged SQL is not prevented from editing references by a trigger. Ancestry and Location cycles, parentage editing, and the single primary photo rule remain for their later stages. Database tests exercise the implemented constraints and creation behaviour against the separate PostgreSQL test database without keeping fixture records.

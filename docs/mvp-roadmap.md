@@ -20,7 +20,7 @@ The MVP is being built in small reviewable stages. Each stage should leave the p
 - Initial visual tokens and component styling
 - Placeholder pages without feature behaviour
 
-## 3. Plant Management data design - current
+## 3. Plant Management data design - complete
 
 This stage is deliberately split before any Plant CRUD is built.
 
@@ -39,7 +39,7 @@ docs: define initial plant data model
 
 ### Database checkpoint
 
-The approved schema and first migration are implemented and applied locally. Database tests and the final changes are being reviewed before the commit. Plant CRUD has not started.
+The approved schema and first migration are committed and applied locally. Their constraints and relationships are covered by database tests.
 
 - Add only the approved Plant Management models to Prisma
 - Review the actual Prisma schema before generating any migration
@@ -53,13 +53,13 @@ Suggested commit:
 feat: add initial plant management schema
 ```
 
-## 4. Plant Management feature
+## 4. Plant Management feature - current
 
 Build Plant Management in small vertical slices rather than one large change.
 
 Planned checkpoints:
 
-1. Plant validation and data access foundation
+1. Plant validation and creation data layer, implemented for review
 2. Plant list with useful empty, loading, and error states
 3. Add Plant
 4. Plant details
@@ -69,6 +69,8 @@ Planned checkpoints:
 8. Plant photos after the storage approach is agreed
 
 Each checkpoint should include the tests needed for its rules and regressions.
+
+The current milestone is `feat: add plant creation data layer`. It adds strict creation input, the Prisma runtime connection, automatic ANT allocation through a new sequence migration, atomic Plant/Parentage/Purchase creation and tests. Parentage and purchase can already be supplied to the internal operation; their UI remains later work. No server actions, forms, updates, archive/restore operations or photo handling are included. See `plant-creation.md` for the operation contract.
 
 ## 5. Care tracking
 

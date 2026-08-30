@@ -8,7 +8,7 @@ The working requirements are in [docs/projectspec.md](docs/projectspec.md), with
 
 ## What it uses
 
-The app is built with Next.js, React, and TypeScript. Prisma and PostgreSQL 18 provide the initial Plant Management database. Docker Compose runs the development and test databases locally. Zod validates integration settings and will also check application input. Lucide provides the interface icons. ESLint and Prettier keep the code consistent, and Vitest with Testing Library is used for tests. The PostgreSQL driver is a development dependency for database tests only.
+The app is built with Next.js, React, and TypeScript. Prisma and PostgreSQL 18 provide the Plant Management database. Docker Compose runs the development and test databases locally. Zod validates integration settings and Plant creation input. Lucide provides the interface icons. ESLint and Prettier keep the code consistent, and Vitest with Testing Library is used for tests. Prisma's PostgreSQL adapter supplies the runtime driver; direct SQL tests also use `pg`.
 
 ## Before starting
 
@@ -35,7 +35,7 @@ npx pnpm@11.19.0 db:generate
 npx pnpm@11.19.0 dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000). The responsive application shell and routes for the current MVP areas are ready to review. The pages are still placeholders and none of the nursery features have been built yet.
+Then open [http://localhost:3000](http://localhost:3000). The responsive application shell and routes for the current MVP areas are ready to review. Pages remain placeholders. The Plant creation data layer is implemented behind the scenes, but there is no Add Plant form or server action yet.
 
 `db:up` starts PostgreSQL 18 and waits for it to accept connections. The first start creates both `anth_nursery` and `anth_nursery_test`. Database files are kept in a named Docker volume, so `db:down` stops the container without removing the data.
 
@@ -91,19 +91,19 @@ tests/          Shared test setup and helpers
 docs/           Project notes and technical documentation
 ```
 
-Some of these folders do not exist yet on purpose. They will be added when the first feature actually needs them, rather than filling the project with empty structure.
+The Plant creation code lives in `src/modules/plants`. Shared Prisma connection setup is in `src/lib/prisma.ts`. Other feature folders will appear when their work starts.
 
 ## Database workflow
 
 Prisma uses PostgreSQL 18 in development, testing, and eventual production. Development and testing use separate databases in the local Docker container. Their connection strings are configured through `DATABASE_URL` and `TEST_DATABASE_URL` in `.env`.
 
-The initial Plant Management migration is implemented and has been verified on both local databases. The approved fields and relationships are in [docs/plant-data-model.md](docs/plant-data-model.md). The custom SQL constraints and migration workflow are explained in [docs/database-migrations.md](docs/database-migrations.md).
+The initial Plant Management migration and the separate ANT sequence migration are implemented. The approved fields and relationships are in [docs/plant-data-model.md](docs/plant-data-model.md). The creation API is documented in [docs/plant-creation.md](docs/plant-creation.md). Custom SQL and migration details are in [docs/database-migrations.md](docs/database-migrations.md).
 
 Use `db:check` to verify both database connections. It runs `SELECT 1` through Prisma without creating tables or migrations. Prisma uses `DATABASE_URL` by default; the check temporarily passes `TEST_DATABASE_URL` to a separate Prisma process for the second connection without changing `.env`.
 
 `db:status` checks development migration history. Use `db:deploy` to apply already reviewed migration files. To draft a future migration for inspection before applying it, use `db:migrate --name <name> --create-only`.
 
-When a database change is agreed, update `prisma/schema.prisma`, create a named migration, check the generated SQL, add tests where they help, and commit the schema, migration, and related code together. Do not edit anything in `src/generated/prisma` by hand.
+When a database change is agreed, update `prisma/schema.prisma` where appropriate, create a named migration, review its SQL, add tests, and commit the migration with its related code. SQL objects that Prisma cannot represent, such as the reference sequence, belong in a custom migration without an unrelated schema edit. Do not edit anything in `src/generated/prisma` by hand.
 
 The local PostgreSQL username and password in `.env.example` are only development defaults. Production must use separate secret credentials supplied by the hosting environment.
 
@@ -118,6 +118,8 @@ npx pnpm@11.19.0 test:db
 ```
 
 Tests require PostgreSQL 18 and the reviewed migrations. They fail if the database is unavailable rather than silently skipping. Each test transaction is rolled back, including failed constraint checks, so fixture records are not kept. No database is reset or truncated.
+
+Sequence numbers are deliberately not rolled back. Running the database tests advances the test sequence, but never the development sequence. Tests must not assume their first Plant will be `ANT-0001`. Do not reset the sequence to remove gaps. Imports of existing ANT references will need to coordinate with it before writing records.
 
 Both tests and the test migration command require a local `TEST_DATABASE_URL` with a database name ending in `_test`, distinct from the development database name. Only the optional `schema=public` URL parameter is supported. Neither command falls back to `DATABASE_URL`.
 
