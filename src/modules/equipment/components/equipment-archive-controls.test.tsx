@@ -18,6 +18,18 @@ const props = {
 };
 beforeEach(() => vi.resetAllMocks());
 
+test('ongoing power warning appears only in active archive confirmation', () => {
+  render(<EquipmentArchiveControls {...props} hasOngoingPowerPeriod />);
+  expect(screen.queryByText(/Its recorded power settings will continue/)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Archive Equipment' }));
+  expect(
+    screen.getByText(
+      'Archiving hides this item from the active inventory. Its recorded power settings will continue until you change or end them.',
+    ),
+  ).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Confirm Archive' })).toBeEnabled();
+});
+
 test('requires explicit confirmation and lets Cancel return focus without a write', async () => {
   const user = userEvent.setup();
   render(<EquipmentArchiveControls {...props} />);

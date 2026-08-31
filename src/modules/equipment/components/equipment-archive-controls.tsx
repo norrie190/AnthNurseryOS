@@ -14,6 +14,7 @@ type EquipmentArchiveControlsProps = {
   reference: string;
   archived: boolean;
   expectedUpdatedAt: string;
+  hasOngoingPowerPeriod?: boolean;
 };
 
 export function EquipmentArchiveControls({
@@ -21,6 +22,7 @@ export function EquipmentArchiveControls({
   reference,
   archived,
   expectedUpdatedAt,
+  hasOngoingPowerPeriod = false,
 }: EquipmentArchiveControlsProps) {
   const router = useRouter();
   const [confirmationToken, setConfirmationToken] = useState<string | null>(null);
@@ -123,6 +125,12 @@ export function EquipmentArchiveControls({
               it later.
             </p>
             <input type="hidden" name="confirmation" value="archive" />
+            {hasOngoingPowerPeriod && (
+              <p>
+                Archiving hides this item from the active inventory. Its recorded power settings
+                will continue until you change or end them.
+              </p>
+            )}
             <div className={styles.actions}>
               <button
                 ref={cancelButton}

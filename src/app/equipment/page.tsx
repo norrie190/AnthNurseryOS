@@ -16,6 +16,9 @@ export default async function EquipmentPage() {
           <p>Manage and view your nursery equipment</p>
         </div>
         <div className={styles.actions}>
+          <Link className={styles.secondaryButton} href="/energy/tariffs">
+            Electricity tariffs
+          </Link>
           <Link className={styles.secondaryLink} href="/equipment/archived">
             Archived Equipment
           </Link>

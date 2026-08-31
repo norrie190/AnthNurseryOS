@@ -2,7 +2,7 @@
 
 ## Current checkpoint
 
-The schema checkpoint is committed. The current [data layer and calculation checkpoint](energy-data-layer.md) implements restricted operations, exact calculations and queries against that unchanged schema. No development energy records are created. Forms, routes and dashboard summaries are not implemented yet.
+The schema and [data layer and calculation checkpoint](energy-data-layer.md) are committed. The current [browser checkpoint](energy-browser-flow.md) adds Equipment energy forms/history and `/energy/tariffs` against those unchanged services and schema. No development energy records are created. Dashboard summaries are not implemented yet.
 
 Equipment inventory is already complete. Energy history is now the next reviewed domain before Care. This document records both the implemented persistence foundation and the approved rules for later checkpoints; the sections below distinguish them.
 
@@ -85,7 +85,7 @@ The pure calculation function uses decimal strings and scaled bigint values, not
 
 Use Europe/London calendar dates and count calendar days, not elapsed local milliseconds. These are standard daily estimates, not measured consumption on 23/25 hour daylight saving days. Month to date should use completed days unless explicitly labelled as including today's full estimate. A 365 day projection at today's settings is different from a calendar year report using its actual dates and all history.
 
-Hours per day cannot establish simultaneous live watts or consumption within cheap clock windows. Future time of use support needs clock schedules or measured intervals, time bands and deliberate timezone rules. It must not pretend existing daily history contains that missing detail. No time of use scheduling, smart plugs, telemetry, standing charges, household accounting, energy UI or dashboard work is part of this checkpoint.
+Hours per day cannot establish simultaneous live watts or consumption within cheap clock windows. Future time of use support needs clock schedules or measured intervals, time bands and deliberate timezone rules. It must not pretend existing daily history contains that missing detail. No time of use scheduling, smart plugs, telemetry, standing charges, household accounting or dashboard work is part of this checkpoint.
 
 ## Verification
 

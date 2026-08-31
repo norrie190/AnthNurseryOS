@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { formatPurchaseMoney } from '../../../lib/purchase-money';
 import type { EquipmentDetailRecord } from '../equipment-queries';
 import { EquipmentArchiveControls } from './equipment-archive-controls';
@@ -10,7 +11,15 @@ const timestamp = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Europe/London',
 });
 const calendarDate = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: 'UTC' });
-export function EquipmentDetail({ equipment }: { equipment: EquipmentDetailRecord }) {
+export function EquipmentDetail({
+  equipment,
+  energy,
+  hasOngoingPowerPeriod = false,
+}: {
+  equipment: EquipmentDetailRecord;
+  energy?: ReactNode;
+  hasOngoingPowerPeriod?: boolean;
+}) {
   const purchase = equipment.purchase;
   const details = [
     ['Category', equipment.category],
@@ -119,11 +128,13 @@ export function EquipmentDetail({ equipment }: { equipment: EquipmentDetailRecor
           <p className={styles.sectionIntro}>No purchase information recorded.</p>
         )}
       </section>
+      {energy}
       <EquipmentArchiveControls
         equipmentId={equipment.id}
         reference={equipment.reference}
         archived={equipment.archivedAt !== null}
         expectedUpdatedAt={equipment.updatedAt.toISOString()}
+        hasOngoingPowerPeriod={hasOngoingPowerPeriod}
       />
     </div>
   );

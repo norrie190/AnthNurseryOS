@@ -15,6 +15,11 @@ import {
   type EquipmentDetailRecord,
 } from '../equipment-queries';
 import { equipmentEditValues } from '../equipment-edit-values';
+import { equipmentEnergyView } from '../../energy/energy-view';
+import { loadEquipmentEnergyView } from '../../energy/energy-page-data';
+
+vi.mock('../../energy/energy-page-data', () => ({ loadEquipmentEnergyView: vi.fn() }));
+vi.mock('../../energy/energy-actions', () => ({ saveEnergyAction: vi.fn() }));
 
 vi.mock('next/server', () => ({ connection: vi.fn() }));
 vi.mock('next/navigation', () => ({
@@ -57,6 +62,16 @@ const item: EquipmentDetailRecord = {
 };
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(loadEquipmentEnergyView).mockResolvedValue(
+    equipmentEnergyView({
+      equipmentId: item.id,
+      usesPower: true,
+      token: item.updatedAt.toISOString(),
+      rows: [],
+      tariffs: [],
+      today: '2026-09-01',
+    }),
+  );
   vi.mocked(getEquipmentList).mockResolvedValue([]);
   vi.mocked(getArchivedEquipmentList).mockResolvedValue([]);
   vi.mocked(getEquipmentById).mockResolvedValue(item);

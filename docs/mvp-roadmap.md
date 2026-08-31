@@ -86,11 +86,11 @@ List, add, detail, edit, archive and restore are available through Equipment pag
 
 usesPower describes capability for consumption tracking, not current operation or inclusion in running cost totals. Shipping is allocated to each individual item. Energy history has its own approved design and checkpoints below.
 
-## 6. Equipment energy history - current data layer checkpoint
+## 6. Equipment energy history - current browser checkpoint
 
-The owner approved [Equipment energy history](equipment-energy.md) before Care. The schema, migration and database protection checkpoint is committed. The current [data layer checkpoint](energy-data-layer.md) adds restricted operations, reads, exact calculations and tests without changing schema or migrations. No development energy records are seeded.
+The owner approved [Equipment energy history](equipment-energy.md) before Care. The schema and [data layer checkpoint](energy-data-layer.md) are committed. The current [browser checkpoint](energy-browser-flow.md) adds Equipment energy forms/history and electricity tariff management using those services and calculations. No development energy records are seeded.
 
-Decimal validation, Equipment stale protection, tariff timeline locking, explicit correction/void operations, exact derived calculations and missing coverage reporting are implemented. The next reviewed checkpoint can add Equipment energy forms/history and tariff management. No energy UI or dashboard work is included now. Standing charges, time of use schedules, telemetry and cached monthly totals remain outside scope.
+Decimal validation, Equipment stale protection, tariff timeline locking, explicit correction/void operations, exact derived calculations and missing coverage reporting are implemented and exposed in the browser. `/energy/tariffs` is the first Energy route; there is no Energy overview or main dashboard integration. Standing charges, time of use schedules, telemetry and cached monthly totals remain outside scope.
 
 ## 7. Care tracking
 

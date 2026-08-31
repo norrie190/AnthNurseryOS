@@ -36,6 +36,8 @@ import {
   updateEquipment,
 } from '../../src/modules/equipment/equipment-service';
 import { formatEnergyKwh, formatGbp } from '../../src/modules/energy/energy-calculations';
+import { saveEnergyAction } from '../../src/modules/energy/energy-actions';
+import { loadEquipmentEnergyView } from '../../src/modules/energy/energy-page-data';
 
 vi.mock('server-only', () => ({}));
 vi.mock('../../src/lib/prisma', () => ({ getPrisma: () => binding ?? database }));
@@ -136,6 +138,202 @@ function equipment(
 async function latestToken(tx: Prisma.TransactionClient, id: string) {
   return token(await tx.equipment.findUniqueOrThrow({ where: { id } }));
 }
+
+function browserForm(values: Record<string, string>) {
+  const data = new FormData();
+  for (const [key, value] of Object.entries(values)) data.set(key, value);
+  return data;
+}
+
+test('browser power workflow records, changes, corrects and voids on archived Equipment without unrelated changes', () =>
+  fixture(async (tx) => {
+    const item = await equipment(tx, {
+      archivedAt: new Date('2026-01-01'),
+      notes: 'Preserve inventory',
+    });
+    const context = {
+      kind: 'power' as const,
+      equipmentId: item.id,
+      token: item.updatedAt.toISOString(),
+    };
+    const fields = {
+      powerWatts: '70.00',
+      hoursPerDay: '12',
+      effectiveFrom: '2099-09-01',
+      lastDay: '',
+      notes: 'Initial',
+    };
+    expect(
+      await saveEnergyAction({ ...context, mode: 'record' }, browserForm(fields)),
+    ).toMatchObject({ success: true });
+    const first = await tx.equipmentPowerPeriod.findFirstOrThrow({
+      where: { equipmentId: item.id },
+    });
+    expect(first.powerWatts.toString()).toBe('70');
+    expect(
+      await saveEnergyAction(
+        { ...context, mode: 'change' },
+        browserForm({ powerWatts: '65', hoursPerDay: '11', effectiveFrom: '2099-09-21' }),
+      ),
+    ).toMatchObject({ success: false, stale: true });
+    const fresh = async () => (await latestToken(tx, item.id)).expectedUpdatedAt;
+    expect(
+      await saveEnergyAction(
+        { ...context, token: await fresh(), mode: 'change' },
+        browserForm({ powerWatts: '65', hoursPerDay: '11', effectiveFrom: '2099-09-21' }),
+      ),
+    ).toMatchObject({ success: true });
+    const corrected = {
+      ...fields,
+      lastDay: '2099-09-22',
+      powerWatts: '80',
+      correctionReason: 'Actual schedule checked',
+      confirmAdjacent: 'yes',
+    };
+    expect(
+      await saveEnergyAction(
+        { ...context, token: await fresh(), mode: 'correct', periodId: first.id },
+        browserForm(corrected),
+      ),
+    ).toMatchObject({ success: true });
+    const history = await getEquipmentPowerHistory(item.id);
+    expect(
+      history.powerPeriods.map((p) => [
+        p.effectiveFrom.toISOString().slice(0, 10),
+        p.effectiveTo?.toISOString().slice(0, 10),
+      ]),
+    ).toEqual([
+      ['2099-09-01', '2099-09-23'],
+      ['2099-09-23', undefined],
+    ]);
+    expect(
+      await saveEnergyAction(
+        { ...context, token: await fresh(), mode: 'void', periodId: first.id },
+        browserForm({ correctionReason: 'Incorrect source', confirmVoid: 'yes' }),
+      ),
+    ).toMatchObject({ success: true });
+    expect(
+      (await tx.equipmentPowerPeriod.findUniqueOrThrow({ where: { id: first.id } })).voidedAt,
+    ).not.toBeNull();
+    const after = await tx.equipment.findUniqueOrThrow({ where: { id: item.id } });
+    expect({ ...after, updatedAt: item.updatedAt }).toEqual(item);
+    const view = await loadEquipmentEnergyView(item.id);
+    expect(view.rows).toHaveLength(2);
+    expect(view.rows[0].voidedAt).not.toBeNull();
+  }));
+
+test('browser numeric and reason validation uses the real strict services with no rows written', () =>
+  fixture(async (tx) => {
+    const item = await equipment(tx);
+    const c = {
+      kind: 'power' as const,
+      equipmentId: item.id,
+      token: item.updatedAt.toISOString(),
+      mode: 'record' as const,
+    };
+    for (const powerWatts of ['70.001', '1e2', 'NaN', '-1']) {
+      expect(
+        await saveEnergyAction(
+          c,
+          browserForm({ powerWatts, hoursPerDay: '12', effectiveFrom: '2099-01-01' }),
+        ),
+      ).toMatchObject({
+        success: false,
+        issues: expect.arrayContaining([expect.objectContaining({ field: 'powerWatts' })]),
+      });
+    }
+    expect(await tx.equipmentPowerPeriod.count({ where: { equipmentId: item.id } })).toBe(0);
+    expect(
+      await saveEnergyAction(
+        c,
+        browserForm({
+          powerWatts: '0',
+          hoursPerDay: '24',
+          effectiveFrom: '2099-01-01',
+          lastDay: '2099-01-01',
+        }),
+      ),
+    ).toMatchObject({ success: true });
+    const period = await tx.equipmentPowerPeriod.findFirstOrThrow({
+      where: { equipmentId: item.id },
+    });
+    expect(period.effectiveTo?.toISOString().slice(0, 10)).toBe('2099-01-02');
+    for (const mode of ['correct', 'void'] as const) {
+      const fields: Record<string, string> =
+        mode === 'void'
+          ? { correctionReason: ' ', confirmVoid: 'yes' }
+          : {
+              correctionReason: ' ',
+              powerWatts: '0',
+              hoursPerDay: '24',
+              effectiveFrom: '2099-01-01',
+              lastDay: '2099-01-01',
+            };
+      expect(
+        await saveEnergyAction(
+          {
+            ...c,
+            mode,
+            periodId: period.id,
+            token: (await latestToken(tx, item.id)).expectedUpdatedAt,
+          },
+          browserForm(fields),
+        ),
+      ).toMatchObject({
+        success: false,
+        issues: expect.arrayContaining([expect.objectContaining({ field: 'correctionReason' })]),
+      });
+    }
+  }));
+
+test('browser tariff workflow preserves exact rates, scheduled history, reason and stale timeline protection', () =>
+  fixture(async (tx) => {
+    const fresh = async () => (await getElectricityTariffHistory()).timelineToken;
+    const c = { kind: 'tariff' as const, token: emptyToken, mode: 'record' as const };
+    expect(
+      await saveEnergyAction(
+        c,
+        browserForm({ unitRateMinorPerKwh: '24.501234', effectiveFrom: '2099-09-01' }),
+      ),
+    ).toMatchObject({ success: false });
+    expect(
+      await saveEnergyAction(
+        c,
+        browserForm({ unitRateMinorPerKwh: '24.50123', effectiveFrom: '2099-09-01' }),
+      ),
+    ).toMatchObject({ success: true });
+    const first = await tx.electricityTariff.findFirstOrThrow();
+    expect(first.unitRateMinorPerKwh.toFixed(5)).toBe('24.50123');
+    const change = browserForm({ unitRateMinorPerKwh: '26.17', effectiveFrom: '2099-10-01' });
+    expect(await saveEnergyAction({ ...c, mode: 'change' }, change)).toMatchObject({
+      success: false,
+      stale: true,
+    });
+    expect(
+      await saveEnergyAction({ ...c, mode: 'change', token: await fresh() }, change),
+    ).toMatchObject({ success: true });
+    expect(
+      await saveEnergyAction(
+        { ...c, mode: 'correct', token: await fresh(), periodId: first.id },
+        browserForm({
+          unitRateMinorPerKwh: '0',
+          effectiveFrom: '2099-09-01',
+          lastDay: '2099-09-30',
+          correctionReason: 'Free tariff confirmed',
+        }),
+      ),
+    ).toMatchObject({ success: true });
+    expect(
+      await saveEnergyAction(
+        { ...c, mode: 'void', token: await fresh(), periodId: first.id },
+        browserForm({ correctionReason: 'Incorrect source', confirmVoid: 'yes' }),
+      ),
+    ).toMatchObject({ success: true });
+    const history = await getElectricityTariffHistory();
+    expect(history.tariffs).toHaveLength(2);
+    expect(history.tariffs[0].voidedAt).not.toBeNull();
+    expect(history.tariffs[1].effectiveFrom.toISOString().slice(0, 10)).toBe('2099-10-01');
+  }));
 
 test('recording maps strict values, allows zero and 24 hours, preserves identity and related data', () =>
   fixture(async (tx) => {
