@@ -49,7 +49,7 @@ usesPower means “This equipment is capable of having electrical consumption tr
 
 EquipmentPurchase is optional, with seller, order reference, calendar purchase date and individual item costs. Integer minor units preserve null as unknown and zero as known zero, with GBP as the default currency. Shipping is the amount allocated to this specific Equipment item, not automatically the full shipping cost of a shared order. No Order model is included.
 
-The database foundation and restricted Equipment data layer are implemented. Creation allocates EQP references, edits use stale protection, and archive/restore preserves related information. Small inventory/detail/Location reads support the next browser milestone. There are no Equipment forms, actions or inventory screens yet. The exact fields and scope are in [Equipment data model](equipment-data-model.md).
+The database foundation, restricted Equipment data layer and inventory browser workflow are implemented. Creation allocates EQP references, edits use stale protection, and archive/restore preserves related information. Equipment pages provide active/archived lists, Add/Edit forms, details and archive/restore actions. The exact fields and scope are in [Equipment data model](equipment-data-model.md), with UI behaviour in [Equipment browser workflow](equipment-browser-flow.md).
 
 Maintenance, photos, operating periods, tariffs and running expenses remain later work. There are no energy calculations or decisions about numeric storage for wattage, tariffs or calculated costs in this checkpoint. Tariff precision and fractional pence must be designed deliberately later. Future equipment upgrades or expansion projects remain outside the first MVP.
 

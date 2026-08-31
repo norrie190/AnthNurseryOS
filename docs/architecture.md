@@ -47,7 +47,7 @@ The `components`, `lib`, and `modules` folders are not being created just to mak
 
 ## Database starting point
 
-The original Plant foundation contains Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. Plant creation, browsing, editing, archive/restore and photo features are implemented. Equipment, EquipmentPurchase and an independent EQP sequence reuse Location. Equipment creation, editing, archive/restore and reads are implemented; its UI remains for the next checkpoint.
+The original Plant foundation contains Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. Plant creation, browsing, editing, archive/restore and photo features are implemented. Equipment, EquipmentPurchase and an independent EQP sequence reuse Location. Equipment creation, editing, archive/restore, reads and inventory pages are implemented.
 
 Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. Timestamps use `timestamptz` with millisecond precision, while the purchase date uses a calendar `date`. Foreign keys restrict deletion and ID updates so referenced nursery records cannot disappear through a cascade. Schema limitations and rules reserved for the migration or data layer are recorded in `docs/plant-data-model.md`.
 
@@ -156,6 +156,10 @@ The committed schema migrations introduced the inventory tables/checks and separ
 src/modules/equipment owns strict inputs, small Equipment errors, reference formatting, operations and reads. It does not call Plant services. The only Plant change extracts unchanged scalar cost/currency/calendar date validation into src/lib/purchase-field-schemas.ts so both domains use the same rules. Creation saves Equipment and optional Purchase atomically, with a Location FOR SHARE check. Editing locks Equipment with FOR NO KEY UPDATE, rechecks expectedUpdatedAt, then checks any changed Location. Transactions use READ COMMITTED and no parentage advisory lock. Explicit field mapping keeps identity/reference/history outside editable inputs, with omitted patch fields preserved and null clearing nullable values.
 
 Every accepted logical edit advances updatedAt to max(server time, previous time + 1 millisecond), including purchase only edits. Archive/restore use the same row lock and Plant idempotency semantics: a repeated request for the existing state keeps both timestamps, while a real transition needs a current token. Small fresh reads provide active/archived lists, detail including purchase/Location, and usable Location options. There are no server actions, pages or broad caching layers in this checkpoint. Full inputs, errors, tests and scope are in [Equipment data model](equipment-data-model.md), with SQL history in [database migrations](database-migrations.md).
+
+## Equipment browser workflow
+
+The Equipment browser checkpoint uses one shared Add/Edit form and small server actions that call the existing services. Its list query adds only brand/model to the selected fields. Exact money parsing/formatting is shared in src/lib/purchase-money.ts; the previous Plant exports remain compatible aliases. Routes use connection() for fresh reads, create/edit redirect to UUID detail URLs, and archive/restore refresh the current page. Forms retain values and their original expectedUpdatedAt token rather than silently authorising a newer edit. The archived list links to each detail page for restoration. No schema, dependency, energy, photo or dashboard changes are included. The full boundary, security and UX decisions are in [Equipment browser workflow](equipment-browser-flow.md).
 
 ## Keeping it tidy as it grows
 

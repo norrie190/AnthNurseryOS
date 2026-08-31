@@ -4,6 +4,16 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { afterAll, afterEach, beforeAll, expect, test, vi } from 'vitest';
 import { PrismaClient, type Prisma } from '../../src/generated/prisma/client';
 import { getTestDatabaseUrl } from '../../scripts/test-database-target';
+import { redirect } from 'next/navigation';
+import {
+  createEquipmentAction,
+  updateEquipmentAction,
+} from '../../src/modules/equipment/equipment-actions';
+import {
+  archiveEquipmentAction,
+  restoreEquipmentAction,
+} from '../../src/modules/equipment/equipment-archive-actions';
+import { initialEquipmentFormState } from '../../src/modules/equipment/equipment-form-state';
 import {
   createEquipment,
   updateEquipment,
@@ -19,6 +29,7 @@ import {
 } from '../../src/modules/equipment/equipment-queries';
 
 vi.mock('server-only', () => ({}));
+vi.mock('next/navigation', () => ({ redirect: vi.fn() }));
 vi.mock('../../src/lib/prisma', () => ({ getPrisma: () => binding ?? database }));
 const url = getTestDatabaseUrl();
 const database = new PrismaClient({
@@ -55,6 +66,7 @@ beforeAll(async () => {
 });
 afterEach(async () => {
   binding = undefined;
+  vi.mocked(redirect).mockReset();
   vi.restoreAllMocks();
   expect(await records()).toEqual(baseline);
   expect(
@@ -112,6 +124,136 @@ function location(tx: Prisma.TransactionClient, archived = false) {
     data: { name: `test-${randomUUID()}`, archivedAt: archived ? new Date() : null },
   });
 }
+
+function form(values: Record<string, string>) {
+  const data = new FormData();
+  for (const [key, value] of Object.entries(values)) data.set(key, value);
+  return data;
+}
+
+test('browser actions create, edit, archive and restore through real services and queries', () =>
+  fixture(async (tx) => {
+    const signal = new Error('Redirect');
+    vi.mocked(redirect).mockImplementation(() => {
+      throw signal;
+    });
+    const place = await location(tx);
+    await expect(
+      createEquipmentAction(
+        initialEquipmentFormState,
+        form({
+          name: 'Browser light',
+          category: 'grow light',
+          usesPower: 'true',
+          locationId: place.id,
+          brand: 'Brand',
+          recordPurchase: 'on',
+          currency: 'GBP',
+          equipmentPrice: '125.50',
+          shippingCost: '0',
+          otherCost: '',
+          seller: 'Shop',
+          purchaseDate: '2026-08-13',
+        }),
+      ),
+    ).rejects.toBe(signal);
+    const url = vi.mocked(redirect).mock.calls[0][0];
+    const id = url.split('/').at(-1)!;
+    const saved = await getEquipmentById(id);
+    expect(saved).toMatchObject({
+      reference: expect.stringMatching(/^EQP-\d{4,}$/),
+      name: 'Browser light',
+      category: 'Grow Light',
+      usesPower: true,
+      location: place,
+      purchase: {
+        equipmentPriceMinor: 12550,
+        shippingCostMinor: 0,
+        otherCostMinor: null,
+        currency: 'GBP',
+      },
+    });
+    if (!saved) throw new Error('Missing created Equipment');
+    expect((await getEquipmentList()).map((row) => row.id)).toContain(id);
+    await expect(
+      updateEquipmentAction(
+        id,
+        saved.updatedAt.toISOString(),
+        initialEquipmentFormState,
+        form({
+          usesPower: 'false',
+          brand: '',
+          locationId: '',
+          recordPurchase: 'on',
+          seller: '',
+          equipmentPrice: '',
+          currency: 'GBP',
+        }),
+      ),
+    ).rejects.toBe(signal);
+    const updated = await getEquipmentById(id);
+    expect(updated).toMatchObject({
+      reference: saved.reference,
+      usesPower: false,
+      brand: null,
+      location: null,
+      purchase: { seller: null, equipmentPriceMinor: null, shippingCostMinor: 0 },
+    });
+    if (!updated) throw new Error('Missing updated Equipment');
+    expect(
+      await updateEquipmentAction(
+        id,
+        saved.updatedAt.toISOString(),
+        initialEquipmentFormState,
+        form({ name: 'Stale' }),
+      ),
+    ).toMatchObject({ stale: true });
+    expect(
+      await archiveEquipmentAction(
+        id,
+        updated.updatedAt.toISOString(),
+        form({ confirmation: 'archive' }),
+      ),
+    ).toMatchObject({ success: true });
+    expect((await getEquipmentList()).map((row) => row.id)).not.toContain(id);
+    expect((await getArchivedEquipmentList()).map((row) => row.id)).toContain(id);
+    const archived = await getEquipmentById(id);
+    if (!archived) throw new Error('Missing archived Equipment');
+    expect(
+      await restoreEquipmentAction(id, archived.updatedAt.toISOString(), form({})),
+    ).toMatchObject({ success: true });
+    expect((await getEquipmentList()).map((row) => row.id)).toContain(id);
+    expect((await getEquipmentById(id))?.purchase).toEqual(updated.purchase);
+  }));
+
+test('minimal nonpowered browser creation and safe domain errors', () =>
+  fixture(async (tx) => {
+    const signal = new Error('Redirect');
+    vi.mocked(redirect).mockImplementation(() => {
+      throw signal;
+    });
+    await expect(
+      createEquipmentAction(initialEquipmentFormState, form({ name: 'Rack', usesPower: 'false' })),
+    ).rejects.toBe(signal);
+    const id = vi.mocked(redirect).mock.calls[0][0].split('/').at(-1)!;
+    expect(await getEquipmentById(id)).toMatchObject({
+      name: 'Rack',
+      usesPower: false,
+      category: 'Other',
+      purchase: null,
+    });
+    const archived = await location(tx, true);
+    const invalid = await createEquipmentAction(
+      initialEquipmentFormState,
+      form({ name: 'Light', usesPower: 'true', locationId: archived.id }),
+    );
+    expect(invalid.fieldErrors.locationId).toBeTruthy();
+    const badDate = await createEquipmentAction(
+      initialEquipmentFormState,
+      form({ name: 'Light', usesPower: 'true', recordPurchase: 'on', purchaseDate: '2026-02-30' }),
+    );
+    expect(badDate.fieldErrors.purchaseDate).toBeTruthy();
+  }));
 
 test.each([true, false])(
   'creates minimal Equipment with explicit power %s and safe defaults',

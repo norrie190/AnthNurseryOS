@@ -7,6 +7,8 @@ const listSelect = {
   reference: true,
   name: true,
   category: true,
+  brand: true,
+  model: true,
   usesPower: true,
   location: { select: { id: true, name: true, archivedAt: true } },
   createdAt: true,
