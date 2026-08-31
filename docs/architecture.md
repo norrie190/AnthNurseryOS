@@ -4,7 +4,7 @@
 
 Anth Nursery OS is a management app for one small nursery. It starts with my own Anthurium collection and breeding programme, so it needs to be useful day to day as well as a good software project to show in a portfolio.
 
-The first MVP is plants, equipment inventory, energy estimates, care, expenses, and a dashboard. Equipment inventory is complete, and the owner has moved the reviewed energy history foundation ahead of Care. Energy services, calculations and browser features remain separate checkpoints after its schema. Maintenance, breeding and ancestry are later phases and should not make the first version more complicated than it needs to be.
+The first MVP is plants, equipment inventory, energy estimates, care, expenses, and a dashboard. Equipment inventory is complete, and the owner has moved energy history ahead of Care. Its schema is committed; the current checkpoint adds services, queries and exact calculations, with browser features still separate. Maintenance, breeding and ancestry are later phases and should not make the first version more complicated than it needs to be.
 
 ## Choices made for the foundation
 
@@ -143,11 +143,15 @@ The approved photo deletion checkpoint is a narrow exception to preserving nurse
 
 ## Equipment energy persistence foundation
 
-The approved [energy design](equipment-energy.md) adds only EquipmentPowerPeriod and ElectricityTariff persistence in this checkpoint. Equipment has a reverse powerPeriods relationship; the required period FK restricts Equipment deletion and ID changes. The tariff is a single nursery timeline, not an Equipment purchase or a tariff copied onto each item.
+The committed [energy schema](equipment-energy.md) contains EquipmentPowerPeriod and ElectricityTariff. Equipment has a reverse powerPeriods relationship; the required period FK restricts Equipment deletion and ID changes. The tariff is a single nursery timeline, not an Equipment purchase or a tariff copied onto each item.
 
 Power uses numeric(8,2) watts, hours use numeric(4,2) and GBP tariffs use numeric(9,5) pence per kWh. Both histories use DATE [start, end) intervals, nullable open ends, optional notes/correction reasons and retained voided records. Custom SQL checks enforce bounds, finite/ordered dates, GBP only and nonblank void reasons. Nonvoid daterange exclusion constraints prevent concurrent overlaps. btree_gist provides Equipment UUID equality and is required on future hosted PostgreSQL too. Migration details are in [database migrations](database-migrations.md).
 
-Gaps mean unknown data, not zero consumption. Archive state does not close operating periods or change history. Future calculations will combine exact source periods with tariffs and report incomplete coverage, without saved monthly totals. Excess input precision must later be rejected before PostgreSQL rounds it. The approved Equipment row locking and tariff transaction advisory locking, usesPower guards, calculation engine, forms and dashboard reads are future application checkpoints, not features implemented by these tables.
+Gaps mean unknown data, not zero consumption. Archive state does not close operating periods or change history. The [energy data layer](energy-data-layer.md) now combines source periods and tariffs using exact scaled bigint arithmetic, reports missing coverage and rejects excess input precision before PostgreSQL rounds it. There are no saved monthly totals or energy UI yet.
+
+Energy services live in src/modules/energy. Power writes lock Equipment with FOR NO KEY UPDATE, check expectedUpdatedAt and strictly advance the Equipment timestamp for changes. Explicit corrections can adjust reviewed adjacent boundaries atomically; void preserves records without stretching neighbours. Equipment editing now blocks disabling usesPower while current/future nonvoid periods remain. Bounded past history can still be entered for an item that is no longer marked as powered.
+
+Tariffs use the stable transaction advisory lock namespace 0x414e5448, key 1. Their SHA-256 timeline token covers sorted IDs/timestamps and retained void markers so an old empty token cannot become valid again after add/void. Repeatable Read report transactions combine bulk Equipment/period queries with the tariff snapshot. No schema, generic repository, singleton version record or cache is added. Browser forms and dashboard integration remain later checkpoints.
 
 ## Equipment inventory foundation
 

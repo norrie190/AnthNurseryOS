@@ -1,6 +1,7 @@
 import 'server-only';
 import { Prisma, type Equipment } from '../../generated/prisma/client';
 import { getPrisma } from '../../lib/prisma';
+import { dateToSql, nurseryToday } from '../../lib/calendar-date';
 import { EquipmentError } from './equipment-errors';
 import {
   parseCreateEquipmentInput,
@@ -69,6 +70,29 @@ export async function updateEquipment(
       async (tx) => {
         const current = await lockEquipment(tx, parsed.equipmentId);
         requireCurrentToken(current, patch.expectedUpdatedAt);
+        if (current.usesPower && patch.usesPower === false) {
+          const effectivePeriod = await tx.equipmentPowerPeriod.findFirst({
+            where: {
+              equipmentId: current.id,
+              voidedAt: null,
+              OR: [{ effectiveTo: null }, { effectiveTo: { gt: dateToSql(nurseryToday()) } }],
+            },
+            select: { id: true },
+          });
+          if (effectivePeriod)
+            throw new EquipmentError(
+              'CONFLICT',
+              'Resolve current or future power periods before disabling power tracking.',
+              {
+                issues: [
+                  {
+                    field: 'usesPower',
+                    message: 'Current or future power history is still effective.',
+                  },
+                ],
+              },
+            );
+        }
         // Equipment first, then a changed Location. An unchanged archived assignment is valid.
         if (patch.locationId && patch.locationId !== current.locationId) {
           await validateLocation(tx, patch.locationId);

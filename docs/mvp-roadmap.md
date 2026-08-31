@@ -86,11 +86,11 @@ List, add, detail, edit, archive and restore are available through Equipment pag
 
 usesPower describes capability for consumption tracking, not current operation or inclusion in running cost totals. Shipping is allocated to each individual item. Energy history has its own approved design and checkpoints below.
 
-## 6. Equipment energy history - current schema checkpoint
+## 6. Equipment energy history - current data layer checkpoint
 
-The owner approved [Equipment energy history](equipment-energy.md) before Care. This checkpoint adds only EquipmentPowerPeriod, ElectricityTariff, the reviewed migration, database constraints and schema tests. No energy records are seeded.
+The owner approved [Equipment energy history](equipment-energy.md) before Care. The schema, migration and database protection checkpoint is committed. The current [data layer checkpoint](energy-data-layer.md) adds restricted operations, reads, exact calculations and tests without changing schema or migrations. No development energy records are seeded.
 
-Decimal watts/hours/rates, DATE intervals, GBP only tariffs, void reasons and nonvoid overlap protection are implemented at the database level. Subsequent reviewed checkpoints will add restricted services and stale protection, exact derived calculations and coverage reporting, then Equipment energy forms/history and tariff management. None of those services, calculations or UI is implemented yet. Standing charges, time of use schedules, telemetry and cached monthly totals remain outside scope.
+Decimal validation, Equipment stale protection, tariff timeline locking, explicit correction/void operations, exact derived calculations and missing coverage reporting are implemented. The next reviewed checkpoint can add Equipment energy forms/history and tariff management. No energy UI or dashboard work is included now. Standing charges, time of use schedules, telemetry and cached monthly totals remain outside scope.
 
 ## 7. Care tracking
 

@@ -2,7 +2,7 @@
 
 ## Current checkpoint
 
-The approved schema checkpoint adds EquipmentPowerPeriod and ElectricityTariff, their database constraints and schema tests. It creates no energy records and changes no existing Equipment, Plants or reference sequences. Energy services, input validation, calculations, forms, routes and dashboard summaries are not implemented yet.
+The schema checkpoint is committed. The current [data layer and calculation checkpoint](energy-data-layer.md) implements restricted operations, exact calculations and queries against that unchanged schema. No development energy records are created. Forms, routes and dashboard summaries are not implemented yet.
 
 Equipment inventory is already complete. Energy history is now the next reviewed domain before Care. This document records both the implemented persistence foundation and the approved rules for later checkpoints; the sections below distinguish them.
 
@@ -57,31 +57,31 @@ The migration deliberately enables btree_gist for UUID equality in the Equipment
 
 The only additional ordinary lookup index is EquipmentPowerPeriod(equipmentId, effectiveFrom), for Equipment history reads. Primary keys and exclusion constraints create their own indexes. There are no speculative reporting indexes, stored range columns, monthly totals or triggers.
 
-PostgreSQL rounds input to a declared numeric scale. The later application boundary must reject excessive precision before Prisma/SQL can round it. The schema alone does not enforce that original input rule. Service rules such as usesPower checks, stale protection and correction workflows are also not database triggers in this checkpoint.
+PostgreSQL rounds input to a declared numeric scale. The energy application boundary now rejects excessive precision before Prisma/SQL can round it. The schema alone does not enforce that original input rule. usesPower checks, stale protection and correction workflows are service rules, not database triggers.
 
 ## Unknown and zero
 
 A powered item with no power history, or a gap in that history, has unknown consumption. Zero watts or zero hours explicitly records zero estimated consumption. Ending a period without a successor leaves unknown data; it does not record that the item was switched off. Missing tariffs leave the cost of nonzero consumption unknown even when kWh can be calculated. An explicit zero tariff is a known zero variable cost. Nonpowered Equipment with no energy history is not applicable.
 
-Later reports must return coverage and missing intervals alongside known subtotals, rather than presenting incomplete information as a complete £0.00 total. Equipment.createdAt is an inventory entry timestamp, not evidence of when operating history began.
+Reports return coverage and missing intervals alongside known subtotals, rather than presenting incomplete information as a complete £0.00 total. Equipment.createdAt is an inventory entry timestamp, not evidence of when operating history began.
 
-## Approved later service rules, not implemented
+## Implemented service rules
 
 Normal operating changes close the previous period at the chosen date and create a successor without overwriting earlier watts/hours. Existing scheduled successors are preserved. Explicit historical corrections require a reason and intentionally change affected historical estimates. Voiding is for an entirely mistaken entry, not ordinary changes; it does not silently stretch neighbouring records. No hard deletion or complete audit/version system is planned. correctionReason records the latest explanation, not every previous value.
 
-New power periods require usesPower = true. The approved later Equipment edit guard will reject changing it to false while current or future nonvoid periods remain; users must resolve those periods explicitly. Past history remains readable and correctable. This guard is not implemented by this schema checkpoint, and the existing inventory service remains unchanged.
+Current/future power periods require usesPower = true. As clarified for the data layer checkpoint, bounded past history can be recorded or corrected even if that flag is now false. Equipment editing rejects changing it to false while current or future nonvoid periods remain; users must resolve those periods explicitly. Past history remains readable and correctable. Inventory schema, purchases and reference allocation are unchanged.
 
-Archive state stays independent. Archiving/restoring does not close, reopen, void or otherwise change power history. Archived Equipment may have ongoing estimates and historical corrections. Later calculations must not filter historical periods by current archive state or usesPower. The future UI will warn about ongoing periods when archiving.
+Archive state stays independent. Archiving/restoring does not close, reopen, void or otherwise change power history. Archived Equipment may have ongoing estimates and historical corrections. Calculations do not filter historical periods by current archive state or usesPower. The future UI will warn about ongoing periods when archiving.
 
-Equipment energy writes will use the Equipment FOR NO KEY UPDATE lock, expectedUpdatedAt checked under that lock, and a timestamp strictly newer than the previous value, including related changes. Tariff writers will use one local transaction scoped advisory lock and an expected timeline token derived from IDs/timestamps. No session lock, generic locking framework or singleton version table is planned. Database exclusion constraints remain the final overlap guarantee.
+Equipment energy writes use the Equipment FOR NO KEY UPDATE lock, expectedUpdatedAt checked under that lock, and a timestamp strictly newer than the previous value, including related changes. Tariff writers use one local transaction scoped advisory lock and a deterministic timeline token covering IDs/timestamps and retained void markers. No session lock, generic locking framework or singleton version table is added. Database exclusion constraints remain the final overlap guarantee.
 
-## Approved later calculations, not implemented
+## Implemented calculations
 
-Calculations will be derived from intersections of the requested dates, power periods and tariffs. Each segment has constant watts/hours/rate. Sum exact segment values before rounding for presentation; do not store calculated monthly totals.
+Calculations are derived from intersections of the requested dates, power periods and tariffs. Each segment has constant watts/hours/rate. Exact segment values are summed before rounding for presentation; no calculated monthly totals are stored.
 
 Wh/day = watts × hours. kWh/day = Wh/day ÷ 1000. Pence/day = kWh/day × tariff pence/kWh. At 70 W, 12 hours and 25p/kWh, that is 840 Wh, 0.84 kWh and 21p per day.
 
-The planned pure calculation function uses decimal strings and scaled bigint values, not binary floating point arithmetic: W = watts × 100, H = hours × 100, R = tariff pence × 100000. Segment kWh is W × H × days / 10^7; pence is W × H × R × days / 10^12. Retain the numerator/scale rather than truncating division, and round only the final monetary presentation to the nearest penny, halves up. Existing whole penny purchase parsing is not a tariff parser.
+The pure calculation function uses decimal strings and scaled bigint values, not binary floating point arithmetic: W = watts × 100, H = hours × 100, R = tariff pence × 100000. Segment kWh is W × H × days / 10^7; pence is W × H × R × days / 10^12. It retains the numerator/scale rather than truncating division, and rounds only the final monetary presentation to the nearest penny, halves up. Existing whole penny purchase parsing is not a tariff parser.
 
 Use Europe/London calendar dates and count calendar days, not elapsed local milliseconds. These are standard daily estimates, not measured consumption on 23/25 hour daylight saving days. Month to date should use completed days unless explicitly labelled as including today's full estimate. A 365 day projection at today's settings is different from a calendar year report using its actual dates and all history.
 
