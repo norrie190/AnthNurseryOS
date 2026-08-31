@@ -91,6 +91,7 @@ test.each([false, true])(
             name: created.name,
             status: created.status,
             createdAt: created.createdAt,
+            photos: [],
             location: withDetails ? { name: saved!.location!.name } : null,
           });
           throw new RollbackFixture(created);
@@ -268,6 +269,7 @@ test('lists only non archived Plants, newest first with reference breaking date 
         name: null,
         status: 'GROWING',
         createdAt: older.createdAt,
+        photos: [],
         location: null,
       });
       throw new RollbackFixture();

@@ -2,11 +2,13 @@
 
 ## Scope
 
-This is the implementation checkpoint for `feat: add plant photo storage and data layer`. The approved design remains in [Plant photo storage](plant-photo-storage.md). This layer adds image validation and processing, a private R2 boundary, metadata operations, photo reads and the primary uniqueness migration. It does not add routes, server actions, browser upload controls, a gallery or list images. No real R2 account has been used for verification.
+This records the completed `feat: add plant photo storage and data layer` checkpoint. The approved design remains in [Plant photo storage](plant-photo-storage.md). This layer adds image validation and processing, a private R2 boundary, metadata operations, photo reads and the primary uniqueness migration. The separately approved real provider smoke test passed, with its disposable object removed and nursery data unchanged. Routes and browser controls are documented separately in [Plant photo browser workflow](plant-photo-browser-flow.md).
 
 The direct dependencies are `@aws-sdk/client-s3` and `@aws-sdk/s3-request-presigner` at 3.1121.0, and `sharp` at 0.35.4. These versions support the project's Node 24 runtime. Sharp is declared directly because the application imports it. No upload framework or alternative storage provider is installed.
 
 ## Operations
+
+The subsequent square thumbnail crop checkpoint extends upload with optional `crop: { x, y, size }`, adds `updatePlantPhotoCrop`, and introduces orientation safe previews and a bounded original read. New uploads store the selected or centred crop. Display remains full and unchanged by crop adjustments; thumbnails resolve through derivativeRevision with a legacy path fallback. The original lifecycle below still applies to upload, while revision specific crop recovery is documented in [thumbnail crops](plant-photo-crops.md).
 
 The server only operations live in `src/modules/plants/plant-photo-service.ts`:
 
@@ -17,6 +19,7 @@ type UploadPlantPhotoInput = {
   caption?: string | null;
   takenAt?: string | null; // ISO instant with milliseconds and Z or an explicit offset
   expectedUpdatedAt: string; // Existing Plant.updatedAt as an ISO UTC string
+  crop?: { x: number; y: number; size: number }; // Oriented normalised square; centred if omitted
 };
 
 uploadPlantPhoto(plantId, input);
@@ -31,11 +34,11 @@ setPrimaryPlantPhoto(plantId, {
 
 Both inputs are strict. Identity, keys, primary flags, ordering, stored timestamps and arbitrary Prisma operations are rejected. The owning Plant UUID is a separate argument. The service copies the bounded input bytes before awaiting other work so a caller cannot change the original after validation. Blank caption and filename become null; caption is limited to 2000 characters. Filename input is limited to 4096 characters and its cleaned basename to 255 Unicode characters. No filename contributes to an object key.
 
-An omitted takenAt stays null. The service accepts an explicit instant and stores it as UTC, not a guessed date from the filename, EXIF or upload time. The later browser boundary will need to interpret entered nursery local date/time explicitly. IDs and concurrency tokens are validated before database access. Expected validation, missing records, stale state and constraint conflicts reuse PlantError. Unexpected processing diagnostics remain in the error cause; database and storage failures remain distinguishable from expected Plant errors. Future actions must show safe messages rather than serialize unexpected errors or their causes.
+An omitted takenAt stays null. The service accepts an explicit instant and stores it as UTC, not a guessed date from the filename, EXIF or upload time. The browser now interprets the entered time in the device timezone and labels that choice. IDs and concurrency tokens are validated before database access. Expected validation, missing records, stale state and constraint conflicts reuse PlantError. Unexpected processing diagnostics remain in the error cause; database and storage failures remain distinguishable from expected Plant errors. HTTP boundaries show safe messages rather than serialize unexpected errors or their causes.
 
 ## Processing
 
-The file byte limit is 10,485,760 and the decoded pixel limit is 50,000,000. The service accepts bytes only. The future HTTP endpoint must additionally bound the request while receiving it, before multipart parsing; there is no endpoint in this checkpoint to enforce a request body limit.
+The file byte limit is 10,485,760 and the decoded pixel limit is 50,000,000. The service accepts bytes only. The browser milestone adds a streamed request limit before multipart parsing; its separate transport limits are recorded in the browser workflow document.
 
 Signature checks admit only JPEG, PNG and WebP to the decoder. Sharp then checks the format and dimensions and fully decodes the pixels with warnings treated as errors. PNG animation control chunks and WebP animation flags/chunks are explicitly rejected, including when a decoder would otherwise expose just the first frame. HEIC/HEIF, GIF, SVG, TIFF, RAW and malformed content are rejected. Filename and browser MIME type are not validation evidence; MIME type is not part of this service input.
 
@@ -51,9 +54,9 @@ The server generates separate asset and upload UUIDs. Keys follow the approved `
 
 PUT uses `If-None-Match: *` so an existing object is not overwritten. Each object has an `upload-id` metadata value belonging to this attempt. Targeted removal first checks ownership with HEAD; it will not delete an object owned by a different upload. R2 requests have bounded timeouts and automatic retries are disabled, keeping uncertain writes explicit. The SDK uses the R2 `auto` region and only required checksum behaviour. These choices follow [R2 S3 compatibility](https://developers.cloudflare.com/r2/api/s3/api/).
 
-`getPlantPhotoGallery(plantId)` returns metadata ordered by sortOrder, then createdAt, then id. `getPrimaryPlantPhoto(plantId)` returns the primary metadata or null. These reads include archived Plants, omit storage keys and do not contact R2. They do not change the existing Plant list query.
+`getPlantPhotoGallery(plantId)` returns metadata ordered by sortOrder, then createdAt, then id. `getPrimaryPlantPhoto(plantId)` returns the primary metadata or null. These reads include archived Plants, omit storage keys and do not contact R2. The browser checkpoint separately extends the list queries with just the primary photo ID.
 
-`getPlantPhotoReadUrl(plantId, photoId, variant)` finds a photo belonging to the Plant, verifies its stored key belongs to the same Plant, and returns `{ url, expiresInSeconds: 300 }`. Only `display` and `thumbnail` are allowed. Arbitrary keys, URLs and original delivery are not public operation inputs. The low level signing helper remains server only. Signed reads specify WebP and private, no-store caching. Do not persist or log these URLs; anyone with one can access the derivative until it expires. There is no HTTP signing endpoint yet.
+`getPlantPhotoReadUrl(plantId, photoId, variant)` finds a photo belonging to the Plant, verifies its stored key belongs to the same Plant, and returns `{ url, expiresInSeconds: 300 }`. Only `display` and `thumbnail` are allowed. Arbitrary keys, URLs and original delivery are not public operation inputs. The low level signing helper remains server only. Signed reads specify WebP and private, no-store caching. Do not persist or log these URLs; anyone with one can access the derivative until it expires. The browser checkpoint uses this helper in its private delivery redirect.
 
 ## Transactions and recovery
 
@@ -79,7 +82,7 @@ Image and unit coverage checks formats, corrupt and oversized content, animation
 
 ## Configure a real development bucket only when ready
 
-No real provider smoke test has been performed. Setting up an account does not authorise an upload by this task. Do not paste secret keys into chat.
+The owner's development bucket has passed the separately approved disposable smoke test. The instructions below remain for a fresh setup. Setting up another account does not authorise test uploads. Do not paste secret keys into chat.
 
 1. Open the Cloudflare dashboard and activate R2 if needed. Check the account's current charges and allowances before agreeing to billing. Create a dedicated Standard bucket named, for example, `anth-nursery-os-dev-photos`. Use the default jurisdiction for the endpoint configured here. Keep public access disabled: no r2.dev access and no public custom domain. Do not share the production bucket. See [creating R2 buckets](https://developers.cloudflare.com/r2/buckets/create-buckets/).
 2. Create R2 S3 credentials with Object Read & Write permission, scoped only to that development bucket. The runtime does not need bucket administration. This permission supports PUT, HEAD, GET/signing and targeted DELETE. Record the account ID, Access Key ID and Secret Access Key securely. These are S3 credentials, not a Cloudflare global API key. See [Cloudflare's S3 setup](https://developers.cloudflare.com/r2/get-started/s3/).
@@ -92,6 +95,6 @@ R2_SECRET_ACCESS_KEY="your_r2_secret_access_key"
 R2_BUCKET_NAME="anth-nursery-os-dev-photos"
 ```
 
-The derived endpoint is `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com`. No browser CORS upload policy or public URL is needed for this server side design. Keep the unauthenticated app on 127.0.0.1. Before any public deployment it still needs authentication, access checks, trusted origin/CSRF controls at the future HTTP boundary, resource limits and a backup plan for both metadata and objects.
+The derived endpoint is `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com`. No browser CORS upload policy or public URL is needed for this server side design. Keep the unauthenticated app on 127.0.0.1. Before any public deployment it still needs authentication, access checks, a review of proxy/origin configuration, resource limits and a backup plan for both metadata and objects. The local browser boundary now requires matching origins for mutations.
 
 For an approved real smoke test, the proposed disposable object is a synthetic 320 by 240 WebP at `plants/<new disposable UUID>/<new asset UUID>/thumbnail.webp`. These UUIDs would be generated and the exact key shown before the write; they do not correspond to a saved Plant or consume an ANT reference. The test would PUT this single object, HEAD it, sign and read that thumbnail, verify its decoded dimensions, then remove only that object using the matching upload identifier and confirm HEAD returns absent. No PlantPhoto row is needed, and no nursery photo is involved. If cleanup fails, report the exact bucket and key for targeted manual removal, never sweep a prefix or bucket. Wait for the owner's approval before this write.

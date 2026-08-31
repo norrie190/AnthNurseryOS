@@ -32,6 +32,7 @@ test('reads again on a later request and links archived records to their existin
         name: null,
         status: 'GROWING',
         location: null,
+        photos: [],
         archivedAt: new Date('2026-08-31T12:00:00Z'),
       },
     ]);

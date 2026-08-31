@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { expect, test, vi } from 'vitest';
 import { PlantList } from './plant-list';
@@ -10,8 +10,28 @@ const plant: PlantListItem = {
   name: 'HURC',
   status: 'GROWING',
   location: { name: 'Grow Tent 1' },
+  photos: [],
   createdAt: new Date('2026-08-30T12:00:00Z'),
 };
+
+test('renders only the selected primary thumbnail and uses a placeholder when delivery fails', () => {
+  render(
+    <PlantList
+      plants={[{ ...plant, photos: [{ id: 'primary-photo', derivativeRevision: null }] }]}
+    />,
+  );
+  const image = screen.getByRole('img');
+  expect(image).toHaveAttribute('src', `/plants/${plant.id}/photos/primary-photo/thumbnail`);
+  fireEvent.error(image);
+  expect(screen.getByRole('img', { name: /Photo unavailable/ })).toBeInTheDocument();
+  expect(screen.getByRole('link')).toHaveAttribute('href', `/plants/${plant.id}`);
+});
+
+test('Plants without a photo have a neutral placeholder and no image request', () => {
+  const { container } = render(<PlantList plants={[plant]} />);
+  expect(screen.getByRole('img', { name: 'No photo' })).toBeInTheDocument();
+  expect(container.querySelector('img')).toBeNull();
+});
 
 test('shows a useful empty state and Add Plant link', () => {
   render(<PlantList plants={[]} />);

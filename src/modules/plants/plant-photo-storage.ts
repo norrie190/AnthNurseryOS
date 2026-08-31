@@ -8,7 +8,13 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { z } from 'zod';
-import { assertPhotoObjectKey, photoVariantKey, type PhotoVariant } from './plant-photo-keys';
+import {
+  assertPhotoObjectKey,
+  parsePhotoStorageKey,
+  photoVariantKey,
+  type PhotoVariant,
+} from './plant-photo-keys';
+import { MAX_PHOTO_BYTES } from './plant-photo-input';
 
 export type PhotoObject = { key: string; body: Buffer; contentType: string; uploadId: string };
 export type PhotoObjectInfo = { uploadId?: string; etag?: string };
@@ -20,7 +26,12 @@ export type PlantPhotoStorage = {
   upload: (object: PhotoObject) => Promise<void>;
   lookup: (key: string) => Promise<PhotoObjectInfo | null>;
   remove: (key: string, uploadId: string) => Promise<PhotoCleanupResult>;
-  signVariant: (originalKey: string, variant: PhotoVariant) => Promise<string>;
+  signVariant: (
+    originalKey: string,
+    variant: PhotoVariant,
+    revision?: string | null,
+  ) => Promise<string>;
+  readOriginal: (key: string) => Promise<Buffer>;
 };
 
 const configurationSchema = z.object({
@@ -125,12 +136,55 @@ export function getPlantPhotoStorage(): PlantPhotoStorage {
       });
       return 'removed';
     },
-    signVariant(originalKey, variant) {
+    async readOriginal(key) {
+      parsePhotoStorageKey(key);
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
+      try {
+        const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }), {
+          abortSignal: controller.signal,
+        });
+        if (!result.Body) throw new Error('Photo original is unavailable.');
+        const body = result.Body.transformToWebStream();
+        const reader = body.getReader();
+        const chunks: Uint8Array[] = [];
+        let size = 0;
+        const aborted = new Promise<never>((_, reject) => {
+          if (controller.signal.aborted) reject(new Error('Original read timed out.'));
+          else
+            controller.signal.addEventListener(
+              'abort',
+              () => reject(new Error('Original read timed out.')),
+              { once: true },
+            );
+        });
+        void aborted.catch(() => {});
+        try {
+          if ((result.ContentLength ?? 0) > MAX_PHOTO_BYTES)
+            throw new Error('Photo original exceeds the size limit.');
+          while (true) {
+            const { value, done } = await Promise.race([reader.read(), aborted]);
+            if (done) break;
+            size += value.byteLength;
+            if (size > MAX_PHOTO_BYTES) throw new Error('Photo original exceeds the size limit.');
+            chunks.push(value);
+          }
+          if (!size) throw new Error('Photo original is empty.');
+          return Buffer.concat(chunks, size);
+        } finally {
+          void reader.cancel().catch(() => {});
+        }
+      } finally {
+        clearTimeout(timer);
+        controller.abort();
+      }
+    },
+    signVariant(originalKey, variant, revision) {
       return getSignedUrl(
         client,
         new GetObjectCommand({
           Bucket: bucket,
-          Key: photoVariantKey(originalKey, variant),
+          Key: photoVariantKey(originalKey, variant, revision),
           ResponseContentType: 'image/webp',
           ResponseCacheControl: 'private, no-store',
         }),

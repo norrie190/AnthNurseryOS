@@ -9,6 +9,9 @@ import { getPlantPhotoStorage } from '../../src/modules/plants/plant-photo-stora
 import {
   uploadPlantPhoto,
   setPrimaryPlantPhoto,
+  updatePlantPhotoCrop,
+  previewNewPlantPhoto,
+  getPlantPhotoCropPreview,
 } from '../../src/modules/plants/plant-photo-service';
 import {
   getPlantPhotoGallery,
@@ -17,6 +20,13 @@ import {
 } from '../../src/modules/plants/plant-photo-queries';
 import { fakePlantPhotoStorage } from '../helpers/fake-plant-photo-storage';
 import { photoFixture } from '../fixtures/plant-photo-images';
+import { getPlantList, getArchivedPlantList } from '../../src/modules/plants/plant-queries';
+import { createPhotoKeys, photoVariantKey } from '../../src/modules/plants/plant-photo-keys';
+import {
+  uploadPlantPhotoRequest,
+  setPrimaryPlantPhotoRequest,
+  deliverPlantPhoto,
+} from '../../src/modules/plants/plant-photo-http';
 
 vi.mock('server-only', () => ({}));
 vi.mock('../../src/lib/prisma', () => ({ getPrisma: vi.fn() }));
@@ -104,6 +114,95 @@ function plant(tx: Prisma.TransactionClient, data: Partial<Prisma.PlantUnchecked
 function token(record: { updatedAt: Date }) {
   return { expectedUpdatedAt: record.updatedAt.toISOString() };
 }
+
+test.each([false, true])(
+  'browser upload, gallery, primary selection and list reads preserve archive state (%s)',
+  (archived) =>
+    fixture(async (tx, fake) => {
+      const original = await plant(tx, {
+        archivedAt: archived ? new Date('2026-08-01T00:00:00Z') : null,
+        status: 'DECEASED',
+      });
+      const origin = 'http://127.0.0.1:3000';
+      const list = archived ? getArchivedPlantList : getPlantList;
+      expect((await list()).find((row) => row.id === original.id)?.photos).toEqual([]);
+      async function upload(expectedUpdatedAt: string) {
+        const body = new FormData();
+        // Deliberately wrong MIME/extension: only the synthetic PNG bytes count.
+        body.set('image', new File([new Uint8Array(image)], 'leaf.jpg', { type: 'image/jpeg' }));
+        body.set('caption', ' Leaf photo ');
+        body.set('takenAt', '2026-08-01T12:30:00.000Z');
+        body.set('expectedUpdatedAt', expectedUpdatedAt);
+        return uploadPlantPhotoRequest(
+          new Request(`${origin}/plants/${original.id}/photos`, {
+            method: 'POST',
+            headers: { origin },
+            body,
+          }),
+          original.id,
+        );
+      }
+      const firstResponse = await upload(original.updatedAt.toISOString());
+      expect(firstResponse.status).toBe(201);
+      const first = await firstResponse.json();
+      expect(first).not.toHaveProperty('photo');
+      const secondResponse = await upload(first.plantUpdatedAt);
+      expect(secondResponse.status).toBe(201);
+      const second = await secondResponse.json();
+      const gallery = await getPlantPhotoGallery(original.id);
+      expect(gallery).toHaveLength(2);
+      expect(gallery[0]).toMatchObject({
+        caption: 'Leaf photo',
+        isPrimary: true,
+        takenAt: new Date('2026-08-01T12:30:00.000Z'),
+      });
+      expect((await list()).find((row) => row.id === original.id)?.photos).toEqual([
+        { id: gallery[0].id, derivativeRevision: gallery[0].derivativeRevision },
+      ]);
+      const select = await setPrimaryPlantPhotoRequest(
+        new Request(`${origin}/plants/${original.id}/photos/${gallery[1].id}/primary`, {
+          method: 'POST',
+          headers: { origin, 'content-type': 'application/json' },
+          body: JSON.stringify({ expectedUpdatedAt: second.plantUpdatedAt }),
+        }),
+        original.id,
+        gallery[1].id,
+      );
+      expect(select.status).toBe(200);
+      const result = await select.json();
+      expect((await list()).find((row) => row.id === original.id)?.photos).toEqual([
+        { id: gallery[1].id, derivativeRevision: gallery[1].derivativeRevision },
+      ]);
+      expect(await tx.plant.findUnique({ where: { id: original.id } })).toEqual({
+        ...original,
+        updatedAt: new Date(result.plantUpdatedAt),
+      });
+      expect((await deliverPlantPhoto(original.id, gallery[1].id, 'thumbnail')).status).toBe(307);
+      expect((await deliverPlantPhoto(original.id, gallery[0].id, 'display')).status).toBe(307);
+      expect((await deliverPlantPhoto(original.id, gallery[0].id, 'original')).status).toBe(400);
+      expect((await deliverPlantPhoto(randomUUID(), gallery[0].id, 'display')).status).toBe(404);
+      expect((await upload(original.updatedAt.toISOString())).status).toBe(409);
+      expect(fake.objects.size).toBe(6);
+      expect(await tx.plantPhoto.count({ where: { plantId: original.id } })).toBe(2);
+    }),
+);
+
+test('browser upload rejects malformed bytes through the real service without storing anything', () =>
+  fixture(async (tx, fake) => {
+    const original = await plant(tx);
+    const origin = 'http://127.0.0.1:3000';
+    const body = new FormData();
+    body.set('image', new File(['not an image'], 'pretend.jpg', { type: 'image/jpeg' }));
+    body.set('expectedUpdatedAt', original.updatedAt.toISOString());
+    const response = await uploadPlantPhotoRequest(
+      new Request(origin, { method: 'POST', headers: { origin }, body }),
+      original.id,
+    );
+    expect(response.status).toBe(400);
+    expect(fake.objects.size).toBe(0);
+    expect(await tx.plantPhoto.count({ where: { plantId: original.id } })).toBe(0);
+    expect(await tx.plant.findUnique({ where: { id: original.id } })).toEqual(original);
+  }));
 
 test('installs the reviewed partial unique index and migration', async () => {
   const indexes = await database.$queryRaw<
@@ -256,7 +355,7 @@ test('rechecks a token changed while storage was busy and compensates the uncomm
     const original = await plant(tx);
     fake.storage.upload.mockImplementation(async (object) => {
       fake.objects.set(object.key, object);
-      if (object.key.endsWith('thumbnail.webp'))
+      if (object.key.includes('/thumbnails/'))
         await tx.plant.update({
           where: { id: original.id },
           data: { updatedAt: new Date(original.updatedAt.getTime() + 1) },
@@ -340,5 +439,257 @@ test('a failed primary switch rolls back both the selection and Plant timestamp'
     expect(await getPrimaryPlantPhoto(original.id)).toMatchObject({ id: first.photo.id });
     expect((await tx.plant.findUniqueOrThrow({ where: { id: original.id } })).updatedAt).toEqual(
       second.plantUpdatedAt,
+    );
+  }));
+
+test('crop migration is installed with both checks and preserves nullable legacy rows', () =>
+  fixture(async (tx, fake) => {
+    const checks = await tx.$queryRaw<
+      { conname: string }[]
+    >`SELECT conname FROM pg_constraint WHERE conname IN ('PlantPhoto_crop_consistency_check', 'PlantPhoto_crop_ranges_check')`;
+    expect(checks).toHaveLength(2);
+    expect(
+      await tx.$queryRaw`SELECT migration_name FROM "_prisma_migrations" WHERE migration_name = '20260831230000_add_plant_photo_thumbnail_crop' AND finished_at IS NOT NULL AND rolled_back_at IS NULL`,
+    ).toHaveLength(1);
+    const owner = await plant(tx);
+    const keys = createPhotoKeys(owner.id, 'png');
+    const photo = await tx.plantPhoto.create({
+      data: { plantId: owner.id, storageKey: keys.original },
+    });
+    expect(photo).toMatchObject({
+      cropX: null,
+      cropY: null,
+      cropSize: null,
+      derivativeRevision: null,
+    });
+    await getPlantPhotoReadUrl(owner.id, photo.id, 'thumbnail');
+    expect(fake.storage.signVariant).toHaveBeenLastCalledWith(keys.original, 'thumbnail', null);
+    expect(photoVariantKey(keys.original, 'thumbnail', photo.derivativeRevision)).toBe(
+      keys.thumbnail,
+    );
+  }));
+
+test('crop consistency rejects every partially populated combination', () =>
+  fixture(async (tx) => {
+    const owner = await plant(tx);
+    const fields = ['cropX', 'cropY', 'cropSize', 'derivativeRevision'] as const;
+    for (let mask = 1; mask < 15; mask++) {
+      const data = Object.fromEntries(
+        fields
+          .filter((_, index) => mask & (1 << index))
+          .map((field) => [
+            field,
+            field === 'derivativeRevision' ? randomUUID() : field === 'cropSize' ? 1 : 0,
+          ]),
+      );
+      await tx.$executeRaw`SAVEPOINT crop_check`;
+      await expect(
+        tx.plantPhoto.create({
+          data: { plantId: owner.id, storageKey: `fixture/${randomUUID()}`, ...data },
+        }),
+      ).rejects.toThrow('PlantPhoto_crop_consistency_check');
+      await tx.$executeRaw`ROLLBACK TO SAVEPOINT crop_check`;
+    }
+  }));
+
+test.each([
+  ['cropX', '-0.1'],
+  ['cropX', '1'],
+  ['cropY', '-0.1'],
+  ['cropY', '1'],
+  ['cropSize', '0'],
+  ['cropSize', '1.01'],
+  ...['cropX', 'cropY', 'cropSize'].flatMap((field) =>
+    ['NaN', 'Infinity', '-Infinity'].map((value) => [field, value]),
+  ),
+])('database crop range rejects %s = %s', (field, value) =>
+  fixture(async (tx) => {
+    const owner = await plant(tx);
+    const photo = await tx.plantPhoto.create({
+      data: {
+        plantId: owner.id,
+        storageKey: `fixture/${randomUUID()}`,
+        cropX: 0,
+        cropY: 0,
+        cropSize: 1,
+        derivativeRevision: randomUUID(),
+      },
+    });
+    await tx.$executeRaw`SAVEPOINT crop_range`;
+    // Column comes only from the literal test cases above; values stay parameterised.
+    await expect(
+      tx.$executeRawUnsafe(
+        `UPDATE "PlantPhoto" SET "${field}" = $1::double precision WHERE id = $2::uuid`,
+        value,
+        photo.id,
+      ),
+    ).rejects.toThrow('PlantPhoto_crop_ranges_check');
+    await tx.$executeRaw`ROLLBACK TO SAVEPOINT crop_range`;
+  }),
+);
+
+test.each([false, true])(
+  'crop lifecycle preserves existing records and full images (archived: %s)',
+  (archived) =>
+    fixture(async (tx, fake) => {
+      const owner = await plant(tx, {
+        archivedAt: archived ? new Date('2026-01-01') : null,
+        status: 'SOLD',
+      });
+      const preview = await previewNewPlantPhoto(owner.id, { image, ...token(owner) });
+      expect(preview).toMatchObject({ width: 16, height: 12 });
+      expect(fake.objects.size).toBe(0);
+      expect(await tx.plant.findUnique({ where: { id: owner.id } })).toEqual(owner);
+      const uploaded = await uploadPlantPhoto(owner.id, {
+        image,
+        ...token(owner),
+        caption: 'Original caption',
+        takenAt: '2026-01-02T00:00:00.000Z',
+      });
+      expect(uploaded.photo).toMatchObject({
+        cropX: 0.125,
+        cropY: 0,
+        cropSize: 1,
+        derivativeRevision: expect.any(String),
+      });
+      const originals = new Map(fake.objects);
+      expect(await getPlantPhotoCropPreview(owner.id, uploaded.photo.id)).toEqual({
+        width: 16,
+        height: 12,
+        crop: { x: 0.125, y: 0, size: 1 },
+      });
+      const crop = { x: 0, y: 0, size: 0.5 };
+      vi.spyOn(Date, 'now').mockReturnValue(uploaded.plantUpdatedAt.getTime());
+      const saved = await updatePlantPhotoCrop(owner.id, uploaded.photo.id, {
+        crop,
+        expectedUpdatedAt: uploaded.plantUpdatedAt.toISOString(),
+      });
+      expect(saved.plantUpdatedAt.getTime()).toBe(uploaded.plantUpdatedAt.getTime() + 1);
+      expect(saved.photo).toEqual({
+        ...uploaded.photo,
+        cropX: 0,
+        cropY: 0,
+        cropSize: 0.5,
+        derivativeRevision: saved.photo.derivativeRevision,
+        updatedAt: saved.photo.updatedAt,
+      });
+      expect(saved.photo.updatedAt.getTime()).toBeGreaterThan(uploaded.photo.updatedAt.getTime());
+      expect(saved.photo.derivativeRevision).not.toBe(uploaded.photo.derivativeRevision);
+      for (const [key, value] of originals) expect(fake.objects.get(key)).toEqual(value);
+      expect(fake.objects.size).toBe(4);
+      expect(await tx.plant.findUnique({ where: { id: owner.id } })).toEqual({
+        ...owner,
+        updatedAt: saved.plantUpdatedAt,
+      });
+      const noOp = await updatePlantPhotoCrop(owner.id, saved.photo.id, {
+        crop,
+        expectedUpdatedAt: saved.plantUpdatedAt.toISOString(),
+      });
+      expect(noOp.changed).toBe(false);
+      expect(noOp.plantUpdatedAt).toEqual(saved.plantUpdatedAt);
+      expect(fake.objects.size).toBe(4);
+      await expect(
+        updatePlantPhotoCrop(owner.id, saved.photo.id, {
+          crop,
+          expectedUpdatedAt: uploaded.plantUpdatedAt.toISOString(),
+        }),
+      ).rejects.toMatchObject({ code: 'STALE_UPDATE' });
+      await getPlantPhotoReadUrl(owner.id, saved.photo.id, 'thumbnail');
+      expect(fake.storage.signVariant).toHaveBeenLastCalledWith(
+        saved.photo.storageKey,
+        'thumbnail',
+        saved.photo.derivativeRevision,
+      );
+      const rows = await (archived ? getArchivedPlantList() : getPlantList());
+      expect(rows.find((row) => row.id === owner.id)?.photos[0]).toEqual({
+        id: saved.photo.id,
+        derivativeRevision: saved.photo.derivativeRevision,
+      });
+      const second = await updatePlantPhotoCrop(owner.id, saved.photo.id, {
+        crop: { x: 0.25, y: 0, size: 0.5 },
+        expectedUpdatedAt: saved.plantUpdatedAt.toISOString(),
+      });
+      expect(second.plantUpdatedAt.getTime()).toBe(saved.plantUpdatedAt.getTime() + 1);
+    }),
+);
+
+test('legacy photo is untouched on preview, gains its first revision only on save', () =>
+  fixture(async (tx, fake) => {
+    const owner = await plant(tx);
+    const keys = createPhotoKeys(owner.id, 'png');
+    const photo = await tx.plantPhoto.create({
+      data: { plantId: owner.id, storageKey: keys.original },
+    });
+    fake.objects.set(keys.original, {
+      key: keys.original,
+      body: image,
+      contentType: 'image/png',
+      uploadId: randomUUID(),
+    });
+    expect((await getPlantPhotoCropPreview(owner.id, photo.id)).crop).toBeNull();
+    expect(await tx.plantPhoto.findUnique({ where: { id: photo.id } })).toEqual(photo);
+    const saved = await updatePlantPhotoCrop(owner.id, photo.id, {
+      crop: { x: 0.125, y: 0, size: 1 },
+      ...token(owner),
+    });
+    expect(saved.changed).toBe(true);
+    expect(fake.storage.upload).toHaveBeenCalledOnce();
+    expect(saved.photo.storageKey).toBe(photo.storageKey);
+  }));
+
+test('a related timestamp failure rolls back a crop switch and removes only the attempted revision', () =>
+  fixture(async (tx, fake) => {
+    const owner = await plant(tx);
+    const uploaded = await uploadPlantPhoto(owner.id, { image, ...token(owner) });
+    const objects = new Map(fake.objects);
+    await tx.$executeRaw`CREATE FUNCTION pg_temp.reject_crop_update() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+      IF EXISTS (SELECT 1 FROM public."PlantPhoto" WHERE "plantId" = NEW.id AND "cropSize" = 0.5) THEN RAISE EXCEPTION 'crop rollback saw changed metadata'; END IF;
+      RAISE EXCEPTION 'crop rollback missing metadata'; END; $$`;
+    await tx.$executeRaw`CREATE TRIGGER reject_crop_update AFTER UPDATE ON public."Plant" FOR EACH ROW EXECUTE FUNCTION pg_temp.reject_crop_update()`;
+    await expect(
+      updatePlantPhotoCrop(owner.id, uploaded.photo.id, {
+        crop: { x: 0, y: 0, size: 0.5 },
+        expectedUpdatedAt: uploaded.plantUpdatedAt.toISOString(),
+      }),
+    ).rejects.toThrow('crop rollback saw changed metadata');
+    expect(await tx.plantPhoto.findUnique({ where: { id: uploaded.photo.id } })).toEqual(
+      uploaded.photo,
+    );
+    expect((await tx.plant.findUniqueOrThrow({ where: { id: owner.id } })).updatedAt).toEqual(
+      uploaded.plantUpdatedAt,
+    );
+    expect(fake.objects).toEqual(objects);
+    expect(fake.storage.remove).toHaveBeenCalledOnce();
+  }));
+
+test('crop rechecks after storage work and rejects another Plant photo before storage', () =>
+  fixture(async (tx, fake) => {
+    const owner = await plant(tx);
+    const other = await plant(tx);
+    const uploaded = await uploadPlantPhoto(owner.id, { image, ...token(owner) });
+    const input = {
+      crop: { x: 0, y: 0, size: 0.5 },
+      expectedUpdatedAt: uploaded.plantUpdatedAt.toISOString(),
+    };
+    await expect(
+      updatePlantPhotoCrop(other.id, uploaded.photo.id, { ...input, ...token(other) }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(updatePlantPhotoCrop(owner.id, randomUUID(), input)).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
+    const before = new Map(fake.objects);
+    fake.storage.upload.mockImplementation(async (object) => {
+      fake.objects.set(object.key, object);
+      await tx.plant.update({
+        where: { id: owner.id },
+        data: { updatedAt: new Date(uploaded.plantUpdatedAt.getTime() + 1) },
+      });
+    });
+    await expect(updatePlantPhotoCrop(owner.id, uploaded.photo.id, input)).rejects.toMatchObject({
+      code: 'STALE_UPDATE',
+    });
+    expect(fake.objects).toEqual(before);
+    expect(await tx.plantPhoto.findUnique({ where: { id: uploaded.photo.id } })).toEqual(
+      uploaded.photo,
     );
   }));

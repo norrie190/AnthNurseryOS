@@ -3,6 +3,8 @@ import type { PlantDetailRecord } from '../plant-queries';
 import { formatPlantMoney } from '../plant-money';
 import { plantStatusLabels } from '../plant-form-state';
 import { PlantArchiveControls } from './plant-archive-controls';
+import { PlantPhotos } from './plant-photos';
+import type { PlantGalleryPhoto } from '../plant-photo-browser';
 import styles from './plant-management.module.css';
 
 function ParentValue({
@@ -21,7 +23,13 @@ function ParentValue({
   );
 }
 
-export function PlantDetail({ plant }: { plant: PlantDetailRecord }) {
+export function PlantDetail({
+  plant,
+  photos = [],
+}: {
+  plant: PlantDetailRecord;
+  photos?: readonly PlantGalleryPhoto[];
+}) {
   const purchase = plant.purchase;
   return (
     <div className={styles.page}>
@@ -74,6 +82,14 @@ export function PlantDetail({ plant }: { plant: PlantDetailRecord }) {
           )}
         </dl>
       </section>
+      <PlantPhotos
+        key={plant.id}
+        plantId={plant.id}
+        reference={plant.reference}
+        archived={plant.archivedAt !== null}
+        expectedUpdatedAt={plant.updatedAt.toISOString()}
+        photos={photos}
+      />
       <section className={styles.card} aria-labelledby="parentage-heading">
         <h2 id="parentage-heading">Parentage</h2>
         <dl className={styles.detailsGrid}>

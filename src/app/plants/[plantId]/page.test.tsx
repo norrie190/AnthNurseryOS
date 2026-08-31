@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { getPlantById } from '@/modules/plants/plant-queries';
 import type { PlantDetailRecord } from '@/modules/plants/plant-queries';
 import PlantPage from './page';
+import { getPlantPhotoGallery } from '@/modules/plants/plant-photo-queries';
 
 vi.mock('next/server', () => ({ connection: vi.fn() }));
 vi.mock('next/navigation', () => ({ notFound: vi.fn(), useRouter: () => ({ refresh: vi.fn() }) }));
@@ -12,7 +13,11 @@ vi.mock('@/modules/plants/plant-archive-actions', () => ({
   restorePlantAction: vi.fn(),
 }));
 vi.mock('@/modules/plants/plant-queries', () => ({ getPlantById: vi.fn() }));
-beforeEach(() => vi.resetAllMocks());
+vi.mock('@/modules/plants/plant-photo-queries', () => ({ getPlantPhotoGallery: vi.fn() }));
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(getPlantPhotoGallery).mockResolvedValue([]);
+});
 
 test('loads the saved UUID and renders its generated reference', async () => {
   const timestamp = new Date('2026-08-30T12:00:00Z');
@@ -32,6 +37,8 @@ test('loads the saved UUID and renders its generated reference', async () => {
   } satisfies PlantDetailRecord);
   render(await PlantPage({ params: Promise.resolve({ plantId: 'saved-id' }) }));
   expect(getPlantById).toHaveBeenCalledWith('saved-id');
+  expect(getPlantPhotoGallery).toHaveBeenCalledWith('saved-id');
+  expect(screen.getByRole('heading', { name: 'Photos' })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'ANT-0001' })).toBeInTheDocument();
 });
 test('uses the not found page for a missing Plant', async () => {

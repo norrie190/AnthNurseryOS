@@ -21,20 +21,20 @@ test.each(['jpeg', 'png', 'webp'] as const)(
     for (const variant of ['display', 'thumbnail'] as const) {
       expect(await sharp(result[variant]).metadata()).toMatchObject({
         format: 'webp',
-        width: 16,
+        width: variant === 'display' ? 16 : 12,
         height: 12,
       });
     }
   },
 );
 
-test('fits display and thumbnail without cropping or enlarging', async () => {
+test('keeps full display and square thumbnail without enlarging', async () => {
   const large = await processPlantPhoto(await photoFixture('jpeg', 3000, 1500));
   expect(await sharp(large.display).metadata()).toMatchObject({ width: 2560, height: 1280 });
-  expect(await sharp(large.thumbnail).metadata()).toMatchObject({ width: 320, height: 160 });
+  expect(await sharp(large.thumbnail).metadata()).toMatchObject({ width: 320, height: 320 });
   const portrait = await processPlantPhoto(await photoFixture('png', 100, 500));
   expect(await sharp(portrait.display).metadata()).toMatchObject({ width: 100, height: 500 });
-  expect(await sharp(portrait.thumbnail).metadata()).toMatchObject({ width: 64, height: 320 });
+  expect(await sharp(portrait.thumbnail).metadata()).toMatchObject({ width: 100, height: 100 });
 });
 
 test('applies orientation and removes EXIF, GPS, XMP and ICC from both served copies', async () => {
@@ -45,7 +45,7 @@ test('applies orientation and removes EXIF, GPS, XMP and ICC from both served co
   expect(metadata.xmp).toBeDefined();
   const result = await processPlantPhoto(original);
   expect(await sharp(result.display).metadata()).toMatchObject({ width: 200, height: 400 });
-  expect(await sharp(result.thumbnail).metadata()).toMatchObject({ width: 160, height: 320 });
+  expect(await sharp(result.thumbnail).metadata()).toMatchObject({ width: 200, height: 200 });
   for (const bytes of [result.display, result.thumbnail]) {
     const served = await sharp(bytes).metadata();
     for (const key of ['exif', 'xmp', 'icc', 'orientation'] as const)

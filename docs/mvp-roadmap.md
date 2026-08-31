@@ -64,13 +64,15 @@ Planned checkpoints:
 3. Plant list with useful empty, loading, and error states, complete and committed
 4. Edit Plant, including parentage and purchase changes, complete and committed
 5. Archive and restore Plant, complete and committed
-6. Plant photos, architecture committed; storage and data layer in review
+6. Plant photos, architecture and storage/data layer complete; browser gallery and list images in review
 
 Each checkpoint should include the tests needed for its rules and regressions.
 
+The owner has also approved square thumbnail crops during upload and on saved photos. This checkpoint adds four nullable photo fields in a new reviewed migration, an accessible shared selector and safe thumbnail revision replacement. Originals and full gallery display images remain unchanged. Legacy photos are not backfilled. See [thumbnail crops](plant-photo-crops.md).
+
 The photo architecture checkpoint is committed. Cloudflare R2 with private storage is approved, with original retention, processed display and thumbnail copies, targeted failure cleanup and a primary photo uniqueness index. See [Plant photo storage](plant-photo-storage.md) for the full design.
 
-The current checkpoint is `feat: add plant photo storage and data layer`. It adds storage integration, validation and processing, restricted photo operations, targeted cleanup, the new reviewed partial unique index migration and tests. It contains no HTTP photo endpoints or UI. Real R2 verification waits for separate approval and development bucket setup. The implementation and setup notes are in [Plant photo data layer](plant-photo-data-layer.md). The later checkpoint, `feat: add plant photo gallery and list images`, will connect the bounded browser upload workflow and primary thumbnails to the existing pages.
+The storage and data layer is complete, including its separately approved real R2 smoke test. The implementation and setup notes are in [Plant photo data layer](plant-photo-data-layer.md). The current checkpoint, `feat: add plant photo gallery and list images`, connects a bounded upload form, primary selection, private image delivery and a gallery to Plant details, plus primary thumbnails on the responsive lists. It adds no dependencies, schema changes or migrations. See [Plant photo browser workflow](plant-photo-browser-flow.md) for behaviour and review steps.
 
 The first implementation will not include photo deletion, a general orphan/reconciliation scanner, broad bucket cleanup, authentication, bulk uploads or advanced image tools. No production host has been selected, so keep the approved server side 10 MiB transport and revisit host limits at deployment rather than implementing hypothetical alternatives now.
 

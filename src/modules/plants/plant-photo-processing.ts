@@ -1,8 +1,9 @@
 import 'server-only';
-import sharp from 'sharp';
+import sharp, { type Raw } from 'sharp';
 import { PlantError } from './plant-errors';
 import { MAX_PHOTO_BYTES, MAX_PHOTO_PIXELS } from './plant-photo-input';
 import type { PhotoExtension } from './plant-photo-keys';
+import { centredPhotoCrop, photoCropPixels, type PhotoCrop } from './plant-photo-crop';
 
 const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const decodeOptions = { limitInputPixels: MAX_PHOTO_PIXELS, failOn: 'warning' as const };
@@ -52,7 +53,7 @@ function detectedExtension(bytes: Buffer): PhotoExtension {
   );
 }
 
-export async function processPlantPhoto(bytes: Buffer) {
+async function decodePhoto(bytes: Buffer) {
   if (!Buffer.isBuffer(bytes) || bytes.length === 0 || bytes.length > MAX_PHOTO_BYTES) {
     throw invalidPhoto('Choose a nonempty image no larger than 10 MiB.');
   }
@@ -81,23 +82,7 @@ export async function processPlantPhoto(bytes: Buffer) {
       height: decoded.info.height,
       channels: decoded.info.channels,
     };
-    const display = await sharp(decoded.data, { raw })
-      .resize({ width: 2560, height: 2560, fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 82 })
-      .timeout({ seconds: 20 })
-      .toBuffer();
-    const thumbnail = await sharp(decoded.data, { raw })
-      .resize({ width: 320, height: 320, fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 78 })
-      .timeout({ seconds: 20 })
-      .toBuffer();
-    return {
-      original: bytes,
-      display,
-      thumbnail,
-      extension,
-      contentType: extension === 'jpg' ? 'image/jpeg' : `image/${extension}`,
-    };
+    return { pixels: decoded.data, raw, extension };
   } catch (cause) {
     if (cause instanceof PlantError) throw cause;
     throw invalidPhoto(
@@ -105,4 +90,52 @@ export async function processPlantPhoto(bytes: Buffer) {
       cause,
     );
   }
+}
+
+async function displayPhoto(pixels: Buffer, raw: Raw) {
+  return sharp(pixels, { raw })
+    .resize({ width: 2560, height: 2560, fit: 'inside', withoutEnlargement: true })
+    .webp({ quality: 82 })
+    .timeout({ seconds: 20 })
+    .toBuffer();
+}
+
+async function thumbnailPhoto(pixels: Buffer, raw: Raw, crop: PhotoCrop) {
+  return sharp(pixels, { raw })
+    .extract(photoCropPixels(crop, raw))
+    .resize({ width: 320, height: 320, fit: 'inside', withoutEnlargement: true })
+    .webp({ quality: 78 })
+    .timeout({ seconds: 20 })
+    .toBuffer();
+}
+
+export async function processPlantPhoto(bytes: Buffer, selectedCrop?: PhotoCrop) {
+  const { pixels, raw, extension } = await decodePhoto(bytes);
+  const crop = selectedCrop ?? centredPhotoCrop(raw);
+  photoCropPixels(crop, raw);
+  const display = await displayPhoto(pixels, raw);
+  const thumbnail = await thumbnailPhoto(pixels, raw, crop);
+  return {
+    original: bytes,
+    display,
+    thumbnail,
+    extension,
+    contentType: extension === 'jpg' ? 'image/jpeg' : `image/${extension}`,
+    crop,
+  };
+}
+
+export async function processPlantPhotoThumbnail(bytes: Buffer, crop: PhotoCrop) {
+  const { pixels, raw } = await decodePhoto(bytes);
+  return thumbnailPhoto(pixels, raw, crop);
+}
+
+export async function processPlantPhotoPreview(bytes: Buffer) {
+  const { pixels, raw } = await decodePhoto(bytes);
+  return { image: await displayPhoto(pixels, raw), width: raw.width, height: raw.height };
+}
+
+export async function readPlantPhotoDimensions(bytes: Buffer) {
+  const { raw } = await decodePhoto(bytes);
+  return { width: raw.width, height: raw.height };
 }

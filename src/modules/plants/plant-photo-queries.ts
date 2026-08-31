@@ -17,6 +17,10 @@ const metadataSelect = {
   sortOrder: true,
   createdAt: true,
   updatedAt: true,
+  cropX: true,
+  cropY: true,
+  cropSize: true,
+  derivativeRevision: true,
 } as const;
 
 export async function getPlantPhotoGallery(plantId: string) {
@@ -46,13 +50,17 @@ export async function getPlantPhotoReadUrl(
     throw new PlantError('VALIDATION_FAILED', 'Choose a valid photo and display variant.');
   const photo = await getPrisma().plantPhoto.findFirst({
     where: { id: parsed.data.photoId, plantId: parsed.data.plantId },
-    select: { storageKey: true },
+    select: { storageKey: true, derivativeRevision: true },
   });
   if (!photo) throw new PlantError('NOT_FOUND', 'This photo could not be found for this Plant.');
   if (parsePhotoStorageKey(photo.storageKey).plantId !== parsed.data.plantId)
     throw new Error('Photo storage ownership does not match the Plant.');
   return {
-    url: await getPlantPhotoStorage().signVariant(photo.storageKey, parsed.data.variant),
+    url: await getPlantPhotoStorage().signVariant(
+      photo.storageKey,
+      parsed.data.variant,
+      photo.derivativeRevision,
+    ),
     expiresInSeconds: 300 as const,
   };
 }

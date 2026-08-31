@@ -115,3 +115,77 @@ test('signs only a display or thumbnail for five minutes and never an original',
   expect(() => storage.signVariant(keys.original, 'original' as 'display')).toThrow();
   expect(sdk.send).not.toHaveBeenCalled();
 });
+
+test('signs the selected thumbnail revision but leaves the display path alone', async () => {
+  const storage = await mockedStorage();
+  const revision = randomUUID();
+  const keys = createPhotoKeys(randomUUID(), 'jpg', revision);
+  await storage.signVariant(keys.original, 'thumbnail', revision);
+  expect(sdk.sign.mock.calls[0][1].input.Key).toBe(keys.thumbnail);
+  await storage.signVariant(keys.original, 'display', revision);
+  expect(sdk.sign.mock.calls[1][1].input.Key).toBe(keys.display);
+});
+test('server original read accepts only the retained original key and bounds actual received bytes', async () => {
+  const storage = await mockedStorage();
+  const keys = createPhotoKeys(randomUUID(), 'jpg');
+  let cancelled = false;
+  const responseBody = (chunks: Uint8Array[]) => ({
+    transformToWebStream: () =>
+      new ReadableStream({
+        start(controller) {
+          for (const chunk of chunks) controller.enqueue(chunk);
+          controller.close();
+        },
+        cancel() {
+          cancelled = true;
+        },
+      }),
+  });
+  sdk.send.mockResolvedValueOnce({
+    Body: responseBody([new Uint8Array([1, 2]), new Uint8Array([3])]),
+  });
+  expect(await storage.readOriginal(keys.original)).toEqual(Buffer.from([1, 2, 3]));
+  expect(sdk.send.mock.calls[0][0].constructor.name).toBe('GetObjectCommand');
+  await expect(storage.readOriginal(keys.display)).rejects.toThrow();
+  const oversize = new Uint8Array(10 * 1024 * 1024 + 1);
+  sdk.send.mockResolvedValueOnce({
+    ContentLength: 1,
+    Body: {
+      transformToWebStream: () =>
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(oversize);
+          },
+          cancel() {
+            cancelled = true;
+          },
+        }),
+    },
+  });
+  await expect(storage.readOriginal(keys.original)).rejects.toThrow('size limit');
+  expect(cancelled).toBe(true);
+});
+test('original reads reject empty files and stop stalled streams', async () => {
+  const storage = await mockedStorage();
+  const key = createPhotoKeys(randomUUID(), 'png').original;
+  sdk.send.mockResolvedValueOnce({
+    Body: {
+      transformToWebStream: () =>
+        new ReadableStream({
+          start(controller) {
+            controller.close();
+          },
+        }),
+    },
+  });
+  await expect(storage.readOriginal(key)).rejects.toThrow('empty');
+  vi.useFakeTimers();
+  try {
+    sdk.send.mockResolvedValueOnce({ Body: { transformToWebStream: () => new ReadableStream() } });
+    const pending = expect(storage.readOriginal(key)).rejects.toThrow('timed out');
+    await vi.advanceTimersByTimeAsync(20001);
+    await pending;
+  } finally {
+    vi.useRealTimers();
+  }
+});

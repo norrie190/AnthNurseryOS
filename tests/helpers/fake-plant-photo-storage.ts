@@ -9,6 +9,11 @@ export function fakePlantPhotoStorage() {
   const objects = new Map<string, PhotoObject>();
   const storage = {
     bucket: 'fake-plant-photos-only',
+    readOriginal: vi.fn(async (key: string) => {
+      const object = objects.get(key);
+      if (!object) throw new Error('Original is unavailable');
+      return Buffer.from(object.body);
+    }),
     upload: vi.fn(async (object: PhotoObject) => {
       if (objects.has(object.key)) throw new Error('Object already exists');
       objects.set(object.key, { ...object, body: Buffer.from(object.body) });

@@ -2,9 +2,9 @@
 
 ## Decision and current checkpoint
 
-Cloudflare R2 is the approved photo storage provider. Files will live in a private bucket, while PostgreSQL will continue to hold PlantPhoto metadata only. The existing PlantPhoto fields are sufficient. A new PostgreSQL partial unique index is approved to guarantee at most one primary photo per Plant.
+Cloudflare R2 is the approved photo storage provider. Files live in a private bucket, while PostgreSQL holds PlantPhoto metadata only. A PostgreSQL partial unique index guarantees at most one primary photo per Plant. The separately approved square crop checkpoint adds crop metadata and a thumbnail revision; its current behaviour supersedes the original uncropped thumbnail design below where noted. See [thumbnail crops](plant-photo-crops.md).
 
-The architecture documentation checkpoint is committed. The current checkpoint, `feat: add plant photo storage and data layer`, implements these rules for review without a browser upload endpoint, gallery or list thumbnails. No real R2 bucket has been used. Exact operation contracts, implementation details and account setup are in [Plant photo data layer](plant-photo-data-layer.md).
+The architecture and storage/data layer checkpoints are complete. The separately approved real R2 smoke test passed and its disposable object was removed without changing nursery data. Exact operation contracts and account setup are in [Plant photo data layer](plant-photo-data-layer.md). The current checkpoint, `feat: add plant photo gallery and list images`, connects the browser controls and private delivery described in [Plant photo browser workflow](plant-photo-browser-flow.md).
 
 ## Why R2
 
@@ -18,17 +18,17 @@ Local filesystem storage is only a possible development option, not the producti
 
 One PlantPhoto record represents a photograph and its derived copies. Its existing fields remain id, plantId, storageKey, optional originalFilename, optional caption, optional takenAt, isPrimary, sortOrder, createdAt and updatedAt. No image bytes, permanent public URLs, expiring signed URLs or credentials belong in PostgreSQL.
 
-The validated original will be retained privately so later nursery work can use its original detail. The display copy will be WebP with a longest side up to approximately 2560 pixels. The thumbnail will be WebP up to approximately 320 pixels. Processing must preserve proportions, avoid enlargement, apply the original orientation and remove EXIF/GPS metadata from both served derivatives. Originals may retain camera metadata and will not be served by the initial gallery or list.
+The validated original is retained privately so later nursery work can use its original detail. Display remains the full photograph with its natural aspect ratio, in WebP with a longest side up to approximately 2560 pixels. New thumbnails use the selected square crop, up to 320 by 320 pixels. Processing avoids enlargement, applies the original orientation and removes EXIF/GPS metadata from both served derivatives. Originals may retain camera metadata and are not served by the gallery or list. Adjust Crop changes only the thumbnail.
 
 The server will generate a new asset UUID and immutable storage keys for each upload. An example object layout is:
 
 ```text
 plants/<plant UUID>/<asset UUID>/original.jpg
 plants/<plant UUID>/<asset UUID>/display.webp
-plants/<plant UUID>/<asset UUID>/thumbnail.webp
+plants/<plant UUID>/<asset UUID>/thumbnails/<revision UUID>.webp
 ```
 
-The original extension comes from the detected image format, not the supplied filename. PlantPhoto.storageKey will identify the original object. The storage boundary will derive the two known companion keys from that layout. These are storage objects, not three separate PlantPhoto rows. Bucket names, endpoints and provider credentials belong in server configuration, outside the key.
+The original extension comes from the detected image format, not the supplied filename. PlantPhoto.storageKey identifies the original object. The storage boundary derives the known companion keys from that layout. Legacy records with a null derivativeRevision still use thumbnail.webp. These are storage objects, not separate PlantPhoto rows. Bucket names, endpoints and provider credentials belong in server configuration, outside the key.
 
 Original filenames are metadata only. Keep a trimmed, length limited basename with path components and control characters removed. Never use a filename, ANT reference or browser supplied path to select an object key. Optional caption text is trimmed and blank becomes null. An unknown takenAt stays null; upload time and filesystem modification time must not be substituted for when the photo was taken. Any entered date/time must be parsed explicitly and handled consistently with the nursery timezone and existing UTC timestamp storage.
 
@@ -55,7 +55,7 @@ The upload form and endpoint must not accept caller supplied photo IDs, storage 
 
 Routes and endpoint composition stay in src/app. Plant photo rules, validation, processing, queries and the small storage boundary stay in src/modules/plants. Database and provider credentials remain behind server only modules. No generic repository, upload framework or multiple provider implementations are needed.
 
-The planned operations are uploadPlantPhoto and setPrimaryPlantPhoto, with small reads for the gallery, primary thumbnail and photo delivery. Names and exact signatures will be implemented in the later data layer checkpoint. The upload endpoint handles the browser boundary; the service owns rules, storage coordination and the database transaction. Photo work stays outside createPlant and never allocates or resets an ANT reference.
+The operations are uploadPlantPhoto and setPrimaryPlantPhoto, with small reads for the gallery, primary thumbnail and photo delivery. Exact signatures are recorded in the data layer notes. The upload endpoint handles the browser boundary; the service owns rules, storage coordination and the database transaction. Photo work stays outside createPlant and never allocates or resets an ANT reference.
 
 Image processing runs in the Node server. Sharp is declared directly because application code imports it, alongside the R2 S3 SDK and signing package. There is no alternative provider or generic upload framework.
 
@@ -102,9 +102,9 @@ Photo deletion is not included. If it is designed later, replacement of a delete
 
 ## Gallery, list and archived Plants
 
-The later UI checkpoint will add a Photos section to the existing detail page, with the primary image, a simple responsive thumbnail grid, captions and taken dates when recorded. Upload Photo opens a small form. Other photos offer Set as Primary, and the current selection has a visible Primary label. Use the existing nursery cards, spacing, keyboard access and error feedback.
+The UI checkpoint adds a Photos section to the existing detail page, with the primary image, a simple responsive thumbnail grid, captions and taken dates when recorded. A small Upload Photo form sits below the gallery. Other photos offer Set as Primary, and the current selection has a visible Primary label. It uses the existing nursery cards, spacing, keyboard access and error feedback.
 
-Preserve entered metadata after validation failures where practical. File inputs cannot always be restored after a failed request; tell the user clearly when a file needs selecting again. Show an uploading state and prevent ordinary repeated submission. No advanced gallery, lightbox, editor, cropping tools or drag and drop ordering is planned.
+Preserve entered metadata after validation failures where practical. File inputs cannot always be restored after a failed request; tell the user clearly when a file needs selecting again. Show an uploading state and prevent ordinary repeated submission. The approved square thumbnail selector supports new uploads and Adjust Crop. No advanced gallery, lightbox, general image editor or drag and drop ordering is planned.
 
 The Plant list will retrieve only the primary photo information needed for its thumbnail, not the entire gallery. Existing ordering, active/archive separation and responsive behaviour stay unchanged. A Plant without a photo gets a neutral placeholder. An unavailable stored image should have a safe fallback rather than a broken image.
 
@@ -146,8 +146,8 @@ Do not upload test images to the owner's real development storage or account wit
 
 The architecture checkpoint, `docs: define plant photo storage architecture`, is complete and committed.
 
-The current checkpoint is `feat: add plant photo storage and data layer`. It introduces the selected dependencies and storage configuration, processing and restricted operations, targeted failure cleanup, the new primary uniqueness migration and focused tests. Its migration was inspected before application. Real provider verification remains subject to separate approval. The owner will review and commit the work.
+The completed checkpoint `feat: add plant photo storage and data layer` introduced the selected dependencies and storage configuration, processing and restricted operations, targeted failure cleanup, the new primary uniqueness migration and focused tests. Its migration was inspected before application. The owner separately approved the successful disposable real provider verification.
 
-The later browser checkpoint is `feat: add plant photo gallery and list images`. It will connect upload and primary selection to the detail page and add the primary thumbnail to the responsive list, with UI and workflow tests.
+The current browser checkpoint is `feat: add plant photo gallery and list images`. It connects upload and primary selection to the detail page and adds the primary thumbnail to the responsive lists, with UI and workflow tests. No dependencies, schema changes or migrations are added. The owner will review and commit the work.
 
-None of these checkpoints include photo deletion, a general reconciliation/admin tool, authentication, bulk uploads, advanced image editing, cropping, drag and drop sorting, Location CRUD, care, observations, breeding, pollen, seed batches, seedlings, sales or dashboard integration.
+The next approved checkpoint adds only square thumbnail cropping, documented in [thumbnail crops](plant-photo-crops.md). These checkpoints do not include photo deletion, a general reconciliation/admin tool, authentication, bulk uploads, advanced image editing, drag and drop sorting, Location CRUD, care, observations, breeding, pollen, seed batches, seedlings, sales or dashboard integration.

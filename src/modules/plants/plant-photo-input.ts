@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { PlantError } from './plant-errors';
 import { plantIdSchema } from './plant-field-schemas';
+import { photoCropSchema } from './plant-photo-crop';
 
 export const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 export const MAX_PHOTO_PIXELS = 50_000_000;
@@ -39,6 +40,7 @@ const uploadSchema = z.strictObject({
     .refine((date) => !date.startsWith('0000-'), 'Use a year from 0001 to 9999.')
     .nullish(),
   expectedUpdatedAt: photoTokenSchema,
+  crop: photoCropSchema.optional(),
 });
 const primarySchema = z.strictObject({
   photoId: plantIdSchema,
@@ -71,4 +73,20 @@ export function parseUploadPlantPhoto(plantId: unknown, input: unknown) {
 
 export function parseSetPrimaryPlantPhoto(plantId: unknown, input: unknown) {
   return parsePhotoRequest(primarySchema, plantId, input);
+}
+
+const cropInputSchema = z.strictObject({
+  photoId: plantIdSchema,
+  crop: photoCropSchema,
+  expectedUpdatedAt: photoTokenSchema,
+});
+export type UpdatePlantPhotoCropInput = Omit<z.input<typeof cropInputSchema>, 'photoId'>;
+export function parseUpdatePlantPhotoCrop(
+  plantId: unknown,
+  photoId: unknown,
+  input: UpdatePlantPhotoCropInput,
+) {
+  // Parse the input independently so an injected photoId cannot override the route.
+  const body = parsePhotoRequest(cropInputSchema.omit({ photoId: true }), plantId, input);
+  return parsePhotoRequest(cropInputSchema, body.plantId, { ...body.input, photoId });
 }

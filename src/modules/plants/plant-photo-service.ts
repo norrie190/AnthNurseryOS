@@ -8,9 +8,17 @@ import {
   parseSetPrimaryPlantPhoto,
   type UploadPlantPhotoInput,
   type SetPrimaryPlantPhotoInput,
+  parseUpdatePlantPhotoCrop,
+  type UpdatePlantPhotoCropInput,
 } from './plant-photo-input';
-import { createPhotoKeys } from './plant-photo-keys';
-import { processPlantPhoto } from './plant-photo-processing';
+import { createPhotoKeys, parsePhotoStorageKey, photoVariantKey } from './plant-photo-keys';
+import {
+  processPlantPhoto,
+  processPlantPhotoThumbnail,
+  processPlantPhotoPreview,
+  readPlantPhotoDimensions,
+} from './plant-photo-processing';
+import { plantIdSchema } from './plant-field-schemas';
 import { getPlantPhotoStorage, type PlantPhotoStorage } from './plant-photo-storage';
 
 export type { UploadPlantPhotoInput, SetPrimaryPlantPhotoInput } from './plant-photo-input';
@@ -100,8 +108,9 @@ export async function uploadPlantPhoto(
   });
   checkCurrent(current, parsed.input.expectedUpdatedAt);
   const storage = getPlantPhotoStorage();
-  const processed = await processPlantPhoto(parsed.input.image);
-  const keys = createPhotoKeys(parsed.plantId, processed.extension);
+  const processed = await processPlantPhoto(parsed.input.image, parsed.input.crop);
+  const derivativeRevision = randomUUID();
+  const keys = createPhotoKeys(parsed.plantId, processed.extension, derivativeRevision);
   const uploadId = randomUUID();
   const attempted: string[] = [];
   try {
@@ -135,6 +144,10 @@ export async function uploadPlantPhoto(
         data: {
           plantId: parsed.plantId,
           storageKey: keys.original,
+          cropX: processed.crop.x,
+          cropY: processed.crop.y,
+          cropSize: processed.crop.size,
+          derivativeRevision,
           originalFilename: parsed.input.originalFilename ?? null,
           caption: parsed.input.caption ?? null,
           takenAt: parsed.input.takenAt ? new Date(parsed.input.takenAt) : null,
@@ -207,6 +220,141 @@ export async function setPrimaryPlantPhoto(
       return { photo: selected, plantUpdatedAt: plant.updatedAt, changed: true };
     }, transactionOptions);
   } catch (error) {
+    rethrowPhotoFailure(error);
+  }
+}
+
+function checkPhotoOwner(photo: PlantPhoto | null, plantId: string): asserts photo is PlantPhoto {
+  if (!photo || photo.plantId !== plantId)
+    throw new PlantError('NOT_FOUND', 'This photo could not be found for this Plant.');
+  if (parsePhotoStorageKey(photo.storageKey).plantId !== plantId)
+    throw new Error('Photo storage ownership does not match the Plant.');
+}
+
+export async function previewNewPlantPhoto(plantId: string, input: UploadPlantPhotoInput) {
+  const parsed = parseUploadPlantPhoto(plantId, input);
+  const plant = await getPrisma().plant.findUnique({
+    where: { id: parsed.plantId },
+    select: { updatedAt: true },
+  });
+  checkCurrent(plant, parsed.input.expectedUpdatedAt);
+  // No R2 calls or writes. The selector sees the same oriented pixels as upload.
+  return processPlantPhotoPreview(parsed.input.image);
+}
+
+export async function getPlantPhotoCropPreview(plantId: string, photoId: string) {
+  if (!plantIdSchema.safeParse(plantId).success || !plantIdSchema.safeParse(photoId).success)
+    throw new PlantError('VALIDATION_FAILED', 'Choose a valid Plant photo.');
+  const photo = await getPrisma().plantPhoto.findFirst({ where: { id: photoId, plantId } });
+  checkPhotoOwner(photo, plantId);
+  const dimensions = await readPlantPhotoDimensions(
+    await getPlantPhotoStorage().readOriginal(photo.storageKey),
+  );
+  return {
+    ...dimensions,
+    crop: photo.cropX == null ? null : { x: photo.cropX, y: photo.cropY!, size: photo.cropSize! },
+  };
+}
+
+export async function updatePlantPhotoCrop(
+  plantId: string,
+  photoId: string,
+  input: UpdatePlantPhotoCropInput,
+): Promise<PlantPhotoResult & { changed: boolean }> {
+  const parsed = parseUpdatePlantPhotoCrop(plantId, photoId, input);
+  const { crop, expectedUpdatedAt } = parsed.input;
+  const db = getPrisma();
+  checkCurrent(
+    await db.plant.findUnique({ where: { id: plantId }, select: { updatedAt: true } }),
+    expectedUpdatedAt,
+  );
+  const previous = await db.plantPhoto.findFirst({ where: { id: photoId, plantId } });
+  checkPhotoOwner(previous, plantId);
+  const sameCrop = (photo: PlantPhoto) =>
+    photo.derivativeRevision != null &&
+    photo.cropX === crop.x &&
+    photo.cropY === crop.y &&
+    photo.cropSize === crop.size;
+  if (sameCrop(previous)) {
+    return db.$transaction(async (tx) => {
+      const plant = await lockPlant(tx, plantId);
+      checkCurrent(plant, expectedUpdatedAt);
+      const photo = await tx.plantPhoto.findFirst({ where: { id: photoId, plantId } });
+      checkPhotoOwner(photo, plantId);
+      if (!sameCrop(photo))
+        throw new PlantError('STALE_UPDATE', 'This photo has changed. Review it before saving.');
+      return { photo, plantUpdatedAt: plant.updatedAt, changed: false };
+    }, transactionOptions);
+  }
+
+  const storage = getPlantPhotoStorage();
+  const thumbnail = await processPlantPhotoThumbnail(
+    await storage.readOriginal(previous.storageKey),
+    crop,
+  );
+  const revision = randomUUID();
+  const key = photoVariantKey(previous.storageKey, 'thumbnail', revision);
+  const uploadId = randomUUID();
+  try {
+    await storage.upload({ key, body: thumbnail, contentType: 'image/webp', uploadId });
+  } catch (error) {
+    await cleanupUpload(storage, plantId, uploadId, [key], 'crop-storage');
+    throw error;
+  }
+  let callbackCompleted = false;
+  try {
+    return await db.$transaction(async (tx) => {
+      const plant = await lockPlant(tx, plantId);
+      checkCurrent(plant, expectedUpdatedAt);
+      const photo = await tx.plantPhoto.findFirst({ where: { id: photoId, plantId } });
+      checkPhotoOwner(photo, plantId);
+      const saved = await tx.plantPhoto.update({
+        where: { id: photoId },
+        data: {
+          cropX: crop.x,
+          cropY: crop.y,
+          cropSize: crop.size,
+          derivativeRevision: revision,
+          updatedAt: new Date(Math.max(Date.now(), photo.updatedAt.getTime() + 1)),
+        },
+      });
+      const updatedPlant = await advancePlant(tx, plantId, plant.updatedAt);
+      callbackCompleted = true;
+      return { photo: saved, plantUpdatedAt: updatedPlant.updatedAt, changed: true };
+    }, transactionOptions);
+  } catch (error) {
+    if (callbackCompleted) {
+      let resolved: PlantPhotoResult | null;
+      try {
+        resolved = await db.$transaction(async (tx) => {
+          const plant = await lockPlant(tx, plantId);
+          const photo = await tx.plantPhoto.findFirst({ where: { id: photoId, plantId } });
+          checkPhotoOwner(photo, plantId);
+          if (!plant) throw new Error('Cannot confirm Plant.');
+          if (photo.derivativeRevision === revision)
+            return { photo, plantUpdatedAt: plant.updatedAt };
+          if (photo.derivativeRevision === previous.derivativeRevision) return null;
+          // Another crop could have superseded our committed revision. Retain it.
+          throw new Error('A different revision is active.');
+        }, transactionOptions);
+      } catch {
+        console.error('Plant photo crop commit unresolved; thumbnail retained', {
+          plantId,
+          photoId,
+          uploadId,
+          bucket: storage.bucket,
+          key,
+          revision,
+          stage: 'crop-commit',
+        });
+        throw new Error(
+          'The crop save could not be confirmed. Check the Plant before trying again.',
+          { cause: error },
+        );
+      }
+      if (resolved) return { ...resolved, changed: true };
+    }
+    await cleanupUpload(storage, plantId, uploadId, [key], 'crop-database');
     rethrowPhotoFailure(error);
   }
 }

@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { PlantListItem, ArchivedPlantListItem } from '../plant-queries';
 import { plantStatusLabels } from '../plant-form-state';
+import { photoImagePath } from '../plant-photo-browser';
+import { PlantPhotoImage } from './plant-photo-image';
 import shared from './plant-management.module.css';
 import styles from './plant-list.module.css';
 
@@ -51,7 +53,24 @@ export function PlantList(props: PlantListProps) {
           <li key={plant.id}>
             <Link className={styles.row} href={`/plants/${plant.id}`}>
               <strong className={styles.reference}>{plant.reference}</strong>
-              <span className={styles.name}>{plant.name || 'Unnamed Plant'}</span>
+              <span className={styles.name}>
+                <span className={styles.photo}>
+                  <PlantPhotoImage
+                    src={
+                      plant.photos[0]
+                        ? photoImagePath(
+                            plant.id,
+                            plant.photos[0].id,
+                            'thumbnail',
+                            plant.photos[0].derivativeRevision,
+                          )
+                        : undefined
+                    }
+                    alt={`${plant.reference} primary photo`}
+                  />
+                </span>
+                <span>{plant.name || 'Unnamed Plant'}</span>
+              </span>
               <span className={styles.status}>
                 <span className={shared.badge}>{plantStatusLabels[plant.status]}</span>
               </span>

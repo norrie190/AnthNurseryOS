@@ -81,6 +81,21 @@
   color: var(--text-muted);
 }
 
+.name {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.photo {
+  flex: 0 0 4rem;
+  width: 4rem;
+  height: 4rem;
+  overflow: hidden;
+  border-radius: var(--radius-small);
+  background: var(--surface-muted);
+}
+
 .mobileLabel {
   display: none;
 }

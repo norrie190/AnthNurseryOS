@@ -5,6 +5,8 @@ import { getPrisma } from '../../src/lib/prisma';
 import {
   uploadPlantPhoto,
   setPrimaryPlantPhoto,
+  updatePlantPhotoCrop,
+  previewNewPlantPhoto,
 } from '../../src/modules/plants/plant-photo-service';
 import { getPlantPhotoReadUrl } from '../../src/modules/plants/plant-photo-queries';
 import { getPlantPhotoStorage } from '../../src/modules/plants/plant-photo-storage';
@@ -47,6 +49,167 @@ beforeEach(async () => {
 });
 afterEach(() => vi.restoreAllMocks());
 const request = () => ({ image, expectedUpdatedAt: updatedAt.toISOString() });
+
+function existingPhoto() {
+  const keys = createPhotoKeys(plantId, 'png');
+  const previous = {
+    id: randomUUID(),
+    plantId,
+    storageKey: keys.original,
+    updatedAt,
+    cropX: null as number | null,
+    cropY: null as number | null,
+    cropSize: null as number | null,
+    derivativeRevision: null as string | null,
+    isPrimary: true,
+    sortOrder: 5,
+    caption: 'History',
+    takenAt: updatedAt,
+  };
+  for (const key of Object.values(keys))
+    fake.objects.set(key, { key, body: image, contentType: 'image/png', uploadId: randomUUID() });
+  let record = previous;
+  tx.plantPhoto.findFirst.mockImplementation(async () => record);
+  tx.plantPhoto.update.mockImplementation(async ({ data }) => {
+    record = { ...record, ...data };
+    return record;
+  });
+  return { previous, record: () => record, keys };
+}
+const cropRequest = () => ({
+  crop: { x: 0, y: 0, size: 0.5 },
+  expectedUpdatedAt: updatedAt.toISOString(),
+});
+
+test('new upload stores the selected crop and generated thumbnail revision', async () => {
+  const result = await uploadPlantPhoto(plantId, { ...request(), crop: cropRequest().crop });
+  expect(result.photo).toMatchObject({
+    cropX: 0,
+    cropY: 0,
+    cropSize: 0.5,
+    derivativeRevision: expect.any(String),
+  });
+  expect(fake.storage.upload.mock.calls[2][0].key).toContain(
+    `/thumbnails/${result.photo.derivativeRevision}.webp`,
+  );
+});
+test('new preview is read only and never accesses R2', async () => {
+  expect(await previewNewPlantPhoto(plantId, request())).toMatchObject({ width: 16, height: 12 });
+  expect(getPlantPhotoStorage).not.toHaveBeenCalled();
+  expect(database.$transaction).not.toHaveBeenCalled();
+});
+test('crop reads the original and writes only one fresh thumbnail before locking', async () => {
+  const { previous, keys } = existingPhoto();
+  const before = new Map(fake.objects);
+  const result = await updatePlantPhotoCrop(plantId, previous.id, cropRequest());
+  expect(result.changed).toBe(true);
+  expect(result.photo).toMatchObject({
+    ...previous,
+    cropX: 0,
+    cropY: 0,
+    cropSize: 0.5,
+    derivativeRevision: expect.any(String),
+    updatedAt: expect.any(Date),
+  });
+  expect(fake.storage.readOriginal).toHaveBeenCalledWith(keys.original);
+  expect(fake.storage.upload).toHaveBeenCalledOnce();
+  expect(fake.objects.size).toBe(4);
+  for (const [key, value] of before) expect(fake.objects.get(key)).toEqual(value);
+  expect(fake.storage.upload.mock.invocationCallOrder[0]).toBeLessThan(
+    database.$transaction.mock.invocationCallOrder[0],
+  );
+  expect(tx.plantPhoto.update.mock.calls[0][0].data).not.toHaveProperty('storageKey');
+});
+test('identical saved crop with current token checks under lock but does not read or write storage', async () => {
+  const { previous } = existingPhoto();
+  Object.assign(previous, { cropX: 0, cropY: 0, cropSize: 0.5, derivativeRevision: randomUUID() });
+  expect((await updatePlantPhotoCrop(plantId, previous.id, cropRequest())).changed).toBe(false);
+  expect(tx.$queryRaw).toHaveBeenCalledOnce();
+  expect(getPlantPhotoStorage).not.toHaveBeenCalled();
+  expect(tx.plantPhoto.update).not.toHaveBeenCalled();
+  expect(tx.plant.update).not.toHaveBeenCalled();
+});
+test.each(['early', 'locked'])('crop rejects stale token %s', async (stage) => {
+  const { previous } = existingPhoto();
+  const newer = { updatedAt: new Date(updatedAt.getTime() + 1) };
+  if (stage === 'early') tx.plant.findUnique.mockResolvedValue(newer);
+  else tx.$queryRaw.mockResolvedValue([newer]);
+  await expect(updatePlantPhotoCrop(plantId, previous.id, cropRequest())).rejects.toMatchObject({
+    code: 'STALE_UPDATE',
+  });
+  expect(fake.objects.size).toBe(3);
+  expect(fake.storage.remove).toHaveBeenCalledTimes(stage === 'early' ? 0 : 1);
+});
+test.each(['read', 'invalid-crop', 'put', 'database'])(
+  'crop failure at %s preserves existing objects',
+  async (stage) => {
+    const { previous } = existingPhoto();
+    const before = new Map(fake.objects);
+    const input = cropRequest();
+    if (stage === 'read') fake.storage.readOriginal.mockRejectedValue(new Error('Read failed'));
+    if (stage === 'invalid-crop') input.crop.x = 0.99;
+    if (stage === 'put')
+      fake.storage.upload.mockImplementation(async (object) => {
+        fake.objects.set(object.key, object);
+        throw new Error('PUT acknowledgement lost');
+      });
+    if (stage === 'database') tx.plant.update.mockRejectedValue(new Error('DB rollback'));
+    await expect(updatePlantPhotoCrop(plantId, previous.id, input)).rejects.toThrow();
+    expect(fake.objects).toEqual(before);
+    expect(fake.storage.remove).toHaveBeenCalledTimes(['put', 'database'].includes(stage) ? 1 : 0);
+  },
+);
+test('crop cleanup failure logs only the attempted key and preserves the cause', async () => {
+  const { previous } = existingPhoto();
+  const failure = new Error('secret provider detail');
+  fake.storage.upload.mockRejectedValue(failure);
+  fake.storage.remove.mockRejectedValue(new Error('secret cleanup detail'));
+  await expect(updatePlantPhotoCrop(plantId, previous.id, cropRequest())).rejects.toBe(failure);
+  const logs = JSON.stringify(vi.mocked(console.error).mock.calls);
+  expect(logs).toContain(fake.storage.upload.mock.calls[0][0].key);
+  expect(logs).toContain('cleanup-failed');
+  expect(logs).not.toContain('secret');
+});
+test.each(['committed', 'previous', 'superseded', 'unavailable'])(
+  'uncertain crop commit: %s',
+  async (outcome) => {
+    const { previous } = existingPhoto();
+    const failure = new Error('Lost commit acknowledgement');
+    database.$transaction.mockImplementationOnce(async (operation) => {
+      await operation(tx);
+      if (outcome === 'previous') tx.plantPhoto.findFirst.mockResolvedValue(previous);
+      if (outcome === 'superseded')
+        tx.plantPhoto.findFirst.mockResolvedValue({
+          ...previous,
+          derivativeRevision: randomUUID(),
+        });
+      throw failure;
+    });
+    if (outcome === 'unavailable')
+      database.$transaction.mockRejectedValueOnce(new Error('Recovery unavailable'));
+    const result = updatePlantPhotoCrop(plantId, previous.id, cropRequest());
+    if (outcome === 'committed') expect((await result).changed).toBe(true);
+    else if (outcome === 'previous') await expect(result).rejects.toBe(failure);
+    else await expect(result).rejects.toMatchObject({ cause: failure });
+    expect(fake.storage.remove).toHaveBeenCalledTimes(outcome === 'previous' ? 1 : 0);
+    expect(fake.objects.size).toBe(outcome === 'previous' ? 3 : 4);
+  },
+);
+test.each([
+  'storageKey',
+  'derivativeRevision',
+  'photoId',
+  'id',
+  'isPrimary',
+  'sortOrder',
+  'caption',
+  'plant',
+])('crop rejects injected %s', async (field) => {
+  await expect(
+    updatePlantPhotoCrop(plantId, randomUUID(), { ...cropRequest(), [field]: 'bad' }),
+  ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+  expect(getPrisma).not.toHaveBeenCalled();
+});
 
 test('finishes all storage writes before taking a database lock', async () => {
   const result = await uploadPlantPhoto(plantId, {
@@ -213,7 +376,7 @@ test('delivery signs only the companion of a known, correctly owned photo', asyn
   expect(await getPlantPhotoReadUrl(plantId, photoId, 'display')).toMatchObject({
     expiresInSeconds: 300,
   });
-  expect(fake.storage.signVariant).toHaveBeenCalledWith(key, 'display');
+  expect(fake.storage.signVariant).toHaveBeenCalledWith(key, 'display', undefined);
   await expect(
     getPlantPhotoReadUrl(plantId, photoId, 'original' as 'display'),
   ).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });

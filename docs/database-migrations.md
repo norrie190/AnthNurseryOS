@@ -34,6 +34,12 @@ This is a new migration, enclosed in BEGIN and COMMIT; neither earlier migration
 
 The photo database tests verify the installed index and migration, reject multiple primaries, permit multiple nonprimary rows, and exercise atomic primary changes and rollback. They use only the guarded PostgreSQL test database and rolled back fixtures. The approved design is in [Plant photo storage](plant-photo-storage.md), with operation details in [Plant photo data layer](plant-photo-data-layer.md).
 
+## Thumbnail crop migration
+
+`20260831230000_add_plant_photo_thumbnail_crop` adds nullable cropX, cropY and cropSize as double precision and derivativeRevision as UUID. The reviewed SQL uses BEGIN/COMMIT and adds PlantPhoto_crop_consistency_check (all four null or all four populated) and PlantPhoto_crop_ranges_check (x/y from zero inclusive to one exclusive, size greater than zero and at most one). PostgreSQL NaN and infinity fail the upper/lower bounds. Image dependent bounds remain a service rule. Prisma cannot express these checks, so retain the custom migration SQL.
+
+Preflight found one Plant with one legacy photo in development and no PlantPhoto records in test. The existing photo had a valid original key. Both databases had none of the new columns. The migration was inspected before applying it to development and the guarded test database. There is no backfill, object rewrite or ANT sequence change. Previous migrations, the primary index and historical records remain intact. See [thumbnail crops](plant-photo-crops.md).
+
 ## Applying migrations
 
 `pnpm db:deploy` applies existing migration files to `DATABASE_URL`. It does not generate a migration. `pnpm db:migrate:test` applies the same migration files to `TEST_DATABASE_URL` through a separate Prisma process, without changing `.env`.

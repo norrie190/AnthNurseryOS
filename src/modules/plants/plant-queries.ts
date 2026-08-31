@@ -14,6 +14,11 @@ export async function getPlantList() {
       status: true,
       location: { select: { name: true } },
       createdAt: true,
+      photos: {
+        where: { isPrimary: true },
+        take: 1,
+        select: { id: true, derivativeRevision: true },
+      },
     },
     orderBy: [{ createdAt: 'desc' }, { reference: 'asc' }],
   });
@@ -30,6 +35,11 @@ export async function getArchivedPlantList() {
       status: true,
       location: { select: { name: true } },
       archivedAt: true,
+      photos: {
+        where: { isPrimary: true },
+        take: 1,
+        select: { id: true, derivativeRevision: true },
+      },
     },
     orderBy: [{ archivedAt: 'desc' }, { reference: 'asc' }],
   });

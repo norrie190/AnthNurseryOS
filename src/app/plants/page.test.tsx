@@ -38,6 +38,7 @@ test('reads again on a later request and displays the newly available Plant', as
         name: null,
         status: 'GROWING',
         location: null,
+        photos: [],
         createdAt: new Date('2026-08-30T12:00:00Z'),
       },
     ]);

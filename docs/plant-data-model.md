@@ -2,7 +2,7 @@
 
 ## Status of this document
 
-This is the approved Plant Management data design. The Prisma schema, initial migrations, creation data layer, initial browsing workflow, Edit Plant, Archive/Restore and photo architecture are committed. The photo storage and data layer is implemented for review, with no new PlantPhoto fields required. Operation behaviour is documented in `plant-creation.md`, `plant-editing.md`, `plant-archiving.md`, `plant-photo-storage.md` and `plant-photo-data-layer.md`.
+This is the approved Plant Management data design. The Prisma schema, initial migrations, creation data layer, initial browsing workflow, Edit Plant, Archive/Restore and photo architecture are committed. The approved thumbnail crop checkpoint extends PlantPhoto with crop metadata and a thumbnail revision. Operation behaviour is documented in `plant-creation.md`, `plant-editing.md`, `plant-archiving.md`, `plant-photo-storage.md`, `plant-photo-data-layer.md` and `plant-photo-crops.md`.
 
 This stage includes Plant, PlantParentage, PlantPurchase, PlantPhoto, and Location only. Care, observations, breeding, pollen, seed batches, seedlings, ancestry, and sales remain outside the schema until their own phases.
 
@@ -112,20 +112,24 @@ Total acquisition cost is calculated from the available price, shipping, and oth
 
 A Plant can have any number of PlantPhoto records. The database stores photo metadata and a storage reference, not the image itself.
 
-| Field              | Required | Purpose                                                              |
-| ------------------ | -------- | -------------------------------------------------------------------- |
-| `id`               | Yes      | Internal photo record ID.                                            |
-| `plantId`          | Yes      | Link to the Plant shown in the photo.                                |
-| `storageKey`       | Yes      | Unique provider independent key used to retrieve the stored image.   |
-| `originalFilename` | No       | Original filename retained for useful metadata.                      |
-| `caption`          | No       | Optional description or note about the image.                        |
-| `takenAt`          | No       | When the photo was taken, when known.                                |
-| `isPrimary`        | Yes      | Whether this is the Plant's main display image. Defaults to `false`. |
-| `sortOrder`        | Yes      | Stable ordering within the Plant's gallery. Defaults to `0`.         |
-| `createdAt`        | Yes      | When the photo record was added.                                     |
-| `updatedAt`        | Yes      | When the photo metadata was last changed.                            |
+| Field                | Required | Purpose                                                              |
+| -------------------- | -------- | -------------------------------------------------------------------- |
+| `id`                 | Yes      | Internal photo record ID.                                            |
+| `plantId`            | Yes      | Link to the Plant shown in the photo.                                |
+| `storageKey`         | Yes      | Unique provider independent key used to retrieve the stored image.   |
+| `originalFilename`   | No       | Original filename retained for useful metadata.                      |
+| `caption`            | No       | Optional description or note about the image.                        |
+| `takenAt`            | No       | When the photo was taken, when known.                                |
+| `isPrimary`          | Yes      | Whether this is the Plant's main display image. Defaults to `false`. |
+| `sortOrder`          | Yes      | Stable ordering within the Plant's gallery. Defaults to `0`.         |
+| `cropX`              | No       | Crop left divided by oriented original width; double precision.      |
+| `cropY`              | No       | Crop top divided by oriented original height; double precision.      |
+| `cropSize`           | No       | Square side divided by the shorter oriented side; double precision.  |
+| `derivativeRevision` | No       | UUID identifying only the currently selected square thumbnail.       |
+| `createdAt`          | Yes      | When the photo record was added.                                     |
+| `updatedAt`          | Yes      | When the photo metadata was last changed.                            |
 
-`storageKey` is not a local path or public URL. Cloudflare R2 is the approved provider, using a private bucket. The server generates an immutable key for the retained original, with known display and thumbnail WebP objects in the same asset folder. The storage boundary resolves those keys; provider credentials and bucket configuration do not belong in PlantPhoto. Original filenames remain metadata only. The existing fields support this without storing image bytes, signed URLs or separate derivative rows.
+`storageKey` is not a local path or public URL. Cloudflare R2 is the approved provider, using a private bucket. The server generates an immutable key for the retained original, with known display and thumbnail WebP objects in the same asset folder. The storage boundary resolves those keys; provider credentials and bucket configuration do not belong in PlantPhoto. Original filenames remain metadata only. The four crop fields are all null for legacy photos or all populated for saved square thumbnails. There are no stored image bytes, signed URLs or separate derivative rows. Full display images remain uncropped; see [thumbnail crops](plant-photo-crops.md).
 
 At most one photo may be primary for a Plant at a time. The first upload becomes primary automatically, and the photo data layer handles changes atomically under the owning Plant's row lock. A PostgreSQL partial unique index on plantId for rows where isPrimary is true supplies database protection. It was added in a new reviewed migration after confirming development and test had no conflicting photo rows. Existing migrations were not edited.
 
