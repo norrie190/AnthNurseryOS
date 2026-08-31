@@ -76,6 +76,8 @@ The storage and data layer is complete, including its separately approved real R
 
 The subsequent approved [photo deletion checkpoint](plant-photo-deletion.md) adds only confirmed permanent photo removal, deterministic primary replacement and cleanup of that exact photo asset after the database commit. No schema change is needed. A general orphan/reconciliation scanner, broad bucket cleanup, authentication, bulk uploads and advanced image tools remain outside scope. No production host has been selected, so keep the approved server side 10 MiB transport and revisit host limits at deployment rather than implementing hypothetical alternatives now.
 
+The approved shared photo infrastructure refactor moves only image processing, crop geometry, the private R2 transport, exact path safeguards, per asset cleanup and two small UI primitives behind compatible Plant wrappers. Plant behaviour and stored paths remain unchanged. EquipmentPhoto is the next approved consumer but has not been added yet. See [Shared photo infrastructure](shared-photo-infrastructure.md).
+
 ## 5. Equipment inventory - complete
 
 The owner has moved Equipment inventory ahead of Care. Equipment operating history, maintenance and electricity calculations are not part of this foundation.

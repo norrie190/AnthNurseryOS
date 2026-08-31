@@ -69,3 +69,24 @@
 .editor input[type='range'] {
   width: min(100%, 24rem);
 }
+.hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.secondaryButton {
+  min-height: 2.85rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.secondaryButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}

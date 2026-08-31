@@ -1,71 +1,29 @@
 import 'server-only';
-import { randomUUID } from 'node:crypto';
-import { z } from 'zod';
+import * as keys from '../../lib/photos/photo-keys';
+import type { PhotoExtension, PhotoVariant } from '../../lib/photos/photo-keys';
 
-export type PhotoExtension = 'jpg' | 'png' | 'webp';
-export type PhotoVariant = 'display' | 'thumbnail';
-const extensionSchema = z.enum(['jpg', 'png', 'webp']);
-export const photoVariantSchema = z.enum(['display', 'thumbnail']);
-const originalPattern = /^plants\/([^/]+)\/([^/]+)\/original\.(jpg|png|webp)$/;
-
+export {
+  photoVariantSchema,
+  type PhotoExtension,
+  type PhotoVariant,
+} from '../../lib/photos/photo-keys';
+// Plant callers cannot choose a different namespace.
 export function createPhotoKeys(plantId: string, extension: PhotoExtension, revision?: string) {
-  const owner = z.uuid().parse(plantId).toLowerCase();
-  const assetId = randomUUID();
-  const original = `plants/${owner}/${assetId}/original.${extensionSchema.parse(extension)}`;
-  return {
-    original,
-    display: photoVariantKey(original, 'display'),
-    thumbnail: photoVariantKey(original, 'thumbnail', revision),
-  };
+  return keys.createPhotoKeys('plants', plantId, extension, revision);
 }
-
 export function parsePhotoStorageKey(key: string) {
-  const match = originalPattern.exec(key);
-  if (
-    !match ||
-    match[0] !== key ||
-    !z.uuid().safeParse(match[1]).success ||
-    !z.uuid().safeParse(match[2]).success
-  ) {
-    throw new Error('Invalid Plant photo storage key.');
-  }
-  return { plantId: match[1], assetId: match[2], extension: extensionSchema.parse(match[3]) };
+  const parsed = keys.parsePhotoStorageKey('plants', key);
+  return { plantId: parsed.ownerId, assetId: parsed.assetId, extension: parsed.extension };
 }
-
-export function photoAssetPrefix(originalKey: string): string {
-  parsePhotoStorageKey(originalKey);
-  // Keep the trailing slash: an adjacent asset must never match this prefix.
-  return originalKey.slice(0, originalKey.lastIndexOf('/') + 1);
+export function photoAssetPrefix(originalKey: string) {
+  return keys.photoAssetPrefix('plants', originalKey);
 }
-
-export function assertPhotoAssetObjectKey(originalKey: string, key: string): void {
-  const prefix = photoAssetPrefix(originalKey);
-  if (!key.startsWith(prefix)) throw new Error('Object is outside the Plant photo asset.');
-  assertPhotoObjectKey(key);
+export function assertPhotoAssetObjectKey(originalKey: string, key: string) {
+  return keys.assertPhotoAssetObjectKey('plants', originalKey, key);
 }
-
-export function photoVariantKey(
-  original: string,
-  variant: PhotoVariant,
-  revision?: string | null,
-): string {
-  parsePhotoStorageKey(original);
-  photoVariantSchema.parse(variant);
-  if (revision != null) z.uuid().parse(revision);
-  return (
-    original.slice(0, original.lastIndexOf('/') + 1) +
-    (variant === 'thumbnail' && revision ? `thumbnails/${revision}.webp` : `${variant}.webp`)
-  );
+export function photoVariantKey(original: string, variant: PhotoVariant, revision?: string | null) {
+  return keys.photoVariantKey('plants', original, variant, revision);
 }
-
-export function assertPhotoObjectKey(key: string): void {
-  const revision = /\/thumbnails\/([^/]+)\.webp$/.exec(key);
-  if (revision) {
-    if (revision.index + revision[0].length !== key.length) throw new Error('Invalid photo key.');
-    z.uuid().parse(revision[1]);
-    parsePhotoStorageKey(key.slice(0, revision.index) + '/original.webp');
-    return;
-  }
-  const original = key.replace(/\/(display|thumbnail)\.webp$/, '/original.webp');
-  parsePhotoStorageKey(original);
+export function assertPhotoObjectKey(key: string) {
+  return keys.assertPhotoObjectKey('plants', key);
 }

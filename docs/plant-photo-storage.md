@@ -53,7 +53,9 @@ The upload form and endpoint must not accept caller supplied photo IDs, storage 
 
 ## Application boundaries
 
-Routes and endpoint composition stay in src/app. Plant photo rules, validation, processing, queries and the small storage boundary stay in src/modules/plants. Database and provider credentials remain behind server only modules. No generic repository, upload framework or multiple provider implementations are needed.
+Routes and endpoint composition stay in src/app. Plant photo ownership, persistence, queries, concurrency, routes, actions and gallery composition stay in src/modules/plants. Neutral image validation and processing, crop geometry, exact key validation, private R2 transport and targeted cleanup live in `src/lib/photos`. The crop selector and ordinary image fallback live in `src/components/photos`. Thin Plant wrappers fix the storage namespace to `plants` and translate neutral image errors back to PlantError, preserving the existing browser contract. The full split is recorded in [Shared photo infrastructure](shared-photo-infrastructure.md).
+
+EquipmentPhoto is the approved next consumer of these mechanics, but it is not implemented by this refactor. There is no polymorphic model, generic repository, generic gallery, upload framework or second provider implementation.
 
 The operations are uploadPlantPhoto and setPrimaryPlantPhoto, with small reads for the gallery, primary thumbnail and photo delivery. Exact signatures are recorded in the data layer notes. The upload endpoint handles the browser boundary; the service owns rules, storage coordination and the database transaction. Photo work stays outside createPlant and never allocates or resets an ANT reference.
 

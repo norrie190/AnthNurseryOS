@@ -75,6 +75,35 @@ test('asset deletion paginates only the exact folder and removes original, displ
   expect(calls.some((command) => command.constructor.name === 'HeadObjectCommand')).toBe(false);
 });
 
+test('Plant storage rejects Equipment paths while the closed Equipment scope accepts only its own paths', async () => {
+  const plantStorage = await mockedStorage();
+  const shared = await import('../../src/lib/photos/photo-storage');
+  const keyHelpers = await import('../../src/lib/photos/photo-keys');
+  const equipmentStorage = shared.getPhotoStorage('equipment');
+  const plantKey = createPhotoKeys(randomUUID(), 'jpg').original;
+  const equipmentKey = keyHelpers.createPhotoKeys('equipment', randomUUID(), 'jpg').original;
+  const upload = (key: string) => ({
+    key,
+    body: Buffer.from('fixture'),
+    contentType: 'image/jpeg',
+    uploadId: randomUUID(),
+  });
+  await expect(plantStorage.upload(upload(equipmentKey))).rejects.toThrow('namespace');
+  await expect(equipmentStorage.upload(upload(plantKey))).rejects.toThrow('namespace');
+  expect(sdk.send).not.toHaveBeenCalled();
+  sdk.send.mockResolvedValue({});
+  await equipmentStorage.upload(upload(equipmentKey));
+  expect(sdk.send).toHaveBeenCalledOnce();
+  expect(sdk.send.mock.calls[0][0].input.Key).toBe(equipmentKey);
+});
+
+test('unknown storage scopes are rejected before configuration or provider access', async () => {
+  const { getPhotoStorage } = await import('../../src/lib/photos/photo-storage');
+  expect(() => getPhotoStorage('media' as 'plants')).toThrow();
+  expect(sdk.configure).not.toHaveBeenCalled();
+  expect(sdk.send).not.toHaveBeenCalled();
+});
+
 test.each(['plants/', '../original.png', 'https://example.invalid/original.png'])(
   'asset removal rejects arbitrary prefix/key %s without SDK calls',
   async (key) => {
