@@ -2,7 +2,7 @@
 
 ## Scope
 
-Plant Management includes `/plants`, `/plants/new` and `/plants/[plantId]`. The list shows saved non archived Plants, with an Add Plant link and a link to each record. The detail route uses the internal UUID, with the ANT reference prominent on the page. These slices, Edit Plant and Archive/Restore are committed. Archive behaviour, including `/plants/archived`, is documented in `plant-archiving.md`; editing remains documented in `plant-editing.md`. Photo storage architecture is the current documentation checkpoint, recorded in [Plant photo storage](plant-photo-storage.md), with no photo UI implemented yet.
+Plant Management includes `/plants`, `/plants/new` and `/plants/[plantId]`. The list shows saved non archived Plants, with an Add Plant link and a link to each record. The detail route uses the internal UUID, with the ANT reference prominent on the page. These slices, Edit Plant and Archive/Restore are committed. Archive behaviour, including `/plants/archived`, is documented in `plant-archiving.md`; editing remains documented in `plant-editing.md`. The photo architecture is committed and its storage and data layer is in review, recorded in [Plant photo storage](plant-photo-storage.md) and [Plant photo data layer](plant-photo-data-layer.md). No photo UI is implemented yet.
 
 The existing database models, migrations, ANT sequence and creation behaviour are unchanged. The detail page also links to `/plants/[plantId]/edit`. Add and Edit reuse the Plant form. This document covers browsing and creation; archive and restore use their separate documented operations. Photos, Location management and other nursery features are not part of this browser slice.
 

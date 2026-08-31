@@ -4,7 +4,7 @@
 
 Cloudflare R2 is the approved photo storage provider. Files will live in a private bucket, while PostgreSQL will continue to hold PlantPhoto metadata only. The existing PlantPhoto fields are sufficient. A new PostgreSQL partial unique index is approved to guarantee at most one primary photo per Plant.
 
-This checkpoint is documentation only: `docs: define plant photo storage architecture`. No R2 dependencies or configuration, bucket, Prisma changes, migration, upload endpoint, image processing, gallery or list thumbnails are included. The decisions below describe the implementation to follow after this documentation is reviewed.
+The architecture documentation checkpoint is committed. The current checkpoint, `feat: add plant photo storage and data layer`, implements these rules for review without a browser upload endpoint, gallery or list thumbnails. No real R2 bucket has been used. Exact operation contracts, implementation details and account setup are in [Plant photo data layer](plant-photo-data-layer.md).
 
 ## Why R2
 
@@ -57,7 +57,7 @@ Routes and endpoint composition stay in src/app. Plant photo rules, validation, 
 
 The planned operations are uploadPlantPhoto and setPrimaryPlantPhoto, with small reads for the gallery, primary thumbnail and photo delivery. Names and exact signatures will be implemented in the later data layer checkpoint. The upload endpoint handles the browser boundary; the service owns rules, storage coordination and the database transaction. Photo work stays outside createPlant and never allocates or resets an ANT reference.
 
-Image processing will run in the Node server. Declare the processing library directly if application code imports it, even when it already exists as an indirect dependency. R2 SDK and processing dependencies will be selected and installed only during implementation, not this checkpoint.
+Image processing runs in the Node server. Sharp is declared directly because application code imports it, alongside the R2 S3 SDK and signing package. There is no alternative provider or generic upload framework.
 
 ## Upload lifecycle
 
@@ -96,7 +96,7 @@ Choosing another primary must verify that the photo belongs to the target Plant,
 
 The approved PostgreSQL partial unique index will enforce uniqueness of plantId only for rows where isPrimary is true. Nonprimary photos remain unrestricted. This guarantees at most one primary; the service supplies the first primary and handles switching. It is not a requirement that every Plant have a photo.
 
-The index must be introduced in a new migration during the data layer checkpoint. Never edit either existing migration. Review existing photo data before applying it; if conflicting primary rows exist, stop for a decision rather than silently changing history. Document and test the index alongside the project's existing custom SQL. It has not been created or applied by this documentation checkpoint. See [database migration notes](database-migrations.md).
+The index is introduced in the new data layer migration, without editing either existing migration. The preflight inspection found zero photo rows in development and test, so there were no conflicting primaries to resolve. Future conflicting history must still be reviewed rather than silently rewritten. The index is documented and tested alongside the project's existing custom SQL. See [database migration notes](database-migrations.md).
 
 Photo deletion is not included. If it is designed later, replacement of a deleted primary must be atomic with the metadata change, choosing a deterministic remaining photo or leaving no primary when none remain. That future rule does not authorise deletion now.
 
@@ -144,9 +144,9 @@ Do not upload test images to the owner's real development storage or account wit
 
 ## Delivery checkpoints
 
-The current checkpoint is `docs: define plant photo storage architecture`. It records these decisions without implementation or a commit until owner review.
+The architecture checkpoint, `docs: define plant photo storage architecture`, is complete and committed.
 
-The later data layer checkpoint is `feat: add plant photo storage and data layer`. It will introduce the selected dependencies and storage configuration, processing and restricted operations, targeted failure cleanup, the new primary uniqueness migration and focused tests. Its migration must be inspected before it is applied.
+The current checkpoint is `feat: add plant photo storage and data layer`. It introduces the selected dependencies and storage configuration, processing and restricted operations, targeted failure cleanup, the new primary uniqueness migration and focused tests. Its migration was inspected before application. Real provider verification remains subject to separate approval. The owner will review and commit the work.
 
 The later browser checkpoint is `feat: add plant photo gallery and list images`. It will connect upload and primary selection to the detail page and add the primary thumbnail to the responsive list, with UI and workflow tests.
 

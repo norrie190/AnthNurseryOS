@@ -64,13 +64,13 @@ Planned checkpoints:
 3. Plant list with useful empty, loading, and error states, complete and committed
 4. Edit Plant, including parentage and purchase changes, complete and committed
 5. Archive and restore Plant, complete and committed
-6. Plant photos, storage architecture approved; documentation checkpoint in review
+6. Plant photos, architecture committed; storage and data layer in review
 
 Each checkpoint should include the tests needed for its rules and regressions.
 
-The current checkpoint is `docs: define plant photo storage architecture`. Cloudflare R2 with private storage is approved, with original retention, processed display and thumbnail copies, targeted failure cleanup and a future primary photo uniqueness index. This checkpoint records the decisions only. It does not configure storage, install dependencies, change Prisma, create migrations or implement uploads, processing, the gallery or list thumbnails. See [Plant photo storage](plant-photo-storage.md) for the full design.
+The photo architecture checkpoint is committed. Cloudflare R2 with private storage is approved, with original retention, processed display and thumbnail copies, targeted failure cleanup and a primary photo uniqueness index. See [Plant photo storage](plant-photo-storage.md) for the full design.
 
-After documentation review, photo delivery is split into two further checkpoints. `feat: add plant photo storage and data layer` will add storage integration, validation and processing, restricted photo operations, targeted cleanup, the new reviewed partial unique index migration and tests. `feat: add plant photo gallery and list images` will connect the browser workflow and primary thumbnails to the existing pages.
+The current checkpoint is `feat: add plant photo storage and data layer`. It adds storage integration, validation and processing, restricted photo operations, targeted cleanup, the new reviewed partial unique index migration and tests. It contains no HTTP photo endpoints or UI. Real R2 verification waits for separate approval and development bucket setup. The implementation and setup notes are in [Plant photo data layer](plant-photo-data-layer.md). The later checkpoint, `feat: add plant photo gallery and list images`, will connect the bounded browser upload workflow and primary thumbnails to the existing pages.
 
 The first implementation will not include photo deletion, a general orphan/reconciliation scanner, broad bucket cleanup, authentication, bulk uploads or advanced image tools. No production host has been selected, so keep the approved server side 10 MiB transport and revisit host limits at deployment rather than implementing hypothetical alternatives now.
 

@@ -37,9 +37,9 @@ The initial statuses are:
 
 Breeding is not a Plant status. A growing plant can participate in breeding later through breeding records.
 
-The first photo design is approved but not implemented. Photographs will use private Cloudflare R2 storage, with metadata only in PostgreSQL. Retain the validated original privately and serve processed display and thumbnail WebP copies with EXIF/GPS removed. Initial uploads accept JPEG, PNG and static WebP up to 10 MiB and 50 MP decoded; HEIC/HEIF is deferred.
+The first photo storage and data layer is implemented for review; browser uploads, the gallery and list images remain a later checkpoint. Photographs use private Cloudflare R2 storage, with metadata only in PostgreSQL. Retain the validated original privately and serve processed display and thumbnail WebP copies with EXIF/GPS removed. Initial uploads accept JPEG, PNG and static WebP up to 10 MiB and 50 MP decoded; HEIC/HEIF is deferred.
 
-The first photo becomes primary automatically. Each Plant may have at most one primary, protected by an approved future partial unique index and atomic service operations. Archived Plants retain their photos and may receive new ones or change the primary without being restored. Photo deletion is not included. Failure handling is limited to targeted cleanup of the unsuccessful upload's objects and diagnostic logging; no general reconciliation scanner or broad cleanup is planned. The full design and local security boundaries are in [Plant photo storage](plant-photo-storage.md).
+The first photo becomes primary automatically. Each Plant may have at most one primary, protected by a partial unique index and atomic service operations. Archived Plants retain their photos and may receive new ones or change the primary without being restored. Photo deletion is not included. Failure handling is limited to targeted cleanup of the unsuccessful upload's objects and diagnostic logging; no general reconciliation scanner or broad cleanup is planned. The full design and local security boundaries are in [Plant photo storage](plant-photo-storage.md).
 
 ### Care
 

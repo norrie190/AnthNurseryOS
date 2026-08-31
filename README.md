@@ -35,7 +35,7 @@ npx pnpm@11.19.0 db:generate
 npx pnpm@11.19.0 dev
 ```
 
-Then open [http://127.0.0.1:3000/plants](http://127.0.0.1:3000/plants) to browse your saved Plants or choose Add Plant. The list shows non archived records, newest first. Select a row to open its detail page. The form records a Plant through the existing creation service and opens its detail page after saving. The ANT reference is assigned automatically. The detail page also offers Edit Plant and Archive Plant. Archive requires confirmation and preserves the record and its status. View Archived opens `/plants/archived`, where you can open a preserved Plant and restore it. Photos and other nursery features remain later work.
+Then open [http://127.0.0.1:3000/plants](http://127.0.0.1:3000/plants) to browse your saved Plants or choose Add Plant. The list shows non archived records, newest first. Select a row to open its detail page. The form records a Plant through the existing creation service and opens its detail page after saving. The ANT reference is assigned automatically. The detail page also offers Edit Plant and Archive Plant. Archive requires confirmation and preserves the record and its status. View Archived opens `/plants/archived`, where you can open a preserved Plant and restore it. The photo storage and data layer is implemented for review, but browser photo uploads, the gallery and list images remain a later checkpoint.
 
 The development and local production commands listen on `127.0.0.1` only. There is no authentication yet, so do not expose the app through a public tunnel or network proxy. This is a local nursery workflow for now, not a deployment ready public service.
 
@@ -128,6 +128,16 @@ Both tests and the test migration command require a local `TEST_DATABASE_URL` wi
 Run `test`, `test:db`, `lint`, `format`, `typecheck`, `db:validate`, `db:generate`, and `build` before handing over a database milestone.
 
 ## Reviewing Plant Management
+
+### Photo storage setup
+
+Cloudflare R2 provides private photo storage, with Sharp generating display and thumbnail WebP copies. The three direct dependencies are `@aws-sdk/client-s3`, `@aws-sdk/s3-request-presigner` and `sharp`. Ordinary Plant use and builds do not need storage credentials until a real photo operation is requested.
+
+The four R2 settings in `.env.example` are deliberately blank. Put real development values only in the ignored project `.env`: `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` and `R2_BUCKET_NAME`. Do not use NEXT_PUBLIC variables, paste secrets into chat or commit credentials. Create a separate private development bucket and scope its S3 Object Read & Write credentials to that bucket. The exact setup and proposed disposable smoke test are in [the photo data layer notes](docs/plant-photo-data-layer.md#configure-a-real-development-bucket-only-when-ready). No real storage test has been performed; approval is required before uploading anything to the owner's account.
+
+Photo unit/image tests run with `test`, and photo database tests with `test:db`. They use synthetic local images and a fake storage boundary, never a real R2 account. The real adapter refuses automated test environments. The reviewed new migration adds a partial unique primary photo index; apply it with the existing migration commands, not `db push`. Browser upload and delivery endpoints are not included yet.
+
+### Browser workflow
 
 The browser workflow and manual checks are described in [docs/plant-browser-flow.md](docs/plant-browser-flow.md). Automated coverage uses Vitest, Testing Library and the separate test database. There is no Playwright suite or special browser fixture route.
 

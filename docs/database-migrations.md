@@ -26,13 +26,13 @@ The creation operation calls `nextval` inside its transaction, then formats the 
 
 The sequence is allocation infrastructure, not an additional Plant property or future feature model. It does not enforce reference immutability against direct SQL. That remains an application responsibility, with the existing unique constraint as duplicate protection.
 
-## Approved primary photo index, not yet implemented
+## Primary photo index migration
 
-The photo architecture approves a new PostgreSQL partial unique index on PlantPhoto.plantId, limited to rows where isPrimary is true. It will reject a second primary for the same Plant while allowing multiple nonprimary photographs and independent primaries on other Plants. Atomic selection changes in the photo service will complement this database constraint. No new PlantPhoto fields are required.
+`prisma/migrations/20260831113000_add_primary_plant_photo_index/migration.sql` adds a PostgreSQL partial unique index on PlantPhoto.plantId, limited to rows where isPrimary is true. It rejects a second primary for the same Plant while allowing multiple nonprimary photographs and independent primaries on other Plants. Atomic selection changes in the photo service complement this database constraint. No new PlantPhoto fields are required.
 
-This index belongs in a new migration at the photo data layer checkpoint. No migration has been created or applied for it during the documentation checkpoint, and previous migrations must not be edited. Check for conflicting existing primary records before applying it; if any exist, stop for review rather than silently changing data. Once implemented, retain the constraint in migration history and review future migrations for accidental removal, alongside the existing cost checks, Location uniqueness and ANT sequence.
+This is a new migration, enclosed in BEGIN and COMMIT; neither earlier migration was edited. Before application, both local databases had zero photo records and no conflicting primaries. Development had one existing Plant, which was left untouched. The migration was reviewed before deployment. On another database, check for conflicting existing primary records before applying it; if any exist, stop for review rather than silently changing data. Retain the constraint in migration history and review future migrations for accidental removal, alongside the existing cost checks, Location uniqueness and ANT sequence.
 
-Tests must verify the index exists and rejects multiple primaries, permits multiple nonprimary rows, and works with atomic primary changes. Use only the guarded PostgreSQL test database and rolled back fixtures. The approved design is in [Plant photo storage](plant-photo-storage.md).
+The photo database tests verify the installed index and migration, reject multiple primaries, permit multiple nonprimary rows, and exercise atomic primary changes and rollback. They use only the guarded PostgreSQL test database and rolled back fixtures. The approved design is in [Plant photo storage](plant-photo-storage.md), with operation details in [Plant photo data layer](plant-photo-data-layer.md).
 
 ## Applying migrations
 

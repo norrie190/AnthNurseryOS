@@ -2,7 +2,7 @@
 
 ## Status of this document
 
-This is the approved Plant Management data design. The Prisma schema, migrations, creation data layer, initial browsing workflow, Edit Plant and Archive/Restore are committed. The approved photo storage design is being documented before implementation, with no new PlantPhoto fields required. Operation behaviour is documented in `plant-creation.md`, `plant-editing.md`, `plant-archiving.md` and `plant-photo-storage.md`.
+This is the approved Plant Management data design. The Prisma schema, initial migrations, creation data layer, initial browsing workflow, Edit Plant, Archive/Restore and photo architecture are committed. The photo storage and data layer is implemented for review, with no new PlantPhoto fields required. Operation behaviour is documented in `plant-creation.md`, `plant-editing.md`, `plant-archiving.md`, `plant-photo-storage.md` and `plant-photo-data-layer.md`.
 
 This stage includes Plant, PlantParentage, PlantPurchase, PlantPhoto, and Location only. Care, observations, breeding, pollen, seed batches, seedlings, ancestry, and sales remain outside the schema until their own phases.
 
@@ -127,7 +127,7 @@ A Plant can have any number of PlantPhoto records. The database stores photo met
 
 `storageKey` is not a local path or public URL. Cloudflare R2 is the approved provider, using a private bucket. The server generates an immutable key for the retained original, with known display and thumbnail WebP objects in the same asset folder. The storage boundary resolves those keys; provider credentials and bucket configuration do not belong in PlantPhoto. Original filenames remain metadata only. The existing fields support this without storing image bytes, signed URLs or separate derivative rows.
 
-At most one photo may be primary for a Plant at a time. The first upload becomes primary automatically, and the photo data layer will handle changes atomically under the owning Plant's row lock. A PostgreSQL partial unique index on plantId for rows where isPrimary is true is approved as database protection. It must be added in a new reviewed migration during implementation; it has not been created or applied by this documentation checkpoint. Existing migrations must not be edited.
+At most one photo may be primary for a Plant at a time. The first upload becomes primary automatically, and the photo data layer handles changes atomically under the owning Plant's row lock. A PostgreSQL partial unique index on plantId for rows where isPrimary is true supplies database protection. It was added in a new reviewed migration after confirming development and test had no conflicting photo rows. Existing migrations were not edited.
 
 Archived Plants may receive photos and change the primary selection while retaining their archive timestamp and status. Photo deletion remains outside this milestone. Upload limits, original retention, private delivery and targeted cleanup rules are in [Plant photo storage](plant-photo-storage.md).
 
@@ -177,4 +177,4 @@ The first migration adds three PostgreSQL check constraints to reject negative c
 
 Creation now generates references, rejects caller supplied identity and timestamps, validates parent roles and existing parent IDs, and rejects archived or missing Locations. Blank parentage does not create an empty record. Omitting purchase creates no purchase record, while an explicit empty purchase group preserves the fact that a purchase is being recorded with unknown details.
 
-The update service enforces identity and reference immutability, parentage choice rules and ancestry cycle prevention. Direct privileged SQL is not prevented from editing references or introducing cycles by a trigger. Location cycle validation remains for its later stage. Primary photo service rules and the approved partial unique index are documented but not implemented yet. Database tests exercise the implemented constraints and Plant operations against the separate PostgreSQL test database without keeping fixture records.
+The update service enforces identity and reference immutability, parentage choice rules and ancestry cycle prevention. Direct privileged SQL is not prevented from editing references or introducing cycles by a trigger. Location cycle validation remains for its later stage. Primary photo service rules and the partial unique index are implemented, while the browser photo workflow remains later work. Database tests exercise the implemented constraints and Plant operations against the separate PostgreSQL test database without keeping fixture records.

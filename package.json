@@ -32,6 +32,8 @@
     "db:validate": "prisma validate"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1121.0",
+    "@aws-sdk/s3-request-presigner": "3.1121.0",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "lucide-react": "1.37.0",
@@ -39,6 +41,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "0.0.1",
+    "sharp": "0.35.4",
     "zod": "4.5.4"
   },
   "devDependencies": {
