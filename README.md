@@ -127,6 +127,12 @@ Both tests and the test migration command require a local `TEST_DATABASE_URL` wi
 
 Run `test`, `test:db`, `lint`, `format`, `typecheck`, `db:validate`, `db:generate`, and `build` before handing over a database milestone.
 
+## Equipment database foundation
+
+Equipment inventory is the next domain, before Care. This checkpoint adds only Equipment, EquipmentPurchase and a separate PostgreSQL EQP sequence, reusing the existing Location model. Apply the two new reviewed migrations using the existing development/test commands above. No new dependencies or environment variables are required.
+
+Equipment services and screens are not implemented yet; /equipment remains the existing placeholder. No Equipment records or EQP references are created during setup. The approved fields, item shipping allocation, usesPower definition and future energy boundaries are in [Equipment data model](docs/equipment-data-model.md). [Migration notes](docs/database-migrations.md#equipment-inventory-foundation) describe the SQL and schema test command that preserves both ANT sequence states.
+
 ## Reviewing Plant Management
 
 ### Photo storage setup

@@ -4,7 +4,7 @@
 
 Anth Nursery OS is a management app for one small nursery. It starts with my own Anthurium collection and breeding programme, so it needs to be useful day to day as well as a good software project to show in a portfolio.
 
-The first MVP is plants, care, equipment, expenses, and a dashboard. Breeding and ancestry are important, but they are later phases and should not make the first version more complicated than it needs to be.
+The first MVP is plants, equipment inventory, care, expenses, and a dashboard. The owner has moved Equipment inventory ahead of Care; equipment operation history, maintenance and running costs remain separate later checkpoints. Breeding and ancestry are later phases and should not make the first version more complicated than it needs to be.
 
 ## Choices made for the foundation
 
@@ -47,7 +47,7 @@ The `components`, `lib`, and `modules` folders are not being created just to mak
 
 ## Database starting point
 
-The approved Plant Management schema, initial migration and separate reference sequence migration are committed. They contain only Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. The creation data layer, browser form, detail page, Plant list, Edit Plant and Archive/Restore are committed. Photo architecture and its storage/data layer are complete, including the primary photo index. The gallery and list image checkpoint connects the browser without changing Prisma fields or migrations.
+The original Plant foundation contains Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. Plant creation, browsing, editing, archive/restore and photo features are implemented. The next Equipment schema checkpoint adds only Equipment, EquipmentPurchase and an independent EQP sequence, reusing Location. Equipment services and UI remain unimplemented.
 
 Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. Timestamps use `timestamptz` with millisecond precision, while the purchase date uses a calendar `date`. Foreign keys restrict deletion and ID updates so referenced nursery records cannot disappear through a cascade. Schema limitations and rules reserved for the migration or data layer are recorded in `docs/plant-data-model.md`.
 
@@ -140,6 +140,18 @@ The shared square selector uses oriented image dimensions and supports pointer a
 ## Plant photo deletion
 
 The approved photo deletion checkpoint is a narrow exception to preserving nursery records. A strict `deletePlantPhoto` operation locks the Plant, checks expectedUpdatedAt and photo ownership, removes the selected metadata and promotes a deterministic remaining primary in one transaction. Plant.updatedAt advances strictly; status, archive state, identity and historical relationships stay unchanged. After confirmed commit, the R2 boundary lists and removes only the validated photo asset prefix, including superseded crop revisions. Database failure never triggers blind cleanup. Storage failure after commit leaves the database consistent and returns a warning with safe server diagnostics, without recreating metadata. There is no schema change, job framework or broad cleanup. The route retains the existing local origin protection; public deployment still needs authentication and access checks. Full rules and recovery limits are in [Plant photo deletion](plant-photo-deletion.md).
+
+## Equipment inventory foundation
+
+The owner has approved Equipment as the next domain, beginning with schema only. Equipment represents individual physical items, not quantities. Its UUID is the relationship key; the unique text reference will be assigned as EQP-XXXX by a later service. Category is flexible text defaulting to Other. Name is required; brand, model, serial number, notes, Location and archive date are optional. No EquipmentStatus or category table is added.
+
+usesPower means “This equipment is capable of having electrical consumption tracked by AnthNurseryOS.” It is required without a default and is not a current operating flag or automatic inclusion in cost calculations. No power period, tariff, wattage, hours, energy total or numeric precision decision is included. Those need a separate historical energy design.
+
+EquipmentPurchase is optional and unique per item. Costs use the same integer minor units and null versus zero distinction as Plant purchases, with three custom PostgreSQL nonnegative checks. Shipping is the amount allocated to this item, not automatically an entire shared order's shipping cost. Currency defaults to GBP in varchar(3), and purchaseDate is a calendar date. No Order model or calculated acquisition total is stored.
+
+Both Equipment relationships use Restrict for delete and update. Location gains only its reverse Equipment relation; its hierarchy, uniqueness and existing Plant relationships are unchanged. Equipment has only its primary/reference indexes and locationId index, and EquipmentPurchase has its primary and unique equipmentId indexes. UUIDs and @updatedAt remain Prisma responsibilities, consistent with Plants.
+
+Two new reviewed migrations introduce the inventory tables/checks and separate public.equipment_reference_sequence. The persistent BIGINT sequence starts at 1 with CACHE 1, NO CYCLE and no column ownership; this checkpoint does not allocate it. Existing migrations, Plant records and ANT sequences remain unchanged. Future create/edit/archive services will follow the approved Plant transaction and expectedUpdatedAt patterns, but none is implemented now. Full fields, semantics and scope are in [Equipment data model](equipment-data-model.md), with SQL history in [database migrations](database-migrations.md).
 
 ## Keeping it tidy as it grows
 

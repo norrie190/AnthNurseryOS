@@ -41,29 +41,29 @@ The photo storage and data layer, browser uploads, gallery and list images are i
 
 The first photo becomes primary automatically. Each Plant may have at most one primary, protected by a partial unique index and atomic service operations. Archived Plants retain their photos and may receive new ones, change the primary or explicitly delete a photo without being restored. Photo deletion requires confirmation, preserves other nursery information and promotes the next deterministic photo when the primary is removed. Metadata is deleted transactionally before targeted removal of that photo's exact R2 asset, including superseded thumbnails. Failed cleanup is reported without recreating metadata. There is no general reconciliation scanner or broad cleanup. See [Plant photo storage](plant-photo-storage.md) and [photo deletion](plant-photo-deletion.md).
 
+### Equipment
+
+Equipment inventory is the next domain after Plant Management, ahead of Care. Each record represents one physical item with a UUID and permanent EQP reference. It includes a required name, flexible text category defaulting to Other, optional brand/model/serial number/notes, an optional existing Location and a separate archive date. No EquipmentStatus or quantity record is added.
+
+usesPower means “This equipment is capable of having electrical consumption tracked by AnthNurseryOS.” It is required without a default. It does not mean currently switched on, connected, consuming electricity, or automatically included in running cost calculations. Future EquipmentPowerPeriod records will determine historical operating consumption.
+
+EquipmentPurchase is optional, with seller, order reference, calendar purchase date and individual item costs. Integer minor units preserve null as unknown and zero as known zero, with GBP as the default currency. Shipping is the amount allocated to this specific Equipment item, not automatically the full shipping cost of a shared order. No Order model is included.
+
+The current checkpoint implements only the two database models, reuse of Location, cost constraints and the independent equipment_reference_sequence. Application reference allocation, validation, stale editing, archive/restore and inventory screens will follow in separate reviewed stages. The exact fields and scope are in [Equipment data model](equipment-data-model.md).
+
+Maintenance, photos, operating periods, tariffs and running expenses remain later work. There are no energy calculations or decisions about numeric storage for wattage, tariffs or calculated costs in this checkpoint. Tariff precision and fractional pence must be designed deliberately later. Future equipment upgrades or expansion projects remain outside the first MVP.
+
 ### Care
 
 Care tracking will cover watering and fertilising. Care will be stored as events so the history is kept. Last watered and last fertilised will be calculated from the latest matching events rather than stored as editable fields on Plant.
 
 The watering and fertiliser indicators should show more than colour alone. Watering targets should eventually be configurable per plant rather than using one interval for every plant.
 
-### Equipment
-
-Equipment tracking will cover:
-
-- Name, brand, and model
-- Purchase date and price
-- Current status
-- Maintenance
-- Running expenses
-
-Future equipment upgrades or expansion projects are outside the first MVP.
-
 ### Expenses
 
 Expense tracking will cover electricity and other nursery costs such as fertiliser, growing media, packaging, shipping, and supplies. Equipment running costs should be linkable to the equipment that caused them.
 
-Monetary values must use integer minor units rather than floating point numbers. GBP is the default currency, but records should retain a currency code so the data model is not permanently limited to GBP.
+Purchase amounts use integer minor units rather than floating point numbers. GBP is the default currency, but records retain a currency code so the data model is not permanently limited to GBP. Future electricity tariff and calculation precision requires its own design; do not assume those rates must be stored as whole pence or choose a numeric type for them here.
 
 ### Dashboard
 

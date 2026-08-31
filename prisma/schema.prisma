@@ -1,4 +1,4 @@
-// Approved initial Plant Management schema. Custom SQL constraints live in migrations.
+// Approved Plant and Equipment inventory schema. Custom SQL constraints live in migrations.
 
 generator client {
   provider = "prisma-client"
@@ -94,6 +94,46 @@ model PlantPhoto {
   @@index([plantId, sortOrder])
 }
 
+model Equipment {
+  id           String    @id @default(uuid()) @db.Uuid
+  reference    String    @unique
+  name         String
+  category     String    @default("Other")
+  brand        String?
+  model        String?
+  serialNumber String?
+  notes        String?
+  // Capable of having electrical consumption tracked, not current operating state.
+  usesPower    Boolean
+  locationId   String?   @db.Uuid
+  archivedAt   DateTime? @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(3)
+
+  location Location?          @relation(fields: [locationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  purchase EquipmentPurchase?
+
+  @@index([locationId])
+}
+
+model EquipmentPurchase {
+  id                  String    @id @default(uuid()) @db.Uuid
+  equipmentId         String    @unique @db.Uuid
+  seller              String?
+  orderReference      String?
+  purchaseDate        DateTime? @db.Date
+  // Nonnegative cost checks are defined in the init_equipment_inventory migration.
+  equipmentPriceMinor Int?
+  // Shipping allocated to this item, not automatically the total for a shared order.
+  shippingCostMinor   Int?
+  otherCostMinor      Int?
+  currency            String    @default("GBP") @db.VarChar(3)
+  createdAt           DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime  @updatedAt @db.Timestamptz(3)
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
 model Location {
   id               String    @id @default(uuid()) @db.Uuid
   name             String
@@ -104,8 +144,9 @@ model Location {
   archivedAt       DateTime? @db.Timestamptz(3)
 
   plants         Plant[]
-  parentLocation Location?  @relation("LocationHierarchy", fields: [parentLocationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  childLocations Location[] @relation("LocationHierarchy")
+  equipment      Equipment[]
+  parentLocation Location?   @relation("LocationHierarchy", fields: [parentLocationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  childLocations Location[]  @relation("LocationHierarchy")
 
   // The migration adds NULLS NOT DISTINCT so root names are unique too.
   @@unique([parentLocationId, name])

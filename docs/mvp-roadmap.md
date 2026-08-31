@@ -53,7 +53,7 @@ Suggested commit:
 feat: add initial plant management schema
 ```
 
-## 4. Plant Management feature - current
+## 4. Plant Management feature - complete
 
 Build Plant Management in small vertical slices rather than one large change.
 
@@ -64,7 +64,7 @@ Planned checkpoints:
 3. Plant list with useful empty, loading, and error states, complete and committed
 4. Edit Plant, including parentage and purchase changes, complete and committed
 5. Archive and restore Plant, complete and committed
-6. Plant photos, architecture and storage/data layer complete; browser gallery and list images in review
+6. Plant photos, storage, browser gallery, list images, thumbnail crops and confirmed photo deletion, complete
 
 Each checkpoint should include the tests needed for its rules and regressions.
 
@@ -72,11 +72,21 @@ The owner has also approved square thumbnail crops during upload and on saved ph
 
 The photo architecture checkpoint is committed. Cloudflare R2 with private storage is approved, with original retention, processed display and thumbnail copies, targeted failure cleanup and a primary photo uniqueness index. See [Plant photo storage](plant-photo-storage.md) for the full design.
 
-The storage and data layer is complete, including its separately approved real R2 smoke test. The implementation and setup notes are in [Plant photo data layer](plant-photo-data-layer.md). The current checkpoint, `feat: add plant photo gallery and list images`, connects a bounded upload form, primary selection, private image delivery and a gallery to Plant details, plus primary thumbnails on the responsive lists. It adds no dependencies, schema changes or migrations. See [Plant photo browser workflow](plant-photo-browser-flow.md) for behaviour and review steps.
+The storage and data layer is complete, including its separately approved real R2 smoke test. The implementation and setup notes are in [Plant photo data layer](plant-photo-data-layer.md). The completed browser checkpoint, `feat: add plant photo gallery and list images`, connects a bounded upload form, primary selection, private image delivery and a gallery to Plant details, plus primary thumbnails on the responsive lists. It added no dependencies, schema changes or migrations. See [Plant photo browser workflow](plant-photo-browser-flow.md) for behaviour and review steps.
 
 The subsequent approved [photo deletion checkpoint](plant-photo-deletion.md) adds only confirmed permanent photo removal, deterministic primary replacement and cleanup of that exact photo asset after the database commit. No schema change is needed. A general orphan/reconciliation scanner, broad bucket cleanup, authentication, bulk uploads and advanced image tools remain outside scope. No production host has been selected, so keep the approved server side 10 MiB transport and revisit host limits at deployment rather than implementing hypothetical alternatives now.
 
-## 5. Care tracking
+## 5. Equipment inventory - current
+
+The owner has moved Equipment inventory ahead of Care. Equipment operating history, maintenance and electricity calculations are not part of this foundation.
+
+The approved design is in [Equipment data model](equipment-data-model.md). The current checkpoint is schema only: Equipment, optional EquipmentPurchase, reuse of the existing Location model, purchase cost checks and a separate EQP sequence. Both new migrations have been reviewed and applied to development and the guarded test database. No Equipment records are seeded, no reference is allocated, and the Equipment page is still a placeholder. The sequence is included now at the owner's request, not delayed until the data layer.
+
+Next reviewable checkpoints will add the restricted Equipment data layer, followed by the list/add/detail/edit/archive/restore browser flow. Those services and screens are not implemented yet. No category table, EquipmentStatus, photos, Order model or energy tables are included.
+
+usesPower describes capability for consumption tracking, not current operation or inclusion in running cost totals. Shipping is allocated to each individual item. Historical energy periods, tariffs, fractional pence and numeric storage decisions require a separate future design.
+
+## 6. Care tracking
 
 - Watering events
 - Fertiliser events
@@ -85,15 +95,16 @@ The subsequent approved [photo deletion checkpoint](plant-photo-deletion.md) add
 - Accessible care status indicators
 - Care history
 
-## 6. Equipment and expenses
+## 7. Expenses and later Equipment operation tracking
 
-- Equipment records and archive/status behaviour
-- Purchase and maintenance information
 - General nursery expenses
-- Equipment running expenses
-- Safe money calculations using minor units
+- Equipment maintenance and operation history, after their own design review
+- Electricity tariff history and running costs, after their own design review
+- Safe recorded expense amounts without losing unknown versus zero values
 
-## 7. Dashboard
+Inventory alone does not calculate electricity use. Wattage/schedules, effective periods, tariff precision and historical calculation rules remain undecided implementation work. Do not add their tables or choose their numeric representation during the Equipment schema checkpoint.
+
+## 8. Dashboard
 
 Build the approved dashboard layout using real data from completed features.
 
@@ -104,7 +115,7 @@ Build the approved dashboard layout using real data from completed features.
 - Watering overview
 - Recent useful activity where the available data supports it
 
-## 8. MVP review
+## 9. MVP review
 
 - Test the main nursery workflows on desktop and mobile
 - Review accessibility and keyboard use

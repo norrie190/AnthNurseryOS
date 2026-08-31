@@ -4,7 +4,7 @@
 
 This is the approved Plant Management data design. The Prisma schema, initial migrations, creation data layer, initial browsing workflow, Edit Plant, Archive/Restore and photo architecture are committed. The approved thumbnail crop checkpoint extends PlantPhoto with crop metadata and a thumbnail revision. Operation behaviour is documented in `plant-creation.md`, `plant-editing.md`, `plant-archiving.md`, `plant-photo-storage.md`, `plant-photo-data-layer.md` and `plant-photo-crops.md`.
 
-This stage includes Plant, PlantParentage, PlantPurchase, PlantPhoto, and Location only. Care, observations, breeding, pollen, seed batches, seedlings, ancestry, and sales remain outside the schema until their own phases.
+The original Plant stage includes Plant, PlantParentage, PlantPurchase, PlantPhoto, and Location. The separately approved [Equipment inventory foundation](equipment-data-model.md) now adds Equipment and EquipmentPurchase, reusing Location without changing Plant fields or relationships. Care, observations, breeding, pollen, seed batches, seedlings, ancestry, and sales remain outside the schema until their own phases.
 
 ## Simple relationship view
 
@@ -138,6 +138,8 @@ Archived Plants may receive photos and change the primary selection while retain
 ## Location
 
 Locations are reusable physical places. A Plant has zero or one current Location, while one Location can contain many Plants.
+
+The Equipment foundation adds only the reverse Equipment relation to Location. One Location can also contain many Equipment items, each with zero or one current Location. There is no second Location system or new hierarchy behaviour.
 
 | Field              | Required | Purpose                                                          |
 | ------------------ | -------- | ---------------------------------------------------------------- |

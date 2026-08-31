@@ -40,6 +40,59 @@ The photo database tests verify the installed index and migration, reject multip
 
 Preflight found one Plant with one legacy photo in development and no PlantPhoto records in test. The existing photo had a valid original key. Both databases had none of the new columns. The migration was inspected before applying it to development and the guarded test database. There is no backfill, object rewrite or ANT sequence change. Previous migrations, the primary index and historical records remain intact. See [thumbnail crops](plant-photo-crops.md).
 
+## Equipment inventory foundation
+
+This schema only checkpoint adds two new migrations. Existing migrations are unchanged.
+
+`20260831233000_init_equipment_inventory` contains Prisma generated SQL from `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script`. This read only generation step produced only the two approved new tables, their keys and the Equipment Location index. The SQL was inspected before being saved as a new migration, then three custom CHECK constraints and BEGIN/COMMIT were added and reviewed before deployment. No shadow database reset or db push was used.
+
+Equipment has a UUID primary key, unique required text reference, required name, text category default Other, optional brand/model/serialNumber/notes, required boolean usesPower without a default, optional Location and archive date, and millisecond timestamptz creation/update fields. EquipmentPurchase has a UUID primary key, unique required Equipment relationship, optional seller/order/date/costs, GBP currency default in varchar(3), and the same timestamp convention. The only Location schema addition is a Prisma reverse relation; it produces no Location table alteration. UUID generation and updatedAt remain Prisma responsibilities.
+
+Equipment_locationId_fkey and EquipmentPurchase_equipmentId_fkey both specify ON DELETE RESTRICT ON UPDATE RESTRICT. Indexes are Equipment_pkey, Equipment_reference_key, Equipment_locationId_idx, EquipmentPurchase_pkey and EquipmentPurchase_equipmentId_key. There are no unrelated indexes.
+
+Prisma cannot express the three EquipmentPurchase CHECK constraints. They are kept in the reviewed migration SQL, just like the Plant cost checks:
+
+```sql
+ALTER TABLE "EquipmentPurchase"
+    ADD CONSTRAINT "EquipmentPurchase_equipmentPriceMinor_nonnegative" CHECK ("equipmentPriceMinor" >= 0),
+    ADD CONSTRAINT "EquipmentPurchase_shippingCostMinor_nonnegative" CHECK ("shippingCostMinor" >= 0),
+    ADD CONSTRAINT "EquipmentPurchase_otherCostMinor_nonnegative" CHECK ("otherCostMinor" >= 0);
+```
+
+Null passes a check and remains unknown; zero remains a known zero cost. shippingCostMinor is the share allocated to that individual item, not an automatic copy of total shared order shipping. There is no Order model or automatic allocation. These rules must survive future migrations.
+
+`20260831233100_add_equipment_reference_sequence` creates only the independent sequence. Its complete SQL is:
+
+```sql
+-- Independent allocation infrastructure for the later Equipment creation service.
+-- No records or references are allocated here. Imports must coordinate the sequence.
+BEGIN;
+
+CREATE SEQUENCE public.equipment_reference_sequence
+    AS BIGINT
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO MAXVALUE
+    CACHE 1
+    NO CYCLE
+    OWNED BY NONE;
+
+COMMIT;
+```
+
+The later data layer will format its bigint allocation as EQP-0001 and beyond EQP-9999. Neither migration creates Equipment records, calls nextval or connects reference to a column default. There is no import/backfill logic because the Equipment tables are new. Do not reset numbering to remove gaps. Equipment reference immutability, validation, stale editing and archive operations are future application behaviour, not added SQL triggers.
+
+Preflight found no Equipment tables or EQP sequence in either local database. Development contained one Plant, its parentage and purchase, two photos and no Locations; the test database contained no nursery rows. Existing row fingerprints, custom constraints/indexes and ANT sequence states were captured before deployment. Both new migrations were inspected and deployed to development and the guarded test database; both histories contain six completed migrations. The existing rows, constraints, indexes and ANT definitions/states matched afterwards. Both new Equipment tables remain empty and EQP remains at last_value 1 with is_called false in both databases.
+
+`equipment-schema.test.ts` uses rolled back fixtures and checks the actual PostgreSQL catalogue, costs, defaults, required fields, foreign keys, indexes, dates and generated Prisma relationships. It only reads sequence state. For this checkpoint the relevant database regression command is:
+
+```text
+pnpm test:db --exclude tests/database/plant-service.test.ts --exclude tests/database/plant-browser-boundary.test.ts
+```
+
+Those two existing creation suites intentionally allocate ANT values, so they are excluded here to preserve even the test ANT state. The full unit/component suite still runs. This does not disable those tests in the repository or change the normal full database command for later milestones. No test resets a database, truncates a table or changes development fixtures.
+
 ## Applying migrations
 
 `pnpm db:deploy` applies existing migration files to `DATABASE_URL`. It does not generate a migration. `pnpm db:migrate:test` applies the same migration files to `TEST_DATABASE_URL` through a separate Prisma process, without changing `.env`.
