@@ -76,17 +76,23 @@ The storage and data layer is complete, including its separately approved real R
 
 The subsequent approved [photo deletion checkpoint](plant-photo-deletion.md) adds only confirmed permanent photo removal, deterministic primary replacement and cleanup of that exact photo asset after the database commit. No schema change is needed. A general orphan/reconciliation scanner, broad bucket cleanup, authentication, bulk uploads and advanced image tools remain outside scope. No production host has been selected, so keep the approved server side 10 MiB transport and revisit host limits at deployment rather than implementing hypothetical alternatives now.
 
-## 5. Equipment inventory - current
+## 5. Equipment inventory - complete
 
 The owner has moved Equipment inventory ahead of Care. Equipment operating history, maintenance and electricity calculations are not part of this foundation.
 
-The approved design is in [Equipment data model](equipment-data-model.md). The schema and data layer checkpoints are committed: Equipment, optional EquipmentPurchase, reuse of Location, purchase cost checks, a separate EQP sequence and restricted creation/edit/archive/restore services. The current checkpoint adds the [inventory browser workflow](equipment-browser-flow.md), without migrations or development fixtures.
+The approved design is in [Equipment data model](equipment-data-model.md). The schema, data layer and [inventory browser workflow](equipment-browser-flow.md) checkpoints are committed: Equipment, optional EquipmentPurchase, reuse of Location, purchase cost checks, a separate EQP sequence and restricted creation/edit/archive/restore services and pages.
 
-List, add, detail, edit, archive and restore are now available through Equipment pages and server actions. Review this browser checkpoint before choosing the next feature. No category table, EquipmentStatus, photos, Order model or energy tables are included.
+List, add, detail, edit, archive and restore are available through Equipment pages and server actions. No category table, EquipmentStatus, photos or Order model is included in inventory.
 
-usesPower describes capability for consumption tracking, not current operation or inclusion in running cost totals. Shipping is allocated to each individual item. Historical energy periods, tariffs, fractional pence and numeric storage decisions require a separate future design.
+usesPower describes capability for consumption tracking, not current operation or inclusion in running cost totals. Shipping is allocated to each individual item. Energy history has its own approved design and checkpoints below.
 
-## 6. Care tracking
+## 6. Equipment energy history - current schema checkpoint
+
+The owner approved [Equipment energy history](equipment-energy.md) before Care. This checkpoint adds only EquipmentPowerPeriod, ElectricityTariff, the reviewed migration, database constraints and schema tests. No energy records are seeded.
+
+Decimal watts/hours/rates, DATE intervals, GBP only tariffs, void reasons and nonvoid overlap protection are implemented at the database level. Subsequent reviewed checkpoints will add restricted services and stale protection, exact derived calculations and coverage reporting, then Equipment energy forms/history and tariff management. None of those services, calculations or UI is implemented yet. Standing charges, time of use schedules, telemetry and cached monthly totals remain outside scope.
+
+## 7. Care tracking
 
 - Watering events
 - Fertiliser events
@@ -95,16 +101,15 @@ usesPower describes capability for consumption tracking, not current operation o
 - Accessible care status indicators
 - Care history
 
-## 7. Expenses and later Equipment operation tracking
+## 8. Expenses and later Equipment work
 
 - General nursery expenses
-- Equipment maintenance and operation history, after their own design review
-- Electricity tariff history and running costs, after their own design review
+- Equipment maintenance, after its own design review
 - Safe recorded expense amounts without losing unknown versus zero values
 
-Inventory alone does not calculate electricity use. Wattage/schedules, effective periods, tariff precision and historical calculation rules remain undecided implementation work. Do not add their tables or choose their numeric representation during the Equipment schema checkpoint.
+Energy history and estimates have moved to the separate approved checkpoint above. General expenses must not double count future derived electricity estimates as recorded payments without a reviewed accounting rule.
 
-## 8. Dashboard
+## 9. Dashboard
 
 Build the approved dashboard layout using real data from completed features.
 
@@ -115,7 +120,7 @@ Build the approved dashboard layout using real data from completed features.
 - Watering overview
 - Recent useful activity where the available data supports it
 
-## 9. MVP review
+## 10. MVP review
 
 - Test the main nursery workflows on desktop and mobile
 - Review accessibility and keyboard use

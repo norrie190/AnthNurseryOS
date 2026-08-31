@@ -103,7 +103,7 @@ getEquipmentList reads non archived items ordered by createdAt descending then r
 
 The implemented browser routes are /equipment, /equipment/new, /equipment/[equipmentId], /equipment/[equipmentId]/edit and /equipment/archived. Services, validation, forms, actions and reads stay in the Equipment module. The [browser workflow](equipment-browser-flow.md) documents presentation, money entry, safe error handling and archive confirmation.
 
-EquipmentPhoto may later attach through Equipment.id and reuse appropriate image/R2 infrastructure without making PlantPhoto polymorphic. EquipmentPowerPeriod may later attach through Equipment.id, with effective operating periods combined with electricity tariff history. There are no power/tariff tables, wattage, schedule, hours per day, running totals, electricity calculations or dashboard integration now. Numeric storage for future wattage, tariffs and calculations is deliberately undecided; fractional pence and precision must be reviewed in that future design.
+EquipmentPhoto may later attach through Equipment.id and reuse appropriate image/R2 infrastructure without making PlantPhoto polymorphic. The approved [energy history foundation](equipment-energy.md) now adds Equipment.powerPeriods and the EquipmentPowerPeriod and ElectricityTariff tables. Numeric precision, DATE intervals, void reasons and overlap constraints are defined there. No energy services, calculations, browser forms, mutable wattage on Equipment or dashboard integration are implemented in this schema checkpoint. Inventory purchase amounts and both reference sequences remain unchanged.
 
 ## Verification
 

@@ -4,7 +4,7 @@
 
 Anth Nursery OS is a management app for one small nursery. It starts with my own Anthurium collection and breeding programme, so it needs to be useful day to day as well as a good software project to show in a portfolio.
 
-The first MVP is plants, equipment inventory, care, expenses, and a dashboard. The owner has moved Equipment inventory ahead of Care; equipment operation history, maintenance and running costs remain separate later checkpoints. Breeding and ancestry are later phases and should not make the first version more complicated than it needs to be.
+The first MVP is plants, equipment inventory, energy estimates, care, expenses, and a dashboard. Equipment inventory is complete, and the owner has moved the reviewed energy history foundation ahead of Care. Energy services, calculations and browser features remain separate checkpoints after its schema. Maintenance, breeding and ancestry are later phases and should not make the first version more complicated than it needs to be.
 
 ## Choices made for the foundation
 
@@ -141,11 +141,19 @@ The shared square selector uses oriented image dimensions and supports pointer a
 
 The approved photo deletion checkpoint is a narrow exception to preserving nursery records. A strict `deletePlantPhoto` operation locks the Plant, checks expectedUpdatedAt and photo ownership, removes the selected metadata and promotes a deterministic remaining primary in one transaction. Plant.updatedAt advances strictly; status, archive state, identity and historical relationships stay unchanged. After confirmed commit, the R2 boundary lists and removes only the validated photo asset prefix, including superseded crop revisions. Database failure never triggers blind cleanup. Storage failure after commit leaves the database consistent and returns a warning with safe server diagnostics, without recreating metadata. There is no schema change, job framework or broad cleanup. The route retains the existing local origin protection; public deployment still needs authentication and access checks. Full rules and recovery limits are in [Plant photo deletion](plant-photo-deletion.md).
 
+## Equipment energy persistence foundation
+
+The approved [energy design](equipment-energy.md) adds only EquipmentPowerPeriod and ElectricityTariff persistence in this checkpoint. Equipment has a reverse powerPeriods relationship; the required period FK restricts Equipment deletion and ID changes. The tariff is a single nursery timeline, not an Equipment purchase or a tariff copied onto each item.
+
+Power uses numeric(8,2) watts, hours use numeric(4,2) and GBP tariffs use numeric(9,5) pence per kWh. Both histories use DATE [start, end) intervals, nullable open ends, optional notes/correction reasons and retained voided records. Custom SQL checks enforce bounds, finite/ordered dates, GBP only and nonblank void reasons. Nonvoid daterange exclusion constraints prevent concurrent overlaps. btree_gist provides Equipment UUID equality and is required on future hosted PostgreSQL too. Migration details are in [database migrations](database-migrations.md).
+
+Gaps mean unknown data, not zero consumption. Archive state does not close operating periods or change history. Future calculations will combine exact source periods with tariffs and report incomplete coverage, without saved monthly totals. Excess input precision must later be rejected before PostgreSQL rounds it. The approved Equipment row locking and tariff transaction advisory locking, usesPower guards, calculation engine, forms and dashboard reads are future application checkpoints, not features implemented by these tables.
+
 ## Equipment inventory foundation
 
 Equipment represents individual physical items, not quantities. Its UUID is the relationship key; createEquipment assigns the unique text reference as EQP-XXXX using the independent sequence. Category is flexible text defaulting to Other. Name is required; brand, model, serial number, notes, Location and archive date are optional. No EquipmentStatus or category table is added.
 
-usesPower means “This equipment is capable of having electrical consumption tracked by AnthNurseryOS.” It is required without a default and is not a current operating flag or automatic inclusion in cost calculations. No power period, tariff, wattage, hours, energy total or numeric precision decision is included. Those need a separate historical energy design.
+usesPower means “This equipment is capable of having electrical consumption tracked by AnthNurseryOS.” It is required without a default and is not a current operating flag or automatic inclusion in cost calculations. The separate approved energy schema now stores historical watts/hours and tariffs; it does not add energy services or calculations to inventory.
 
 EquipmentPurchase is optional and unique per item. Costs use the same integer minor units and null versus zero distinction as Plant purchases, with three custom PostgreSQL nonnegative checks. Shipping is the amount allocated to this item, not automatically an entire shared order's shipping cost. Currency defaults to GBP in varchar(3), and purchaseDate is a calendar date. No Order model or calculated acquisition total is stored.
 

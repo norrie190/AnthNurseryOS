@@ -93,6 +93,20 @@ pnpm test:db --exclude tests/database/plant-service.test.ts --exclude tests/data
 
 Those two existing creation suites intentionally allocate ANT values, so they are excluded here to preserve even the test ANT state. The full unit/component suite still runs. This does not disable those tests in the repository or change the normal full database command for later milestones. No test resets a database, truncates a table or changes development fixtures.
 
+## Equipment energy history foundation
+
+`20260831235000_add_equipment_energy_history` creates EquipmentPowerPeriod and ElectricityTariff only, plus the Equipment period lookup index and restricted Equipment FK. Prisma generated the table/index/FK SQL with `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script`. That read only output was inspected, then saved as a new migration with the reviewed custom SQL and BEGIN/COMMIT. Previous migrations are unchanged. There is no shadow database reset, db push, backfill, energy seed or sequence allocation.
+
+Preflight verified both local PostgreSQL 18 databases offered btree_gist 1.8 and had neither energy table. The migration deliberately installs it with `CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public`. Hosted PostgreSQL must support this extension and permit installation; stop if it cannot, rather than weakening overlap protection. The extension and table creation are transactional.
+
+Custom CHECK constraints enforce power from 0 to 100000 W, hours from 0 to 24, tariffs from 0 to 1000 p/kWh, GBP currency, finite calendar dates with end later than start, and a nonblank correctionReason whenever voidedAt is populated. The reason check explicitly rejects null and whitespace only text; notes/reasons stay TEXT. Bounded numeric comparisons also reject NaN. Declared decimal columns reject numeric infinities, but round excess fractional input, which later application validation must reject before insertion.
+
+`EquipmentPowerPeriod_no_overlap` is an EXCLUDE USING gist constraint combining equipmentId equality with `daterange(effectiveFrom, effectiveTo, '[)') &&`, limited to `voidedAt IS NULL`. `ElectricityTariff_no_overlap` uses the same range/predicate without Equipment scoping: there is one nursery tariff timeline. Adjacent and gapped intervals are valid; open ends overlap all later covered dates. Voided rows stay stored but no longer block dates. These constraints also protect updates and unvoiding. They are not fully represented in Prisma, so migration SQL and behavioural tests remain the source of truth.
+
+The indexes are the two UUID primary keys, the two GiST indexes created by exclusion constraints, and `EquipmentPowerPeriod_equipmentId_effectiveFrom_idx`. There are no extra reporting indexes or generated range columns. The only new FK is `EquipmentPowerPeriod_equipmentId_fkey`, with ON DELETE RESTRICT ON UPDATE RESTRICT. Equipment's reverse relation requires no stored Equipment column. ElectricityTariff has no Equipment FK. Existing Plant/Equipment cost checks, Location root uniqueness, photo checks/indexes and ANT/EQP sequences must remain intact.
+
+The [energy schema tests](../tests/database/energy-schema.test.ts) use the guarded test database with all fixtures rolled back, including generated Prisma model coverage. This new suite does not allocate ANT or EQP references. Existing full regression tests do allocate test references and may leave intentional test sequence gaps. Development row fingerprints and both development sequence states are compared before and after verification. No services, calculations or energy UI are included; see [Equipment energy history](equipment-energy.md).
+
 ## Applying migrations
 
 `pnpm db:deploy` applies existing migration files to `DATABASE_URL`. It does not generate a migration. `pnpm db:migrate:test` applies the same migration files to `TEST_DATABASE_URL` through a separate Prisma process, without changing `.env`.

@@ -1,4 +1,4 @@
-// Approved Plant and Equipment inventory schema. Custom SQL constraints live in migrations.
+// Approved Plant, Equipment inventory and energy history schema. Custom constraints live in migrations.
 
 generator client {
   provider = "prisma-client"
@@ -110,8 +110,9 @@ model Equipment {
   createdAt    DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime  @updatedAt @db.Timestamptz(3)
 
-  location Location?          @relation(fields: [locationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  purchase EquipmentPurchase?
+  location     Location?              @relation(fields: [locationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  purchase     EquipmentPurchase?
+  powerPeriods EquipmentPowerPeriod[]
 
   @@index([locationId])
 }
@@ -132,6 +133,39 @@ model EquipmentPurchase {
   updatedAt           DateTime  @updatedAt @db.Timestamptz(3)
 
   equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+// Bounds, interval validity, void reasons and nonvoid overlap protection are migration SQL.
+model EquipmentPowerPeriod {
+  id               String    @id @default(uuid()) @db.Uuid
+  equipmentId      String    @db.Uuid
+  powerWatts       Decimal   @db.Decimal(8, 2)
+  hoursPerDay      Decimal   @db.Decimal(4, 2)
+  effectiveFrom    DateTime  @db.Date
+  effectiveTo      DateTime? @db.Date
+  notes            String?
+  correctionReason String?
+  voidedAt         DateTime? @db.Timestamptz(3)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(3)
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([equipmentId, effectiveFrom])
+}
+
+// One nursery tariff timeline. GBP minor units are pence per kWh, not whole purchase pence.
+model ElectricityTariff {
+  id                  String    @id @default(uuid()) @db.Uuid
+  unitRateMinorPerKwh Decimal   @db.Decimal(9, 5)
+  currency            String    @default("GBP") @db.VarChar(3)
+  effectiveFrom       DateTime  @db.Date
+  effectiveTo         DateTime? @db.Date
+  notes               String?
+  correctionReason    String?
+  voidedAt            DateTime? @db.Timestamptz(3)
+  createdAt           DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime  @updatedAt @db.Timestamptz(3)
 }
 
 model Location {

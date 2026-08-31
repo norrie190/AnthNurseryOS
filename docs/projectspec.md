@@ -51,7 +51,7 @@ EquipmentPurchase is optional, with seller, order reference, calendar purchase d
 
 The database foundation, restricted Equipment data layer and inventory browser workflow are implemented. Creation allocates EQP references, edits use stale protection, and archive/restore preserves related information. Equipment pages provide active/archived lists, Add/Edit forms, details and archive/restore actions. The exact fields and scope are in [Equipment data model](equipment-data-model.md), with UI behaviour in [Equipment browser workflow](equipment-browser-flow.md).
 
-Maintenance, photos, operating periods, tariffs and running expenses remain later work. There are no energy calculations or decisions about numeric storage for wattage, tariffs or calculated costs in this checkpoint. Tariff precision and fractional pence must be designed deliberately later. Future equipment upgrades or expansion projects remain outside the first MVP.
+The approved [energy history schema](equipment-energy.md) adds EquipmentPowerPeriod and a single nursery ElectricityTariff timeline. It stores exact decimal watts, daily hours and GBP pence per kWh against calendar date intervals, with database overlap protection and retained voided records. There are no energy services, calculations, forms or dashboard integration yet. Calculations will be derived from source history, with gaps remaining unknown, rather than saved monthly totals. Maintenance, photos and future equipment upgrades remain separate later work.
 
 ### Care
 
@@ -63,7 +63,7 @@ The watering and fertiliser indicators should show more than colour alone. Water
 
 Expense tracking will cover electricity and other nursery costs such as fertiliser, growing media, packaging, shipping, and supplies. Equipment running costs should be linkable to the equipment that caused them.
 
-Purchase amounts use integer minor units rather than floating point numbers. GBP is the default currency, but records retain a currency code so the data model is not permanently limited to GBP. Future electricity tariff and calculation precision requires its own design; do not assume those rates must be stored as whole pence or choose a numeric type for them here.
+Purchase amounts use integer minor units rather than floating point numbers. GBP is the default currency, but purchase records retain a currency code. The separate electricity history foundation uses numeric(9,5) pence per kWh and explicitly GBP only tariffs. Future exact derived calculations must retain fractional pence until presentation. Standing charges, currency conversion and time of use tariffs are not included.
 
 ### Dashboard
 
