@@ -35,7 +35,7 @@ npx pnpm@11.19.0 db:generate
 npx pnpm@11.19.0 dev
 ```
 
-Then open [http://127.0.0.1:3000/plants](http://127.0.0.1:3000/plants) to browse your saved Plants or choose Add Plant. The list shows non archived records, newest first. Select a row to open its detail page. The form records a Plant through the existing creation service and opens its detail page after saving. The ANT reference is assigned automatically. Editing, archive controls, photos and other nursery features remain later work.
+Then open [http://127.0.0.1:3000/plants](http://127.0.0.1:3000/plants) to browse your saved Plants or choose Add Plant. The list shows non archived records, newest first. Select a row to open its detail page. The form records a Plant through the existing creation service and opens its detail page after saving. The ANT reference is assigned automatically. The detail page also offers Edit Plant and Archive Plant. Archive requires confirmation and preserves the record and its status. View Archived opens `/plants/archived`, where you can open a preserved Plant and restore it. Photos and other nursery features remain later work.
 
 The development and local production commands listen on `127.0.0.1` only. There is no authentication yet, so do not expose the app through a public tunnel or network proxy. This is a local nursery workflow for now, not a deployment ready public service.
 

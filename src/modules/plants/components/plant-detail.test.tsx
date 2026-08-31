@@ -1,7 +1,13 @@
 import { render, screen } from '@testing-library/react';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 import { PlantDetail } from './plant-detail';
 import type { PlantDetailRecord } from '../plant-queries';
+
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock('../plant-archive-actions', () => ({
+  archivePlantAction: vi.fn(),
+  restorePlantAction: vi.fn(),
+}));
 
 const timestamp = new Date('2026-08-30T12:00:00Z');
 const plant: PlantDetailRecord = {
@@ -73,5 +79,33 @@ test('renders saved parent links, external names and distinct monetary values', 
   expect(screen.getByText('£0.00')).toBeInTheDocument();
   expect(screen.getAllByText('Not recorded')).toHaveLength(2);
   expect(screen.getByText('29 February 2024')).toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: /edit|archive/i })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Archive Plant' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Edit Plant' })).toHaveAttribute(
+    'href',
+    `/plants/${plant.id}/edit`,
+  );
+});
+
+test('archived detail retains information and status, shows archive date and offers Restore', () => {
+  render(
+    <PlantDetail
+      plant={{
+        ...plant,
+        name: 'Archived specimen',
+        notes: 'Historical notes',
+        status: 'DECEASED',
+        archivedAt: new Date('2026-08-31T10:00:00Z'),
+      }}
+    />,
+  );
+  expect(screen.getByRole('heading', { name: 'ANT-0042' })).toBeInTheDocument();
+  expect(screen.getByText('Deceased')).toBeInTheDocument();
+  expect(screen.getByText('Historical notes')).toBeInTheDocument();
+  expect(screen.getByText('31 August 2026')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Restore Plant' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Archive Plant' })).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: '← Archived Plants' })).toHaveAttribute(
+    'href',
+    '/plants/archived',
+  );
 });

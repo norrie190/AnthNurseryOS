@@ -20,6 +20,22 @@ export async function getPlantList() {
 }
 export type PlantListItem = Awaited<ReturnType<typeof getPlantList>>[number];
 
+export async function getArchivedPlantList() {
+  return getPrisma().plant.findMany({
+    where: { archivedAt: { not: null } },
+    select: {
+      id: true,
+      reference: true,
+      name: true,
+      status: true,
+      location: { select: { name: true } },
+      archivedAt: true,
+    },
+    orderBy: [{ archivedAt: 'desc' }, { reference: 'asc' }],
+  });
+}
+export type ArchivedPlantListItem = Awaited<ReturnType<typeof getArchivedPlantList>>[number];
+
 export async function getPlantById(plantId: string) {
   if (!z.uuid().safeParse(plantId).success) return null;
   return getPrisma().plant.findUnique({

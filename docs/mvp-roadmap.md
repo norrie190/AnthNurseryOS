@@ -62,13 +62,13 @@ Planned checkpoints:
 1. Plant validation and creation data layer, complete and committed
 2. Add Plant through the browser and view the saved Plant, complete and committed
 3. Plant list with useful empty, loading, and error states, complete and committed
-4. Edit Plant, including parentage and purchase changes, current review
-5. Archive and restore Plant
+4. Edit Plant, including parentage and purchase changes, complete and committed
+5. Archive and restore Plant, current review
 6. Plant photos after the storage approach is agreed
 
 Each checkpoint should include the tests needed for its rules and regressions.
 
-The current milestone is `feat: add plant editing`. The detail page links to `/plants/[plantId]/edit`, which saves through a restricted update service and returns to the same detail route. Identity and ANT references remain unchanged. Parentage cycle checks and stale edit protection keep related changes safe. Purchase details and current Location can be changed or cleared explicitly without deleting records. Archive controls, photos, search and other nursery features remain outside this milestone. No schema or migration changes are needed. See `plant-editing.md` for the rules and verification approach.
+The current milestone is `feat: add plant archiving and restore`. The detail page offers archive confirmation for active Plants and Restore Plant for archived ones. `/plants/archived` keeps historical records accessible while the main list remains the active collection. Status, identity and relationships are preserved. Existing timestamp and row lock protection prevents stale state changes without adding a versioning system. No schema changes, migrations, deletion, photos, search or other nursery features are included. See `plant-archiving.md` for the rules and verification approach.
 
 ## 5. Care tracking
 

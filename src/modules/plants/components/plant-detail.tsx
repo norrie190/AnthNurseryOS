@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { PlantDetailRecord } from '../plant-queries';
 import { formatPlantMoney } from '../plant-money';
 import { plantStatusLabels } from '../plant-form-state';
+import { PlantArchiveControls } from './plant-archive-controls';
 import styles from './plant-management.module.css';
 
 function ParentValue({
@@ -24,8 +25,8 @@ export function PlantDetail({ plant }: { plant: PlantDetailRecord }) {
   const purchase = plant.purchase;
   return (
     <div className={styles.page}>
-      <Link href="/plants" className={styles.backLink}>
-        ← Plants
+      <Link href={plant.archivedAt ? '/plants/archived' : '/plants'} className={styles.backLink}>
+        {plant.archivedAt ? '← Archived Plants' : '← Plants'}
       </Link>
       <header className={styles.heading}>
         <p className={styles.eyebrow}>Plant record</p>
@@ -58,6 +59,19 @@ export function PlantDetail({ plant }: { plant: PlantDetailRecord }) {
             <dt>Notes</dt>
             <dd className={styles.notes}>{plant.notes || 'Not recorded'}</dd>
           </div>
+          {plant.archivedAt && (
+            <div>
+              <dt>Archived</dt>
+              <dd>
+                <time dateTime={plant.archivedAt.toISOString()}>
+                  {new Intl.DateTimeFormat('en-GB', {
+                    dateStyle: 'long',
+                    timeZone: 'Europe/London',
+                  }).format(plant.archivedAt)}
+                </time>
+              </dd>
+            </div>
+          )}
         </dl>
       </section>
       <section className={styles.card} aria-labelledby="parentage-heading">
@@ -142,6 +156,13 @@ export function PlantDetail({ plant }: { plant: PlantDetailRecord }) {
           Back to Plants
         </Link>
       </div>
+      <PlantArchiveControls
+        key={plant.id}
+        plantId={plant.id}
+        reference={plant.reference}
+        archived={plant.archivedAt !== null}
+        expectedUpdatedAt={plant.updatedAt.toISOString()}
+      />
     </div>
   );
 }

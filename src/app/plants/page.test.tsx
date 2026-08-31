@@ -18,7 +18,11 @@ test('loads the collection at request time with Add Plant available in the empty
   expect(getPlantList).toHaveBeenCalledOnce();
   expect(screen.getByRole('heading', { level: 1, name: 'Plants' })).toBeInTheDocument();
   expect(screen.getByText('Manage and view your nursery collection')).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: 'No Plants yet' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'No active Plants' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'View Archived' })).toHaveAttribute(
+    'href',
+    '/plants/archived',
+  );
   for (const link of screen.getAllByRole('link', { name: 'Add Plant' })) {
     expect(link).toHaveAttribute('href', '/plants/new');
   }
@@ -45,7 +49,7 @@ test('reads again on a later request and displays the newly available Plant', as
     '/plants/saved-uuid',
   );
   expect(screen.getByRole('link', { name: 'Add Plant' })).toHaveAttribute('href', '/plants/new');
-  expect(screen.queryByText('No Plants yet')).not.toBeInTheDocument();
+  expect(screen.queryByText('No active Plants')).not.toBeInTheDocument();
 });
 
 test('does not disguise database errors as an empty collection', async () => {

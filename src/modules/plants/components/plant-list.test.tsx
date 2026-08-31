@@ -15,9 +15,9 @@ const plant: PlantListItem = {
 
 test('shows a useful empty state and Add Plant link', () => {
   render(<PlantList plants={[]} />);
-  expect(screen.getByRole('heading', { name: 'No Plants yet' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'No active Plants' })).toBeInTheDocument();
   expect(
-    screen.getByText('Add your first Plant to start building your nursery collection.'),
+    screen.getByText('Add a Plant to your collection, or restore one from Archived Plants.'),
   ).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Add Plant' })).toHaveAttribute('href', '/plants/new');
   expect(screen.queryByRole('list')).not.toBeInTheDocument();
@@ -83,4 +83,44 @@ test.each([
 test('displays the Added date in the same nursery timezone as Plant details', () => {
   render(<PlantList plants={[{ ...plant, createdAt: new Date('2026-08-29T23:30:00Z') }]} />);
   expect(screen.getByText('30 Aug 2026')).toBeInTheDocument();
+});
+
+test('provides an archived empty state with a way back to active Plants', () => {
+  render(<PlantList plants={[]} archived />);
+  expect(screen.getByRole('heading', { name: 'No archived Plants' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Back to active Plants' })).toHaveAttribute(
+    'href',
+    '/plants',
+  );
+  expect(screen.queryByRole('list')).not.toBeInTheDocument();
+});
+
+test('reuses responsive rows for archived Plants, with archive dates and preserved query ordering', () => {
+  const { container } = render(
+    <PlantList
+      archived
+      plants={[
+        { ...plant, archivedAt: new Date('2026-08-30T23:30:00Z'), name: null, location: null },
+        {
+          ...plant,
+          id: 'second',
+          reference: 'ANT-0002',
+          status: 'DECEASED',
+          archivedAt: new Date('2026-08-29T12:00:00Z'),
+        },
+      ]}
+    />,
+  );
+  const links = within(screen.getByRole('list', { name: 'Archived Plants' })).getAllByRole('link');
+  expect(links).toHaveLength(2);
+  expect(links[0]).toHaveAttribute('href', `/plants/${plant.id}`);
+  expect(links[0]).toHaveTextContent('ANT-0001');
+  expect(links[0]).toHaveTextContent('Unnamed Plant');
+  expect(links[0]).toHaveTextContent('Growing');
+  expect(links[0]).toHaveTextContent('No location');
+  expect(links[0]).toHaveTextContent('31 Aug 2026');
+  expect(links[1]).toHaveTextContent('Deceased');
+  expect(links[1]).toHaveTextContent('Grow Tent 1');
+  expect(container).not.toHaveTextContent(plant.id);
+  expect(container.querySelector('time')).toHaveAttribute('datetime', '2026-08-30T23:30:00.000Z');
 });

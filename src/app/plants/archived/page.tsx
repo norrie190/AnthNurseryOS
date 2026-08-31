@@ -1,31 +1,26 @@
 import Link from 'next/link';
 import { connection } from 'next/server';
 import { PlantList } from '@/modules/plants/components/plant-list';
-import { getPlantList } from '@/modules/plants/plant-queries';
+import { getArchivedPlantList } from '@/modules/plants/plant-queries';
 import styles from '@/modules/plants/components/plant-management.module.css';
 import listStyles from '@/modules/plants/components/plant-list.module.css';
 
-export default async function PlantsPage() {
+export default async function ArchivedPlantsPage() {
   await connection();
-  const plants = await getPlantList();
+  const plants = await getArchivedPlantList();
   return (
     <div className={styles.page}>
       <header className={listStyles.header}>
         <div className={styles.heading}>
           <p className={styles.eyebrow}>Your collection</p>
-          <h1>Plants</h1>
-          <p>Manage and view your nursery collection</p>
+          <h1>Archived Plants</h1>
+          <p>Preserved Plant records. Open a Plant to view its details or restore it.</p>
         </div>
-        <div className={styles.actions}>
-          <Link href="/plants/archived" className={styles.secondaryLink}>
-            View Archived
-          </Link>
-          <Link href="/plants/new" className={styles.primaryButton}>
-            Add Plant
-          </Link>
-        </div>
+        <Link href="/plants" className={styles.secondaryLink}>
+          View active Plants
+        </Link>
       </header>
-      <PlantList plants={plants} />
+      <PlantList plants={plants} archived />
     </div>
   );
 }

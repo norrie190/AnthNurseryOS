@@ -213,6 +213,47 @@
   font-size: 0.9rem;
   text-underline-offset: 0.2em;
 }
+.secondaryButton {
+  min-height: 2.85rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.secondaryButton:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+.archiveConfirmation {
+  margin: 0;
+  padding: 1rem;
+  min-width: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-small);
+}
+.archiveConfirmation legend {
+  padding: 0 0.35rem;
+  font-weight: 600;
+}
+.archiveConfirmation p {
+  margin: 0 0 1rem;
+  line-height: 1.6;
+}
+.archiveFeedback {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius-small);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  line-height: 1.6;
+}
+.archiveFeedback p {
+  margin: 0;
+}
 .errorSummary {
   padding: 1.25rem;
   border: 2px solid #a02d24;

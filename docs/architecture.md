@@ -47,7 +47,7 @@ The `components`, `lib`, and `modules` folders are not being created just to mak
 
 ## Database starting point
 
-The approved Plant Management schema, initial migration and separate reference sequence migration are committed. They contain only Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. The creation data layer, browser form, detail page and Plant list are committed. Edit Plant is implemented for review. Archive operations remain outside this milestone.
+The approved Plant Management schema, initial migration and separate reference sequence migration are committed. They contain only Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. The creation data layer, browser form, detail page, Plant list and Edit Plant are committed. Archive and restore are implemented for review using the existing archivedAt field, with no schema changes.
 
 Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. Timestamps use `timestamptz` with millisecond precision, while the purchase date uses a calendar `date`. Foreign keys restrict deletion and ID updates so referenced nursery records cannot disappear through a cascade. Schema limitations and rules reserved for the migration or data layer are recorded in `docs/plant-data-model.md`.
 
@@ -77,7 +77,7 @@ The form uses React state and `useActionState`, without a form library. Submissi
 
 The action only handles the browser boundary. It reads an explicit set of form fields, interprets parent modes and the optional purchase section, converts amounts using decimal strings and bigint, and calls the existing `createPlant`. Business validation, sequence allocation and the transaction remain in that service. Expected errors become safe field or form messages. Unexpected errors retain their server diagnostics and return a generic message. Redirect runs outside the error catch, after the service succeeds.
 
-The list, new and detail routes use Next's `connection()` before database reads so their content is loaded for each request, not during a production build. Four small server only queries load the Plant list, a single Plant, available parent options and usable Locations. There is no repository framework, shared query cache or cache invalidation machinery.
+The list, new, edit, archived and detail routes use Next's `connection()` before database reads so their content is loaded for each request, not during a production build. Small server only queries load active and archived lists, a single Plant, available parent options and usable Locations. There is no repository framework or shared query cache.
 
 `getPlantList` selects just the internal ID, reference, name, status, Location name and creation timestamp. It excludes records with `archivedAt` set, without excluding Sold or Deceased Plants that have not been archived. Ordering is `createdAt` descending, then the unique reference ascending for equal timestamps. Reference ordering is a deterministic text tie break, not a replacement for the creation date or a numeric sequence sort.
 
@@ -96,6 +96,16 @@ Existing parentage mutations obtain one PostgreSQL transaction advisory lock bef
 The target Plant uses FOR NO KEY UPDATE. Its updatedAt is compared to the original expectedUpdatedAt while locked. Each accepted save advances it to at least the previous timestamp plus one millisecond, including related only changes. Stale edits fail without automatic merge or retry. No version column is needed for this milestone. New Location assignments use the existing FOR SHARE check, while a currently assigned archived Location may be preserved.
 
 The shared Plant form supports Add and Edit without a form framework. `/plants/[plantId]/edit` reuses the existing reads and preloads values, parent modes and exact decimal money. The action performs only browser boundary work. The original token stays paired with retained values; a server rerender cannot quietly refresh it. Existing purchases can have fields cleared but cannot be deleted. Complete behaviour and test boundaries are in `plant-editing.md`.
+
+## Plant archive and restore
+
+Archive state is independent of biological status. Restricted server only operations change archivedAt and advance updatedAt, without changing status, reference, identity, Location or any related record. They never allocate an ANT reference or delete anything.
+
+Archive and restore use the same target row lock and expectedUpdatedAt token as editing. A state change requires a matching token under FOR NO KEY UPDATE, and its replacement timestamp is strictly later than the previous value. This also makes older edit forms stale. A request whose desired state already exists returns without writing, even with the token from the original request. Repeated archive therefore preserves the first archive date. No parentage advisory lock is needed because relationships are not changed.
+
+The detail page uses a small inline confirmation before archiving. Server actions validate the confirmation and call the service; client controls show pending, safe failure or success feedback. On success, router.refresh reloads the current detail record and clears the client route cache so returning to either list reads current data. This is a local refresh after a write, not a shared cache or invalidation framework.
+
+`/plants/archived` reuses the existing responsive Plant list with an archive date column. Its query selects only archived records, ordered by archivedAt descending and reference ascending. The active list keeps its original ordering and excludes archived records regardless of status. Archived details and historical parent options remain accessible. The complete operation contract and testing boundaries are in `plant-archiving.md`.
 
 ## Keeping it tidy as it grows
 

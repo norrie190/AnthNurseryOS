@@ -2,7 +2,7 @@
 
 ## Status of this document
 
-This is the approved Plant Management data design. The Prisma schema, migrations, creation data layer and initial browsing workflow are committed. Edit Plant is implemented for review without changing these models. Creation and update behaviour are documented in `plant-creation.md` and `plant-editing.md`.
+This is the approved Plant Management data design. The Prisma schema, migrations, creation data layer, initial browsing workflow and Edit Plant are committed. Archive and restore are implemented for review without changing these models. Operation behaviour is documented in `plant-creation.md`, `plant-editing.md` and `plant-archiving.md`.
 
 This stage includes Plant, PlantParentage, PlantPurchase, PlantPhoto, and Location only. Care, observations, breeding, pollen, seed batches, seedlings, ancestry, and sales remain outside the schema until their own phases.
 

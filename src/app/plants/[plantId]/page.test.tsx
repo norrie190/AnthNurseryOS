@@ -6,7 +6,11 @@ import type { PlantDetailRecord } from '@/modules/plants/plant-queries';
 import PlantPage from './page';
 
 vi.mock('next/server', () => ({ connection: vi.fn() }));
-vi.mock('next/navigation', () => ({ notFound: vi.fn() }));
+vi.mock('next/navigation', () => ({ notFound: vi.fn(), useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock('@/modules/plants/plant-archive-actions', () => ({
+  archivePlantAction: vi.fn(),
+  restorePlantAction: vi.fn(),
+}));
 vi.mock('@/modules/plants/plant-queries', () => ({ getPlantById: vi.fn() }));
 beforeEach(() => vi.resetAllMocks());
 
