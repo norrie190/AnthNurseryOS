@@ -80,9 +80,9 @@ The subsequent approved [photo deletion checkpoint](plant-photo-deletion.md) add
 
 The owner has moved Equipment inventory ahead of Care. Equipment operating history, maintenance and electricity calculations are not part of this foundation.
 
-The approved design is in [Equipment data model](equipment-data-model.md). The current checkpoint is schema only: Equipment, optional EquipmentPurchase, reuse of the existing Location model, purchase cost checks and a separate EQP sequence. Both new migrations have been reviewed and applied to development and the guarded test database. No Equipment records are seeded, no reference is allocated, and the Equipment page is still a placeholder. The sequence is included now at the owner's request, not delayed until the data layer.
+The approved design is in [Equipment data model](equipment-data-model.md). The schema checkpoint is committed: Equipment, optional EquipmentPurchase, reuse of Location, purchase cost checks and a separate EQP sequence. The current checkpoint implements restricted creation, editing, archive/restore and inventory reads against that schema. It adds no migrations or development fixtures. The Equipment page is still a placeholder.
 
-Next reviewable checkpoints will add the restricted Equipment data layer, followed by the list/add/detail/edit/archive/restore browser flow. Those services and screens are not implemented yet. No category table, EquipmentStatus, photos, Order model or energy tables are included.
+The next reviewable checkpoint is the list/add/detail/edit/archive/restore browser flow using those services. No Equipment forms or server actions exist yet. No category table, EquipmentStatus, photos, Order model or energy tables are included.
 
 usesPower describes capability for consumption tracking, not current operation or inclusion in running cost totals. Shipping is allocated to each individual item. Historical energy periods, tariffs, fractional pence and numeric storage decisions require a separate future design.
 

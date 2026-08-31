@@ -2,7 +2,7 @@
 
 ## Checkpoint and scope
 
-This is the approved Equipment inventory foundation. The schema checkpoint adds only Equipment, EquipmentPurchase, the reverse Equipment relation on the existing Location model, and an independent PostgreSQL reference sequence. It does not implement Equipment services, reference formatting, forms, pages, archive actions, maintenance, photos or energy tracking. The current /equipment page remains a placeholder.
+This is the approved Equipment inventory foundation. The committed schema contains Equipment, EquipmentPurchase, the reverse Equipment relation on Location, and an independent PostgreSQL reference sequence. The current checkpoint adds the restricted application data layer: creation, editing, archive/restore and reads. It adds no schema changes, forms, pages, server actions, maintenance, photos or energy tracking. The current /equipment page remains a placeholder.
 
 Equipment inventory now follows Plant Management, before Care, as requested by the owner. The sequence is included in this schema checkpoint rather than waiting for the later data layer. The migration details are in [database migrations](database-migrations.md).
 
@@ -21,7 +21,7 @@ Location
 
 Each Equipment record is one physical item. Two identical grow lights have two records and two references, not one shared quantity. An EquipmentPurchase belongs to exactly one Equipment record; equipmentId is unique. Existing Location hierarchy and name uniqueness rules remain unchanged. A grow tent as equipment is a physical asset; a Location named Grow Tent 1 represents a space. Neither record automatically creates the other.
 
-Both foreign keys use Restrict for deletion and ID updates. There is no cascade. Those foreign keys protect referenced records, but are not a complete prohibition on privileged SQL deletion. The eventual application must offer archive and restore rather than hard deletion.
+Both foreign keys use Restrict for deletion and ID updates. There is no cascade. Those foreign keys protect referenced records, but are not a complete prohibition on privileged SQL deletion. The application operations offer archive and restore rather than hard deletion.
 
 ## Equipment fields
 
@@ -43,7 +43,7 @@ Both foreign keys use Restrict for deletion and ID updates. There is no cascade.
 
 Names, brands, models and serial numbers are not unique: similar or identical physical items remain separate records. There is no EquipmentStatus. Active means not archived, not switched on, working or in service. UUID generation and updatedAt behaviour follow Plants: Prisma supplies them, not new database triggers or UUID defaults. Direct SQL inserts must supply id and updatedAt.
 
-Category uses text because new types should not require a database migration or a category administration workflow. Suggested categories and custom entry belong in the later form. A category does not determine usesPower. The current database requires nonnull names/categories; trimming, blank rejection, text length rules and category suggestions are application validation for the next checkpoint, not implemented here.
+Category uses text because new types should not require a database migration or a category administration workflow. Suggested categories and custom entry belong in the later form. A category does not determine usesPower. Application validation now trims text, rejects blank names/categories, enforces the lengths below and normalises suggested category labels. The database itself requires nonnull names/categories.
 
 usesPower means: “This equipment is capable of having electrical consumption tracked by AnthNurseryOS.” It does not mean currently switched on, connected, consuming electricity, or automatically included in running cost calculations. The caller will explicitly choose it during creation. Later EquipmentPowerPeriod records, not this boolean, will determine historical operating consumption.
 
@@ -63,7 +63,7 @@ usesPower means: “This equipment is capable of having electrical consumption t
 | createdAt           | DateTime / timestamptz(3) | Required, now()             | Purchase record creation instant                  |
 | updatedAt           | DateTime / timestamptz(3) | Required, Prisma @updatedAt | Purchase record timestamp                         |
 
-Costs are integers from zero through PostgreSQL's signed integer maximum, 2147483647. Each field has a PostgreSQL CHECK constraint rejecting negative values. Null means unknown, while 0 is a known zero or free amount. Currency defaults to GBP without locking the schema to it. The varchar length is database enforced; recognised currency validation belongs in the later service.
+Costs are integers from zero through PostgreSQL's signed integer maximum, 2147483647. Each field has a PostgreSQL CHECK constraint rejecting negative values. Null means unknown, while 0 is a known zero or free amount. Currency defaults to GBP without locking the schema to it. The varchar length is database enforced; the service uses the same runtime currency validation as Plant purchases.
 
 shippingCostMinor is not automatically the full shipping cost of a shared order. If two items arrive in one £10 shipment, the user can allocate £2.50 to one and £7.50 to the other, recording 250 and 750. Both may retain the same orderReference. There is no Order model, automatic allocation or order total enforcement in this checkpoint.
 
@@ -73,17 +73,33 @@ An item may have no purchase record because it was gifted, already owned or its 
 
 The primary keys index id on both new tables. Equipment.reference and EquipmentPurchase.equipmentId each have a unique index. The only additional Equipment index is locationId, supporting its real current relationship. There are no category, archive, maintenance or future energy indexes.
 
-public.equipment_reference_sequence is a persistent BIGINT sequence starting at 1, incrementing by 1, with CACHE 1, NO CYCLE and OWNED BY NONE. It is independent of public.plant_reference_sequence. This checkpoint creates it without calling nextval, connecting it to a column default or creating Equipment records.
+public.equipment_reference_sequence is a persistent BIGINT sequence starting at 1, incrementing by 1, with CACHE 1, NO CYCLE and OWNED BY NONE. It is independent of public.plant_reference_sequence. The schema checkpoint created it without allocating references or connecting it to a column default. The creation service now calls nextval inside its transaction; no development records are seeded.
 
-The later creation service will allocate a value and format EQP-0001 through EQP-9999, then EQP-10000 and beyond, using at least four digits. Gaps are intentional: rollback does not return a number, and archive/restore must not rewind the sequence. Allocation and commit order may differ. Imports and backup restores must coordinate sequence state rather than reset numbering. Reference immutability will follow Plant application rules; the unique index alone does not prohibit changing it through direct privileged SQL.
+The creation service formats EQP-0001 through EQP-9999, then EQP-10000 and beyond, using bigint and at least four digits. Gaps are intentional: rollback does not return a number, and archive/restore never rewind the sequence. Allocation and commit order may differ. Imports and backup restores must coordinate sequence state rather than reset numbering. References are immutable through the application inputs; the unique index alone does not prohibit changing them through direct privileged SQL.
 
-## Approved next stages, not implemented
+## Application data layer
 
-The Equipment module will use strict inputs, explicit field mapping and small Equipment errors following Plant patterns. Creation must save Equipment and optional Purchase atomically. Editing must reject IDs, reference, createdAt, archivedAt and arbitrary Prisma operations. Nullable fields use omitted means preserve and explicit null means clear. An omitted purchase is unchanged; purchase: {} creates an unknown record if absent or preserves fields if present. A purchase record cannot be deleted through editing.
+The Equipment module uses strict Zod inputs, explicit field mapping and a small EquipmentError following Plant patterns. It does not import Plant services. Shared scalar cost, currency and purchase date rules live in src/lib/purchase-field-schemas.ts, with the existing Plant exports retained. No dependency or generic repository framework is added.
+
+createEquipment(input) accepts name, usesPower, optional category/brand/model/serialNumber/notes/locationId and optional purchase. Name is required and usesPower must be an explicit boolean. Omitted category becomes Other. Equipment and optional Purchase are saved atomically. The returned record includes the generated id/reference/timestamps, current Location and optional Purchase.
+
+updateEquipment(equipmentId, input) requires expectedUpdatedAt and accepts only editable scalar fields and an optional purchase patch. IDs, reference, createdAt, updatedAt, archivedAt and arbitrary Prisma operations are rejected as input fields. Nullable fields use omitted means preserve and explicit null means clear. An omitted purchase is unchanged; purchase: {} creates an unknown record if absent or preserves its fields and timestamps if present. purchase: null is rejected for both creation and editing. There is no purchase deletion. Accepted edits, including an empty patch, advance the Equipment timestamp; the returned shape matches creation.
+
+Name is 1–200 characters; category is 1–80. Brand, model, serial number, seller and order reference allow up to 200 characters, and notes up to 10,000. Optional blank text becomes null after trimming. Null characters, malformed UUIDs, coerced booleans, fractional/negative/overflow costs and invalid calendar dates are rejected. Dates use YYYY-MM-DD and years 0001–9999, converted to a UTC midnight Date only for the PostgreSQL date boundary. Currency is trimmed, uppercased and checked against Intl.supportedValuesOf('currency'); this follows the runtime data, not a complete historical currency catalogue. Changing currency never converts amounts. Browser money entry/conversion remains for the UI milestone; these operations take integer minor units only.
+
+Suggested categories are Grow Light, Extraction Fan, Circulation Fan, Humidifier, Controller, Sensor / Meter, Grow Tent, Shelving / Rack, Heating, Cooling, Watering and Other. Known labels are recognised regardless of case and spacing; custom nonblank text is retained with whitespace cleaned up. Category never infers usesPower.
 
 New Location assignments must exist and not be archived. Editing may preserve a currently assigned archived Location or explicitly move/clear it. Use the existing selected Location rules, without inventing ancestor archive behaviour or Location management here.
 
-Equipment edits will lock the Equipment row with FOR NO KEY UPDATE, compare expectedUpdatedAt while locked, then take any required Location FOR SHARE lock. Each accepted logical edit, including purchase only changes, must advance Equipment.updatedAt strictly beyond its prior millisecond value. Archive/restore will use the same stale state rules as Plants, with unchanged repeated requests preserving existing timestamps. There is no need for a Plant parentage advisory lock.
+Equipment edits lock the Equipment row with FOR NO KEY UPDATE, compare expectedUpdatedAt while locked, then take any required Location FOR SHARE lock. Creation also locks its selected Location with FOR SHARE before allocating a reference. Transactions use READ COMMITTED. Each accepted logical edit, including purchase only changes, sets Equipment.updatedAt to the later of the server clock or the prior timestamp plus one millisecond. A stale edit fails without merging or retrying. There is no Plant parentage advisory lock.
+
+archiveEquipment(equipmentId, { expectedUpdatedAt }) and restoreEquipment use the same row lock. They return { equipment, changed }. If the desired archive state is already present, they return changed: false without replacing either timestamp, even with the valid old token from a repeated request. A real state transition requires the current token and advances updatedAt. Archiving does not change power capability, reference, Location, Purchase or any other Equipment information. Archived Equipment remains readable and editable.
+
+EquipmentError codes are VALIDATION_FAILED, LOCATION_UNAVAILABLE, NOT_FOUND, STALE_UPDATE and CONFLICT. Validation includes field issues and retains the Zod cause. Known database constraint/concurrency conflicts become CONFLICT with their cause preserved. Unexpected infrastructure failures remain the original error for server diagnostics; the later browser boundary must map those safely, not display raw database messages.
+
+getEquipmentList reads non archived items ordered by createdAt descending then reference ascending. getArchivedEquipmentList uses archivedAt descending then reference ascending. Both return id/reference/name/category/usesPower, dates and a small Location summary. getEquipmentById includes Location and Purchase for active or archived items and returns null for missing or malformed IDs. getEquipmentLocationOptions returns non archived choices with immediate parent/name labels in name then UUID order. The detail record separately retains any currently assigned archived Location for the later edit form. There is no full hierarchy traversal, generic query layer or application caching.
+
+## Later browser and domain stages
 
 Later browser routes are /equipment, /equipment/new, /equipment/[equipmentId], /equipment/[equipmentId]/edit and /equipment/archived. Keep services, validation, forms and reads in the Equipment module. None of those screens or actions is added by this checkpoint.
 
@@ -93,4 +109,6 @@ EquipmentPhoto may later attach through Equipment.id and reuse appropriate image
 
 Database tests run only against the guarded local test database. Equipment, purchase, Location and any Plant relationship fixtures live in transactions that are always rolled back. The schema tests inspect the EQP sequence catalogue without allocating it and compare both sequence states before and after. They also cover generated Prisma UUIDs/timestamps, nullable fields, costs, references, foreign keys, archive field preservation, shared Locations, category text, repeated order references and the applied migrations.
 
-For this checkpoint, regression database tests exclude the existing Plant creation and browser creation suites because those deliberately advance the test ANT sequence. The remaining database regressions and full unit/component suite still run. Existing Plant/Location row fingerprints, custom constraints/indexes and ANT state are compared before and after migration and testing. No development fixtures, real storage writes or schema resets are used.
+The service tests run real operations inside rolled back transactions. Savepoints isolate each operation within its fixture. Transactional purchase failure triggers prove that related failures roll back Equipment changes too. Four concurrent creation transactions allocate distinct EQP references, then roll back; the next allocation must be newer. These tests intentionally advance only the test EQP sequence and verify the ANT state is unchanged by Equipment operations. No test assumes EQP starts at 1.
+
+The full database regression suite also includes existing Plant creation tests, which intentionally advance the test ANT sequence. Both test sequences can therefore contain gaps after the full suite. Development row fingerprints and both development sequence states are checked before and after; no development fixtures, R2 calls, schema resets or migrations are used for this data layer checkpoint.

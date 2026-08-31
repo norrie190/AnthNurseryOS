@@ -47,7 +47,7 @@ The `components`, `lib`, and `modules` folders are not being created just to mak
 
 ## Database starting point
 
-The original Plant foundation contains Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. Plant creation, browsing, editing, archive/restore and photo features are implemented. The next Equipment schema checkpoint adds only Equipment, EquipmentPurchase and an independent EQP sequence, reusing Location. Equipment services and UI remain unimplemented.
+The original Plant foundation contains Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. Plant creation, browsing, editing, archive/restore and photo features are implemented. Equipment, EquipmentPurchase and an independent EQP sequence reuse Location. Equipment creation, editing, archive/restore and reads are implemented; its UI remains for the next checkpoint.
 
 Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. Timestamps use `timestamptz` with millisecond precision, while the purchase date uses a calendar `date`. Foreign keys restrict deletion and ID updates so referenced nursery records cannot disappear through a cascade. Schema limitations and rules reserved for the migration or data layer are recorded in `docs/plant-data-model.md`.
 
@@ -143,7 +143,7 @@ The approved photo deletion checkpoint is a narrow exception to preserving nurse
 
 ## Equipment inventory foundation
 
-The owner has approved Equipment as the next domain, beginning with schema only. Equipment represents individual physical items, not quantities. Its UUID is the relationship key; the unique text reference will be assigned as EQP-XXXX by a later service. Category is flexible text defaulting to Other. Name is required; brand, model, serial number, notes, Location and archive date are optional. No EquipmentStatus or category table is added.
+Equipment represents individual physical items, not quantities. Its UUID is the relationship key; createEquipment assigns the unique text reference as EQP-XXXX using the independent sequence. Category is flexible text defaulting to Other. Name is required; brand, model, serial number, notes, Location and archive date are optional. No EquipmentStatus or category table is added.
 
 usesPower means “This equipment is capable of having electrical consumption tracked by AnthNurseryOS.” It is required without a default and is not a current operating flag or automatic inclusion in cost calculations. No power period, tariff, wattage, hours, energy total or numeric precision decision is included. Those need a separate historical energy design.
 
@@ -151,7 +151,11 @@ EquipmentPurchase is optional and unique per item. Costs use the same integer mi
 
 Both Equipment relationships use Restrict for delete and update. Location gains only its reverse Equipment relation; its hierarchy, uniqueness and existing Plant relationships are unchanged. Equipment has only its primary/reference indexes and locationId index, and EquipmentPurchase has its primary and unique equipmentId indexes. UUIDs and @updatedAt remain Prisma responsibilities, consistent with Plants.
 
-Two new reviewed migrations introduce the inventory tables/checks and separate public.equipment_reference_sequence. The persistent BIGINT sequence starts at 1 with CACHE 1, NO CYCLE and no column ownership; this checkpoint does not allocate it. Existing migrations, Plant records and ANT sequences remain unchanged. Future create/edit/archive services will follow the approved Plant transaction and expectedUpdatedAt patterns, but none is implemented now. Full fields, semantics and scope are in [Equipment data model](equipment-data-model.md), with SQL history in [database migrations](database-migrations.md).
+The committed schema migrations introduced the inventory tables/checks and separate public.equipment_reference_sequence. The persistent BIGINT sequence starts at 1 with CACHE 1, NO CYCLE and no column ownership. The data layer adds no migrations or dependencies. Equipment allocation never calls the ANT sequence; rollback gaps are expected for both domains' creation tests in the guarded test database.
+
+src/modules/equipment owns strict inputs, small Equipment errors, reference formatting, operations and reads. It does not call Plant services. The only Plant change extracts unchanged scalar cost/currency/calendar date validation into src/lib/purchase-field-schemas.ts so both domains use the same rules. Creation saves Equipment and optional Purchase atomically, with a Location FOR SHARE check. Editing locks Equipment with FOR NO KEY UPDATE, rechecks expectedUpdatedAt, then checks any changed Location. Transactions use READ COMMITTED and no parentage advisory lock. Explicit field mapping keeps identity/reference/history outside editable inputs, with omitted patch fields preserved and null clearing nullable values.
+
+Every accepted logical edit advances updatedAt to max(server time, previous time + 1 millisecond), including purchase only edits. Archive/restore use the same row lock and Plant idempotency semantics: a repeated request for the existing state keeps both timestamps, while a real transition needs a current token. Small fresh reads provide active/archived lists, detail including purchase/Location, and usable Location options. There are no server actions, pages or broad caching layers in this checkpoint. Full inputs, errors, tests and scope are in [Equipment data model](equipment-data-model.md), with SQL history in [database migrations](database-migrations.md).
 
 ## Keeping it tidy as it grows
 
