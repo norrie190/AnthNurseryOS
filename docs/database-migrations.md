@@ -26,6 +26,14 @@ The creation operation calls `nextval` inside its transaction, then formats the 
 
 The sequence is allocation infrastructure, not an additional Plant property or future feature model. It does not enforce reference immutability against direct SQL. That remains an application responsibility, with the existing unique constraint as duplicate protection.
 
+## Approved primary photo index, not yet implemented
+
+The photo architecture approves a new PostgreSQL partial unique index on PlantPhoto.plantId, limited to rows where isPrimary is true. It will reject a second primary for the same Plant while allowing multiple nonprimary photographs and independent primaries on other Plants. Atomic selection changes in the photo service will complement this database constraint. No new PlantPhoto fields are required.
+
+This index belongs in a new migration at the photo data layer checkpoint. No migration has been created or applied for it during the documentation checkpoint, and previous migrations must not be edited. Check for conflicting existing primary records before applying it; if any exist, stop for review rather than silently changing data. Once implemented, retain the constraint in migration history and review future migrations for accidental removal, alongside the existing cost checks, Location uniqueness and ANT sequence.
+
+Tests must verify the index exists and rejects multiple primaries, permits multiple nonprimary rows, and works with atomic primary changes. Use only the guarded PostgreSQL test database and rolled back fixtures. The approved design is in [Plant photo storage](plant-photo-storage.md).
+
 ## Applying migrations
 
 `pnpm db:deploy` applies existing migration files to `DATABASE_URL`. It does not generate a migration. `pnpm db:migrate:test` applies the same migration files to `TEST_DATABASE_URL` through a separate Prisma process, without changing `.env`.

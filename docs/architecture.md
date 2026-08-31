@@ -47,7 +47,7 @@ The `components`, `lib`, and `modules` folders are not being created just to mak
 
 ## Database starting point
 
-The approved Plant Management schema, initial migration and separate reference sequence migration are committed. They contain only Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. The creation data layer, browser form, detail page, Plant list and Edit Plant are committed. Archive and restore are implemented for review using the existing archivedAt field, with no schema changes.
+The approved Plant Management schema, initial migration and separate reference sequence migration are committed. They contain only Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. The creation data layer, browser form, detail page, Plant list, Edit Plant and Archive/Restore are committed. Photo storage architecture is approved and is being documented before implementation. The approved primary photo index is not yet part of the database.
 
 Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. Timestamps use `timestamptz` with millisecond precision, while the purchase date uses a calendar `date`. Foreign keys restrict deletion and ID updates so referenced nursery records cannot disappear through a cascade. Schema limitations and rules reserved for the migration or data layer are recorded in `docs/plant-data-model.md`.
 
@@ -106,6 +106,20 @@ Archive and restore use the same target row lock and expectedUpdatedAt token as 
 The detail page uses a small inline confirmation before archiving. Server actions validate the confirmation and call the service; client controls show pending, safe failure or success feedback. On success, router.refresh reloads the current detail record and clears the client route cache so returning to either list reads current data. This is a local refresh after a write, not a shared cache or invalidation framework.
 
 `/plants/archived` reuses the existing responsive Plant list with an archive date column. Its query selects only archived records, ordered by archivedAt descending and reference ascending. The active list keeps its original ordering and excludes archived records regardless of status. Archived details and historical parent options remain accessible. The complete operation contract and testing boundaries are in `plant-archiving.md`.
+
+## Approved Plant photo architecture
+
+Cloudflare R2 will hold photographs in a private bucket while PostgreSQL retains PlantPhoto metadata only. The existing fields are sufficient. Storage keys are generated on the server and identify the retained original; known display and thumbnail copies share its asset folder. Filenames are metadata, not object paths. Provider settings and credentials stay in server configuration, and R2 does not determine where Next.js or PostgreSQL must be hosted.
+
+The first implementation will accept JPEG, PNG and static WebP, one file at a time, up to 10 MiB and 50 MP decoded. HEIC/HEIF is deferred. Server validation must inspect and decode the content, with bounded request and processing resources. Retain the validated original privately and generate display WebP up to approximately 2560 pixels and thumbnail WebP up to approximately 320 pixels on the longest side. Served derivatives have orientation applied and EXIF/GPS removed. The initial UI will not serve originals.
+
+The Plant module will own photo rules, processing, queries and a small server only R2 boundary. Upload files before opening a short database transaction, then lock the Plant, recheck expectedUpdatedAt, insert metadata and update its timestamp. First photos become primary; primary changes are atomic under the same Plant lock. A new PostgreSQL partial unique index will guarantee at most one primary photo per Plant. That migration is approved for the later data layer checkpoint, not created or applied now. Existing migrations must not be edited.
+
+Failed uploads will attempt targeted cleanup of their own new objects. Cleanup failures must preserve the original error and log exact affected keys. An uncertain database commit must not trigger blind deletion, and a housekeeping failure after commit must not undo saved metadata or referenced files. There is no general orphan scanner, reconciliation tool or broad bucket cleanup in the initial implementation.
+
+Archived Plants may receive photos and change their primary photo without changing archivedAt or status. The later gallery and list will use processed copies delivered through short lived signed URLs. Private storage does not make the unauthenticated app safe to expose publicly: local use stays on loopback, credentials stay server only, and authentication and access checks remain prerequisites for public deployment. Backup planning must cover both metadata and objects.
+
+No production host is selected. Keep the server side 10 MiB upload design; a host with a smaller request limit would require a later transport change, likely staged/direct presigned R2 uploads, without changing the storage backend. Do not implement that alternative now. Full security, hosting, lifecycle and test decisions are recorded in [Plant photo storage](plant-photo-storage.md). This checkpoint changes documentation only.
 
 ## Keeping it tidy as it grows
 
