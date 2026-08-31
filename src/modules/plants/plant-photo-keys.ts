@@ -32,6 +32,18 @@ export function parsePhotoStorageKey(key: string) {
   return { plantId: match[1], assetId: match[2], extension: extensionSchema.parse(match[3]) };
 }
 
+export function photoAssetPrefix(originalKey: string): string {
+  parsePhotoStorageKey(originalKey);
+  // Keep the trailing slash: an adjacent asset must never match this prefix.
+  return originalKey.slice(0, originalKey.lastIndexOf('/') + 1);
+}
+
+export function assertPhotoAssetObjectKey(originalKey: string, key: string): void {
+  const prefix = photoAssetPrefix(originalKey);
+  if (!key.startsWith(prefix)) throw new Error('Object is outside the Plant photo asset.');
+  assertPhotoObjectKey(key);
+}
+
 export function photoVariantKey(
   original: string,
   variant: PhotoVariant,

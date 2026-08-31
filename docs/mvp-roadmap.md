@@ -74,7 +74,7 @@ The photo architecture checkpoint is committed. Cloudflare R2 with private stora
 
 The storage and data layer is complete, including its separately approved real R2 smoke test. The implementation and setup notes are in [Plant photo data layer](plant-photo-data-layer.md). The current checkpoint, `feat: add plant photo gallery and list images`, connects a bounded upload form, primary selection, private image delivery and a gallery to Plant details, plus primary thumbnails on the responsive lists. It adds no dependencies, schema changes or migrations. See [Plant photo browser workflow](plant-photo-browser-flow.md) for behaviour and review steps.
 
-The first implementation will not include photo deletion, a general orphan/reconciliation scanner, broad bucket cleanup, authentication, bulk uploads or advanced image tools. No production host has been selected, so keep the approved server side 10 MiB transport and revisit host limits at deployment rather than implementing hypothetical alternatives now.
+The subsequent approved [photo deletion checkpoint](plant-photo-deletion.md) adds only confirmed permanent photo removal, deterministic primary replacement and cleanup of that exact photo asset after the database commit. No schema change is needed. A general orphan/reconciliation scanner, broad bucket cleanup, authentication, bulk uploads and advanced image tools remain outside scope. No production host has been selected, so keep the approved server side 10 MiB transport and revisit host limits at deployment rather than implementing hypothetical alternatives now.
 
 ## 5. Care tracking
 

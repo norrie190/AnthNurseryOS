@@ -36,6 +36,8 @@ Both inputs are strict. Identity, keys, primary flags, ordering, stored timestam
 
 An omitted takenAt stays null. The service accepts an explicit instant and stores it as UTC, not a guessed date from the filename, EXIF or upload time. The browser now interprets the entered time in the device timezone and labels that choice. IDs and concurrency tokens are validated before database access. Expected validation, missing records, stale state and constraint conflicts reuse PlantError. Unexpected processing diagnostics remain in the error cause; database and storage failures remain distinguishable from expected Plant errors. HTTP boundaries show safe messages rather than serialize unexpected errors or their causes.
 
+The later [photo deletion checkpoint](plant-photo-deletion.md) adds `deletePlantPhoto(plantId, photoId, { expectedUpdatedAt, confirmed: true })`. It commits metadata deletion, primary replacement and Plant timestamp advancement before targeted storage cleanup. Its separate `removePhotoAsset` boundary lists only a validated known asset prefix and removes all its variants and crop revisions, rather than using the upload attempt ownership check. Cleanup failure returns a warning without recreating metadata. No schema, configuration or dependency change is needed.
+
 ## Processing
 
 The file byte limit is 10,485,760 and the decoded pixel limit is 50,000,000. The service accepts bytes only. The browser milestone adds a streamed request limit before multipart parsing; its separate transport limits are recorded in the browser workflow document.

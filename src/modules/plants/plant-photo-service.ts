@@ -10,8 +10,15 @@ import {
   type SetPrimaryPlantPhotoInput,
   parseUpdatePlantPhotoCrop,
   type UpdatePlantPhotoCropInput,
+  parseDeletePlantPhoto,
+  type DeletePlantPhotoInput,
 } from './plant-photo-input';
-import { createPhotoKeys, parsePhotoStorageKey, photoVariantKey } from './plant-photo-keys';
+import {
+  createPhotoKeys,
+  parsePhotoStorageKey,
+  photoVariantKey,
+  photoAssetPrefix,
+} from './plant-photo-keys';
 import {
   processPlantPhoto,
   processPlantPhotoThumbnail,
@@ -23,6 +30,12 @@ import { getPlantPhotoStorage, type PlantPhotoStorage } from './plant-photo-stor
 
 export type { UploadPlantPhotoInput, SetPrimaryPlantPhotoInput } from './plant-photo-input';
 export type PlantPhotoResult = { photo: PlantPhoto; plantUpdatedAt: Date };
+export type DeletePlantPhotoResult = {
+  deletedPhotoId: string;
+  primaryPhotoId: string | null;
+  plantUpdatedAt: Date;
+  cleanupPending: boolean;
+};
 const transactionOptions = {
   isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
   maxWait: 5000,
@@ -54,6 +67,112 @@ async function advancePlant(tx: Prisma.TransactionClient, plantId: string, previ
     data: { updatedAt: new Date(Math.max(Date.now(), previous.getTime() + 1)) },
     select: { updatedAt: true },
   });
+}
+
+export async function deletePlantPhoto(
+  plantId: string,
+  photoId: string,
+  input: DeletePlantPhotoInput,
+): Promise<DeletePlantPhotoResult> {
+  const parsed = parseDeletePlantPhoto(plantId, photoId, input);
+  const db = getPrisma();
+  type Deletion = { storageKey: string; result: Omit<DeletePlantPhotoResult, 'cleanupPending'> };
+  let completed: Deletion | undefined;
+  let deletion: Deletion;
+  try {
+    deletion = await db.$transaction(async (tx) => {
+      const locked = await lockPlant(tx, parsed.plantId);
+      checkCurrent(locked, parsed.input.expectedUpdatedAt);
+      const photo = await tx.plantPhoto.findUnique({ where: { id: parsed.input.photoId } });
+      checkPhotoOwner(photo, parsed.plantId);
+      const prefix = photoAssetPrefix(photo.storageKey);
+      // Imported/corrupt rows must not share an asset folder, even if their
+      // original extensions differ and pass the storageKey unique constraint.
+      const sharedAsset = await tx.plantPhoto.findFirst({
+        where: { id: { not: photo.id }, storageKey: { startsWith: prefix } },
+        select: { id: true },
+      });
+      if (sharedAsset)
+        throw new PlantError('CONFLICT', 'This photo asset needs review before deletion.');
+      await tx.plantPhoto.delete({ where: { id: photo.id } });
+      const primary = await tx.plantPhoto.findFirst({
+        where: { plantId: parsed.plantId, ...(photo.isPrimary ? {} : { isPrimary: true }) },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+        select: { id: true },
+      });
+      if (photo.isPrimary && primary)
+        await tx.plantPhoto.update({ where: { id: primary.id }, data: { isPrimary: true } });
+      const updated = await advancePlant(tx, parsed.plantId, locked.updatedAt);
+      completed = {
+        storageKey: photo.storageKey,
+        result: {
+          deletedPhotoId: photo.id,
+          primaryPhotoId: primary?.id ?? null,
+          plantUpdatedAt: updated.updatedAt,
+        },
+      };
+      return completed;
+    }, transactionOptions);
+  } catch (error) {
+    if (!completed) rethrowPhotoFailure(error);
+    const attempt = completed;
+    // The callback completed, but COMMIT may have lost its acknowledgement.
+    // Wait behind the same Plant lock before deciding whether cleanup is safe.
+    let resolved: Deletion | null;
+    try {
+      resolved = await db.$transaction(async (tx) => {
+        const locked = await lockPlant(tx, parsed.plantId);
+        if (!locked) throw new Error('Plant disappeared while resolving photo deletion.');
+        const remaining = await tx.plantPhoto.findFirst({
+          where: {
+            OR: [
+              { id: parsed.input.photoId },
+              { storageKey: { startsWith: photoAssetPrefix(attempt.storageKey) } },
+            ],
+          },
+          select: { id: true },
+        });
+        if (remaining) return null;
+        const primary = await tx.plantPhoto.findFirst({
+          where: { plantId: parsed.plantId, isPrimary: true },
+          select: { id: true },
+        });
+        // Return the observed database state, not a timestamp from a callback
+        // whose commit may have rolled back before another deletion completed.
+        return {
+          storageKey: attempt.storageKey,
+          result: {
+            deletedPhotoId: parsed.input.photoId,
+            primaryPhotoId: primary?.id ?? null,
+            plantUpdatedAt: locked.updatedAt,
+          },
+        };
+      }, transactionOptions);
+    } catch {
+      console.error('Plant photo deletion commit uncertain; storage retained', {
+        plantId: parsed.plantId,
+        photoId: parsed.input.photoId,
+        assetPrefix: photoAssetPrefix(attempt.storageKey),
+      });
+      throw new Error('Photo deletion outcome is uncertain.', { cause: error });
+    }
+    if (!resolved) rethrowPhotoFailure(error);
+    deletion = resolved;
+  }
+
+  // Never hold a database lock during R2 work. Failure here must not undo a
+  // committed deletion, recreate metadata, or offer a destructive retry.
+  try {
+    await getPlantPhotoStorage().removePhotoAsset(deletion.storageKey);
+    return { ...deletion.result, cleanupPending: false };
+  } catch {
+    console.error('Plant photo deleted; targeted storage cleanup incomplete', {
+      plantId: parsed.plantId,
+      photoId: parsed.input.photoId,
+      assetPrefix: photoAssetPrefix(deletion.storageKey),
+    });
+    return { ...deletion.result, cleanupPending: true };
+  }
 }
 
 function rethrowPhotoFailure(error: unknown): never {

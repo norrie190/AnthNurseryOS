@@ -26,7 +26,7 @@ plants/<plant UUID>/<asset UUID>/thumbnails/<revision UUID>.webp
 
 derivativeRevision versions only the thumbnail. A null revision resolves to the legacy thumbnail.webp in the asset folder. The known display path never depends on the revision. Asset and revision UUIDs come from the server, never the filename or request. Delivery resolves the active revision from PostgreSQL; the browser URL's v marker only prompts an image refresh and cannot select a storage path. Private signing remains restricted to display and thumbnail.
 
-Successful superseded thumbnails remain in R2 for now. This avoids interrupting an already issued signed read, at the cost of one small retained image per adjustment. There is no crop history UI or automatic bucket sweep.
+Successful superseded thumbnails remain in R2 while the photo exists. This avoids interrupting an already issued signed read, at the cost of one small retained image per adjustment. The separately approved [photo deletion checkpoint](plant-photo-deletion.md) removes those revisions along with the original and display when the owner explicitly deletes that photo. There is no crop history UI or automatic bucket sweep.
 
 ## Preview and browser flow
 

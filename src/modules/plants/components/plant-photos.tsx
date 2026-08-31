@@ -55,6 +55,16 @@ export function PlantPhotos({
     crop: PhotoCrop;
   } | null>(null);
   const [revisions, setRevisions] = useState<Record<string, string>>({});
+  const [deletedIds, setDeletedIds] = useState<string[]>([]);
+  const [primaryOverride, setPrimaryOverride] = useState<string | null | undefined>();
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    photoId: string;
+    label: string;
+    token: string;
+  } | null>(null);
+  const cancelDeleteButton = useRef<HTMLButtonElement>(null);
+  const deleteButton = useRef<HTMLButtonElement | null>(null);
+  const confirmationWasOpen = useRef(false);
   const [editPreviewReady, setEditPreviewReady] = useState(false);
   const fileSignature = useRef('');
   const [pending, startTransition] = useTransition();
@@ -62,11 +72,25 @@ export function PlantPhotos({
   const fileInput = useRef<HTMLInputElement>(null);
   const feedbackElement = useRef<HTMLDivElement>(null);
   const busy = pending || operation !== null;
-  const primary = photos.find((photo) => photo.isPrimary);
+  const controlsDisabled = busy || deleteConfirmation !== null;
+  const visiblePhotos = photos.filter((photo) => !deletedIds.includes(photo.id));
+  // The local replacement only bridges the refresh after our deletion. Once
+  // server props remove that photo, their primary selection is authoritative.
+  const isPrimary = (photo: PlantGalleryPhoto) =>
+    primaryOverride === undefined || visiblePhotos.length === photos.length
+      ? photo.isPrimary
+      : photo.id === primaryOverride;
+  const primary = visiblePhotos.find(isPrimary);
   const issues = feedback && !feedback.success ? (feedback.issues ?? []) : [];
   useEffect(() => {
-    if (feedback && !feedback.success) feedbackElement.current?.focus();
+    if (feedback && (!feedback.success || feedback.deletedPhotoId))
+      feedbackElement.current?.focus();
   }, [feedback]);
+  useEffect(() => {
+    if (deleteConfirmation) cancelDeleteButton.current?.focus();
+    else if (confirmationWasOpen.current) deleteButton.current?.focus();
+    confirmationWasOpen.current = deleteConfirmation !== null;
+  }, [deleteConfirmation]);
 
   function send(url: string, options: RequestInit, action: string) {
     if (inFlight.current || busy) return;
@@ -85,6 +109,7 @@ export function PlantPhotos({
           // A rerender after someone else's edit must not silently refresh it.
           setToken(result.plantUpdatedAt);
           if (action === 'upload') {
+            setPrimaryOverride(undefined);
             setCaption('');
             setTakenAt('');
             setUploadPreview(null);
@@ -96,6 +121,12 @@ export function PlantPhotos({
               [result.photoId!]: result.derivativeRevision!,
             }));
             setEditCrop(null);
+          }
+          if (action === 'delete' && result.deletedPhotoId) {
+            setDeletedIds((current) => [...current, result.deletedPhotoId!]);
+            setPrimaryOverride(result.primaryPhotoId);
+            setDeleteConfirmation(null);
+            if (editCrop?.photoId === result.deletedPhotoId) setEditCrop(null);
           }
           router.refresh();
         } else if (action === 'upload') setReselect(true);
@@ -235,6 +266,24 @@ export function PlantPhotos({
     );
   }
 
+  function confirmDelete() {
+    if (!deleteConfirmation) return;
+    send(
+      `/plants/${plantId}/photos/${deleteConfirmation.photoId}`,
+      {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expectedUpdatedAt: deleteConfirmation.token, confirmed: true }),
+      },
+      'delete',
+    );
+  }
+
+  function cancelDelete() {
+    if (busy) return;
+    setDeleteConfirmation(null);
+  }
+
   function fieldError(field: string) {
     const issue = issues.find((item) => item.field === field);
     return issue ? (
@@ -262,8 +311,8 @@ export function PlantPhotos({
       <h2 id="photos-heading">Photos</h2>
       {archived && (
         <p className={shared.sectionIntro}>
-          This Plant is archived. Adding photos, adjusting crops or changing its primary photo will
-          not restore it or change its status.
+          This Plant is archived. Adding or deleting photos, adjusting crops or changing its primary
+          photo will not restore it or change its status.
         </p>
       )}
       {primary && (
@@ -282,9 +331,9 @@ export function PlantPhotos({
           </figcaption>
         </figure>
       )}
-      {photos.length ? (
+      {visiblePhotos.length ? (
         <ul className={styles.gallery} aria-label="Plant photos">
-          {photos.map((photo, index) => (
+          {visiblePhotos.map((photo, index) => (
             <li key={photo.id}>
               <figure className={styles.photo}>
                 <div className={styles.thumbnail}>
@@ -299,13 +348,13 @@ export function PlantPhotos({
                   />
                 </div>
                 <figcaption>
-                  {photo.isPrimary ? (
+                  {isPrimary(photo) ? (
                     <span className={shared.badge}>Primary</span>
                   ) : (
                     <button
                       type="button"
                       className={shared.secondaryButton}
-                      disabled={busy}
+                      disabled={controlsDisabled}
                       aria-label={`Set photo ${index + 1} as Primary`}
                       onClick={() => selectPrimary(photo.id)}
                     >
@@ -315,11 +364,27 @@ export function PlantPhotos({
                   <button
                     type="button"
                     className={shared.secondaryButton}
-                    disabled={busy}
+                    disabled={controlsDisabled}
                     aria-label={`Adjust Crop for photo ${index + 1}`}
                     onClick={() => void prepareCrop(photo.id)}
                   >
                     Adjust Crop
+                  </button>
+                  <button
+                    type="button"
+                    className={shared.secondaryButton}
+                    disabled={controlsDisabled}
+                    aria-label={`Delete photo ${index + 1}`}
+                    onClick={(event) => {
+                      deleteButton.current = event.currentTarget;
+                      setDeleteConfirmation({
+                        photoId: photo.id,
+                        label: `photo ${index + 1}${photo.caption ? `: ${photo.caption}` : ''}`,
+                        token,
+                      });
+                    }}
+                  >
+                    Delete
                   </button>
                   {details(photo)}
                 </figcaption>
@@ -334,6 +399,41 @@ export function PlantPhotos({
         </p>
       )}
 
+      {deleteConfirmation && (
+        <section
+          className={shared.errorSummary}
+          aria-labelledby="delete-photo-heading"
+          aria-describedby="delete-photo-warning"
+          aria-busy={busy}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') cancelDelete();
+          }}
+        >
+          <h3 id="delete-photo-heading">Delete {deleteConfirmation.label}?</h3>
+          <p id="delete-photo-warning">
+            This permanently removes the photo, including its original and all thumbnail crops. It
+            cannot be undone. The Plant and its other records will stay unchanged.
+          </p>
+          <button
+            ref={cancelDeleteButton}
+            type="button"
+            className={shared.secondaryButton}
+            disabled={busy}
+            onClick={cancelDelete}
+          >
+            Cancel deletion
+          </button>{' '}
+          <button
+            type="button"
+            className={shared.primaryButton}
+            disabled={busy}
+            onClick={confirmDelete}
+          >
+            {operation === 'delete' ? 'Deleting Photo…' : 'Permanently Delete Photo'}
+          </button>
+        </section>
+      )}
+
       {editCrop && (
         <section aria-label="Adjust thumbnail crop" className={styles.upload}>
           <h3>Adjust Crop</h3>
@@ -343,13 +443,13 @@ export function PlantPhotos({
             dimensions={editCrop.dimensions}
             crop={editCrop.crop}
             onChange={(crop) => setEditCrop({ ...editCrop, crop })}
-            disabled={busy}
+            disabled={controlsDisabled}
             onReady={setEditPreviewReady}
           />
           <button
             type="button"
             className={shared.primaryButton}
-            disabled={busy || !editPreviewReady}
+            disabled={controlsDisabled || !editPreviewReady}
             onClick={saveCrop}
           >
             {operation === 'crop' ? 'Saving Crop…' : 'Save Crop'}
@@ -357,7 +457,7 @@ export function PlantPhotos({
           <button
             type="button"
             className={shared.secondaryButton}
-            disabled={busy}
+            disabled={controlsDisabled}
             onClick={() => setEditCrop(null)}
           >
             Cancel
@@ -369,8 +469,12 @@ export function PlantPhotos({
         <div
           ref={feedbackElement}
           tabIndex={-1}
-          role={feedback.success ? 'status' : 'alert'}
-          className={feedback.success ? shared.archiveFeedback : shared.errorSummary}
+          role={feedback.success && !feedback.cleanupPending ? 'status' : 'alert'}
+          className={
+            feedback.success && !feedback.cleanupPending
+              ? shared.archiveFeedback
+              : shared.errorSummary
+          }
         >
           <p>{feedback.message}</p>
           {!feedback.success && issues.length > 0 && (
@@ -417,7 +521,7 @@ export function PlantPhotos({
         aria-busy={busy}
         noValidate
       >
-        <fieldset disabled={busy} className={styles.uploadFields}>
+        <fieldset disabled={controlsDisabled} className={styles.uploadFields}>
           <legend>Upload Photo</legend>
           <p id="photo-guidance" className={shared.sectionIntro}>
             One JPEG, PNG or static WebP image, up to 10 MiB and 50 megapixels. HEIC/HEIF is not

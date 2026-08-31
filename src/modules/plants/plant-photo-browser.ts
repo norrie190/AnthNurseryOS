@@ -17,6 +17,9 @@ export const photoResponseSchema = z.discriminatedUnion('success', [
     plantUpdatedAt: z.iso.datetime(),
     photoId: z.uuid().optional(),
     derivativeRevision: z.uuid().optional(),
+    deletedPhotoId: z.uuid().optional(),
+    primaryPhotoId: z.uuid().nullable().optional(),
+    cleanupPending: z.boolean().optional(),
   }),
   z.object({
     success: z.literal(false),

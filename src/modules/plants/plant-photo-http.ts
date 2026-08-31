@@ -8,6 +8,7 @@ import {
   updatePlantPhotoCrop,
   previewNewPlantPhoto,
   getPlantPhotoCropPreview,
+  deletePlantPhoto,
 } from './plant-photo-service';
 import { photoCropSchema } from './plant-photo-crop';
 import { getPlantPhotoReadUrl } from './plant-photo-queries';
@@ -254,6 +255,34 @@ export async function setPrimaryPlantPhotoRequest(
       success: true,
       message: 'Primary photo saved.',
       plantUpdatedAt: result.plantUpdatedAt.toISOString(),
+    });
+  } catch (error) {
+    return photoFailure(error);
+  }
+}
+
+export async function deletePlantPhotoRequest(request: Request, plantId: string, photoId: string) {
+  try {
+    checkOrigin(request);
+    if (request.headers.get('content-type')?.split(';')[0].trim() !== 'application/json')
+      throw new PhotoRequestError('The delete photo request must use JSON.', 415);
+    const bytes = await boundedBody(request, 1024);
+    let input;
+    try {
+      input = JSON.parse(bytes.toString('utf8'));
+    } catch {
+      throw new PhotoRequestError('The delete photo request could not be read.');
+    }
+    const result = await deletePlantPhoto(plantId, photoId, input);
+    return json({
+      success: true,
+      message: result.cleanupPending
+        ? 'Photo deleted from the nursery record, but storage cleanup could not be completed. Some files may remain in R2. Check the server diagnostics before any manual cleanup.'
+        : 'Photo permanently deleted.',
+      deletedPhotoId: result.deletedPhotoId,
+      primaryPhotoId: result.primaryPhotoId,
+      plantUpdatedAt: result.plantUpdatedAt.toISOString(),
+      cleanupPending: result.cleanupPending,
     });
   } catch (error) {
     return photoFailure(error);

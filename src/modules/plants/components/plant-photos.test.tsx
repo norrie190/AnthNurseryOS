@@ -26,6 +26,165 @@ function success(message = 'Photo uploaded.') {
 function file() {
   return new File(['synthetic content'], 'leaf.jpg', { type: 'image/jpeg' });
 }
+
+const deletePhotos: PlantGalleryPhoto[] = [
+  { ...photos[0], id: '11111111-1111-4111-8111-111111111111' },
+  { ...photos[1], id: '22222222-2222-4222-8222-222222222222' },
+];
+function deletionSuccess(photoId: string, primaryPhotoId: string | null, cleanupPending = false) {
+  return {
+    ok: true,
+    json: async () => ({
+      success: true,
+      message: cleanupPending
+        ? 'Photo deleted, but some files may remain in R2.'
+        : 'Photo permanently deleted.',
+      deletedPhotoId: photoId,
+      primaryPhotoId,
+      plantUpdatedAt: nextToken,
+      cleanupPending,
+    }),
+  };
+}
+
+test('deletion requires confirmation, warns permanently, and Cancel/Escape preserve the photo and focus', async () => {
+  const user = userEvent.setup();
+  render(<PlantPhotos {...props} photos={deletePhotos} />);
+  const remove = screen.getByRole('button', { name: 'Delete photo 1' });
+  await user.click(remove);
+  expect(screen.getByRole('heading', { name: 'Delete photo 1: First leaf?' })).toBeInTheDocument();
+  expect(screen.getByText(/This permanently removes/)).toHaveTextContent('It cannot be undone');
+  expect(screen.getByRole('button', { name: 'Cancel deletion' })).toHaveFocus();
+  expect(fetchMock).not.toHaveBeenCalled();
+  await user.click(screen.getByRole('button', { name: 'Cancel deletion' }));
+  expect(remove).toHaveFocus();
+  await user.click(remove);
+  await user.keyboard('{Escape}');
+  expect(remove).toHaveFocus();
+  expect(
+    screen.queryByRole('button', { name: 'Permanently Delete Photo' }),
+  ).not.toBeInTheDocument();
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+test.each([false, true])(
+  'delete primary refreshes and immediately promotes remaining image, including archived Plant %s',
+  async (archived) => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValue(deletionSuccess(deletePhotos[0].id, deletePhotos[1].id));
+    render(<PlantPhotos {...props} archived={archived} photos={deletePhotos} />);
+    await user.click(screen.getByRole('button', { name: 'Delete photo 1' }));
+    await user.click(screen.getByRole('button', { name: 'Permanently Delete Photo' }));
+    await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      `/plants/plant-id/photos/${deletePhotos[0].id}`,
+      {
+        method: 'DELETE',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expectedUpdatedAt: props.expectedUpdatedAt, confirmed: true }),
+      },
+    );
+    expect(screen.getAllByRole('img')).toHaveLength(2);
+    expect(screen.getAllByRole('img')[0]).toHaveAttribute(
+      'src',
+      `/plants/plant-id/photos/${deletePhotos[1].id}/display`,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Photo permanently deleted');
+    expect(screen.getByRole('status')).toHaveFocus();
+  },
+);
+
+test('deleting the only photo clears the main display and shows the empty state, including cleanup warning', async () => {
+  const user = userEvent.setup();
+  fetchMock.mockResolvedValue(deletionSuccess(deletePhotos[0].id, null, true));
+  render(<PlantPhotos {...props} photos={[deletePhotos[0]]} />);
+  await user.type(screen.getByLabelText(/Caption/), 'Keep this unsaved caption');
+  await user.click(screen.getByRole('button', { name: 'Delete photo 1' }));
+  await user.click(screen.getByRole('button', { name: 'Permanently Delete Photo' }));
+  await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+  expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  expect(screen.getByText(/No photos yet/)).toBeInTheDocument();
+  expect(screen.getByRole('alert')).toHaveTextContent('some files may remain');
+  expect(screen.getByRole('alert')).toHaveFocus();
+  expect(screen.getByLabelText(/Caption/)).toHaveValue('Keep this unsaved caption');
+});
+
+test('pending deletion prevents duplicate requests and disables other mutations', async () => {
+  let finish!: (value: ReturnType<typeof deletionSuccess>) => void;
+  fetchMock.mockReturnValue(
+    new Promise((resolve) => {
+      finish = resolve;
+    }),
+  );
+  const user = userEvent.setup();
+  render(<PlantPhotos {...props} photos={deletePhotos} />);
+  await user.click(screen.getByRole('button', { name: 'Delete photo 2' }));
+  await user.click(screen.getByRole('button', { name: 'Permanently Delete Photo' }));
+  expect(screen.getByRole('button', { name: 'Deleting Photo…' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Cancel deletion' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Upload Photo' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Set photo 2 as Primary' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('button', { name: 'Deleting Photo…' }));
+  expect(fetchMock).toHaveBeenCalledOnce();
+  await act(async () => finish(deletionSuccess(deletePhotos[1].id, deletePhotos[0].id)));
+  expect(screen.getAllByRole('img')[0]).toHaveAttribute(
+    'src',
+    `/plants/plant-id/photos/${deletePhotos[0].id}/display`,
+  );
+});
+
+test('refreshed server photos supersede the temporary local primary replacement', async () => {
+  const user = userEvent.setup();
+  const third = { ...deletePhotos[1], id: '33333333-3333-4333-8333-333333333333' };
+  fetchMock.mockResolvedValue(deletionSuccess(deletePhotos[0].id, deletePhotos[1].id));
+  const { rerender } = render(<PlantPhotos {...props} photos={[...deletePhotos, third]} />);
+  await user.click(screen.getByRole('button', { name: 'Delete photo 1' }));
+  await user.click(screen.getByRole('button', { name: 'Permanently Delete Photo' }));
+  await waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+  rerender(
+    <PlantPhotos
+      {...props}
+      expectedUpdatedAt={nextToken}
+      photos={[deletePhotos[1], { ...third, isPrimary: true }]}
+    />,
+  );
+  expect(screen.getAllByRole('img')[0]).toHaveAttribute(
+    'src',
+    `/plants/plant-id/photos/${third.id}/display`,
+  );
+});
+
+test.each(['stale', 'server', 'transport'])(
+  'delete %s failure retains photo, confirmation and submitted text',
+  async (failure) => {
+    if (failure === 'transport')
+      fetchMock.mockRejectedValueOnce(new Error('secret provider detail'));
+    else
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({
+          success: false,
+          message: 'Safe deletion error',
+          stale: failure === 'stale',
+          checkSaved: failure === 'server',
+        }),
+      });
+    const user = userEvent.setup();
+    render(<PlantPhotos {...props} photos={deletePhotos} />);
+    await user.type(screen.getByLabelText(/Caption/), 'Draft');
+    await user.click(screen.getByRole('button', { name: 'Delete photo 1' }));
+    await user.click(screen.getByRole('button', { name: 'Permanently Delete Photo' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert).not.toHaveTextContent('secret provider detail');
+    expect(alert).toHaveFocus();
+    expect(within(alert).getByRole('link', { name: 'Reload Plant details' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Permanently Delete Photo' })).toBeEnabled();
+    expect(screen.getAllByRole('img')).toHaveLength(3);
+    expect(screen.getByLabelText(/Caption/)).toHaveValue('Draft');
+    expect(refresh).not.toHaveBeenCalled();
+  },
+);
 beforeEach(() => {
   vi.clearAllMocks();
   previewMock.mockResolvedValue({

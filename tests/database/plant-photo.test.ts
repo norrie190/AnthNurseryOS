@@ -12,6 +12,7 @@ import {
   updatePlantPhotoCrop,
   previewNewPlantPhoto,
   getPlantPhotoCropPreview,
+  deletePlantPhoto,
 } from '../../src/modules/plants/plant-photo-service';
 import {
   getPlantPhotoGallery,
@@ -26,6 +27,7 @@ import {
   uploadPlantPhotoRequest,
   setPrimaryPlantPhotoRequest,
   deliverPlantPhoto,
+  deletePlantPhotoRequest,
 } from '../../src/modules/plants/plant-photo-http';
 
 vi.mock('server-only', () => ({}));
@@ -114,6 +116,258 @@ function plant(tx: Prisma.TransactionClient, data: Partial<Prisma.PlantUnchecked
 function token(record: { updatedAt: Date }) {
   return { expectedUpdatedAt: record.updatedAt.toISOString() };
 }
+
+async function deletionPhoto(
+  tx: Prisma.TransactionClient,
+  fake: ReturnType<typeof fakePlantPhotoStorage>,
+  plantId: string,
+  data: Partial<Prisma.PlantPhotoUncheckedCreateInput> = {},
+) {
+  const keys = createPhotoKeys(plantId, 'png');
+  const revision = randomUUID();
+  const photo = await tx.plantPhoto.create({
+    data: {
+      plantId,
+      storageKey: keys.original,
+      cropX: 0,
+      cropY: 0,
+      cropSize: 1,
+      derivativeRevision: revision,
+      caption: 'Keep other photos intact',
+      ...data,
+    },
+  });
+  for (const key of [
+    ...Object.values(keys),
+    photoVariantKey(keys.original, 'thumbnail', revision),
+    photoVariantKey(keys.original, 'thumbnail', randomUUID()),
+  ])
+    fake.objects.set(key, { key, body: image, contentType: 'image/png', uploadId: randomUUID() });
+  return photo;
+}
+
+test.each([false, true])(
+  'deleting the only photo preserves all nursery history, archived %s',
+  (archived) =>
+    fixture(async (tx, fake) => {
+      const location = await tx.location.create({
+        data: { name: `photo-location-${randomUUID()}` },
+      });
+      const parent = await plant(tx);
+      const owner = await plant(tx, {
+        locationId: location.id,
+        archivedAt: archived ? new Date() : null,
+        status: 'DECEASED',
+        name: 'Retained Plant',
+        notes: 'Keep notes',
+      });
+      const parentage = await tx.plantParentage.create({
+        data: {
+          plantId: owner.id,
+          seedParentPlantId: parent.id,
+          pollenParentName: 'External parent',
+        },
+      });
+      const purchase = await tx.plantPurchase.create({
+        data: {
+          plantId: owner.id,
+          seller: 'Keep seller',
+          plantPriceMinor: 5000,
+          shippingCostMinor: 0,
+        },
+      });
+      const offspring = await plant(tx);
+      const offspringParentage = await tx.plantParentage.create({
+        data: { plantId: offspring.id, seedParentPlantId: owner.id },
+      });
+      const photo = await deletionPhoto(tx, fake, owner.id, { isPrimary: true });
+      const foreignPhoto = await deletionPhoto(tx, fake, parent.id, { isPrimary: true });
+      const otherObjects = new Map(
+        [...fake.objects].filter(
+          ([key]) =>
+            !key.startsWith(photo.storageKey.slice(0, photo.storageKey.lastIndexOf('/') + 1)),
+        ),
+      );
+      const origin = 'http://127.0.0.1:3000';
+      const response = await deletePlantPhotoRequest(
+        new Request(`${origin}/plants/${owner.id}/photos/${photo.id}`, {
+          method: 'DELETE',
+          headers: { origin, 'content-type': 'application/json' },
+          body: JSON.stringify({ ...token(owner), confirmed: true }),
+        }),
+        owner.id,
+        photo.id,
+      );
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(result).toMatchObject({
+        success: true,
+        deletedPhotoId: photo.id,
+        primaryPhotoId: null,
+        cleanupPending: false,
+      });
+      expect(await tx.plantPhoto.findUnique({ where: { id: photo.id } })).toBeNull();
+      const after = await tx.plant.findUniqueOrThrow({ where: { id: owner.id } });
+      expect(after.updatedAt.getTime()).toBeGreaterThan(owner.updatedAt.getTime());
+      expect({ ...after, updatedAt: owner.updatedAt }).toEqual(owner);
+      expect(await tx.location.findUnique({ where: { id: location.id } })).toEqual(location);
+      expect(await tx.plantPurchase.findUnique({ where: { id: purchase.id } })).toEqual(purchase);
+      expect(await tx.plantParentage.findUnique({ where: { id: parentage.id } })).toEqual(
+        parentage,
+      );
+      expect(await tx.plantParentage.findUnique({ where: { id: offspringParentage.id } })).toEqual(
+        offspringParentage,
+      );
+      expect(await tx.plantPhoto.findUnique({ where: { id: foreignPhoto.id } })).toEqual(
+        foreignPhoto,
+      );
+      expect(await tx.plant.findUnique({ where: { id: parent.id } })).toEqual(parent);
+      expect(await getPlantPhotoGallery(owner.id)).toEqual([]);
+      expect(await getPrimaryPlantPhoto(owner.id)).toBeNull();
+      expect(
+        (await (archived ? getArchivedPlantList() : getPlantList())).find(
+          (row) => row.id === owner.id,
+        )?.photos,
+      ).toEqual([]);
+      expect(fake.objects).toEqual(otherObjects);
+      expect(fake.storage.removePhotoAsset).toHaveBeenCalledExactlyOnceWith(photo.storageKey);
+    }),
+);
+
+test('primary deletion promotes by sortOrder, createdAt and UUID without reordering others', () =>
+  fixture(async (tx, fake) => {
+    const owner = await plant(tx, { updatedAt: new Date('2099-01-01T00:00:00Z') });
+    const chosen = await deletionPhoto(tx, fake, owner.id, { isPrimary: true });
+    const first = await deletionPhoto(tx, fake, owner.id, {
+      id: '11111111-1111-4111-8111-111111111111',
+      sortOrder: 2,
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+    });
+    const tied = await deletionPhoto(tx, fake, owner.id, {
+      id: '22222222-2222-4222-8222-222222222222',
+      sortOrder: 2,
+      createdAt: first.createdAt,
+    });
+    const newer = await deletionPhoto(tx, fake, owner.id, {
+      sortOrder: 2,
+      createdAt: new Date('2026-02-01T00:00:00Z'),
+    });
+    const last = await deletionPhoto(tx, fake, owner.id, {
+      sortOrder: 9,
+      createdAt: new Date('2025-01-01T00:00:00Z'),
+    });
+    const result = await deletePlantPhoto(owner.id, chosen.id, {
+      ...token(owner),
+      confirmed: true,
+    });
+    expect(result.primaryPhotoId).toBe(first.id);
+    expect(result.plantUpdatedAt.getTime()).toBe(owner.updatedAt.getTime() + 1);
+    const promoted = await tx.plantPhoto.findUniqueOrThrow({ where: { id: first.id } });
+    expect({ ...promoted, isPrimary: false, updatedAt: first.updatedAt }).toEqual(first);
+    for (const untouched of [tied, newer, last])
+      expect(await tx.plantPhoto.findUnique({ where: { id: untouched.id } })).toEqual(untouched);
+    expect((await getPlantList()).find((row) => row.id === owner.id)?.photos).toEqual([
+      { id: first.id, derivativeRevision: first.derivativeRevision },
+    ]);
+    await expect(
+      deletePlantPhoto(owner.id, tied.id, { ...token(owner), confirmed: true }),
+    ).rejects.toMatchObject({ code: 'STALE_UPDATE' });
+    const next = await deletePlantPhoto(owner.id, tied.id, {
+      expectedUpdatedAt: result.plantUpdatedAt.toISOString(),
+      confirmed: true,
+    });
+    expect(next.primaryPhotoId).toBe(first.id);
+    expect(next.plantUpdatedAt.getTime()).toBe(result.plantUpdatedAt.getTime() + 1);
+    expect(await tx.plantPhoto.findUnique({ where: { id: first.id } })).toEqual(promoted);
+  }));
+
+test('missing, wrong owner and stale deletion cannot change metadata or storage', () =>
+  fixture(async (tx, fake) => {
+    const owner = await plant(tx);
+    const other = await plant(tx);
+    const photo = await deletionPhoto(tx, fake, owner.id, { isPrimary: true });
+    const before = new Map(fake.objects);
+    await expect(
+      deletePlantPhoto(other.id, photo.id, { ...token(other), confirmed: true }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(
+      deletePlantPhoto(owner.id, randomUUID(), { ...token(owner), confirmed: true }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(
+      deletePlantPhoto(randomUUID(), photo.id, { ...token(owner), confirmed: true }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    await expect(
+      deletePlantPhoto(owner.id, photo.id, {
+        expectedUpdatedAt: new Date(owner.updatedAt.getTime() - 1).toISOString(),
+        confirmed: true,
+      }),
+    ).rejects.toMatchObject({ code: 'STALE_UPDATE' });
+    expect(await tx.plantPhoto.findUnique({ where: { id: photo.id } })).toEqual(photo);
+    expect(await tx.plant.findUnique({ where: { id: owner.id } })).toEqual(owner);
+    expect(fake.objects).toEqual(before);
+    expect(fake.storage.removePhotoAsset).not.toHaveBeenCalled();
+  }));
+
+test('database rollback restores deleted photo and primary selection without any R2 cleanup', () =>
+  fixture(async (tx, fake) => {
+    const owner = await plant(tx);
+    const photo = await deletionPhoto(tx, fake, owner.id, { isPrimary: true });
+    const next = await deletionPhoto(tx, fake, owner.id);
+    const before = new Map(fake.objects);
+    await tx.$executeRaw`CREATE FUNCTION pg_temp.reject_photo_delete_update() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'photo deletion rollback'; END; $$`;
+    await tx.$executeRaw`CREATE TRIGGER reject_photo_delete_update AFTER UPDATE ON public."Plant" FOR EACH ROW EXECUTE FUNCTION pg_temp.reject_photo_delete_update()`;
+    await expect(
+      deletePlantPhoto(owner.id, photo.id, { ...token(owner), confirmed: true }),
+    ).rejects.toThrow('photo deletion rollback');
+    expect(await tx.plantPhoto.findUnique({ where: { id: photo.id } })).toEqual(photo);
+    expect(await tx.plantPhoto.findUnique({ where: { id: next.id } })).toEqual(next);
+    expect(await tx.plant.findUnique({ where: { id: owner.id } })).toEqual(owner);
+    expect(fake.objects).toEqual(before);
+    expect(fake.storage.removePhotoAsset).not.toHaveBeenCalled();
+  }));
+
+test('R2 failure leaves a consistent committed deletion and promoted primary, without recreating metadata', () =>
+  fixture(async (tx, fake) => {
+    const owner = await plant(tx);
+    const photo = await deletionPhoto(tx, fake, owner.id, { isPrimary: true });
+    const next = await deletionPhoto(tx, fake, owner.id);
+    const before = new Map(fake.objects);
+    fake.storage.removePhotoAsset.mockRejectedValue(new Error('offline'));
+    const result = await deletePlantPhoto(owner.id, photo.id, { ...token(owner), confirmed: true });
+    expect(result.cleanupPending).toBe(true);
+    expect(await tx.plantPhoto.findUnique({ where: { id: photo.id } })).toBeNull();
+    expect((await getPrimaryPlantPhoto(owner.id))?.id).toBe(next.id);
+    expect((await tx.plant.findUniqueOrThrow({ where: { id: owner.id } })).updatedAt).toEqual(
+      result.plantUpdatedAt,
+    );
+    expect(fake.objects).toEqual(before);
+    await expect(
+      deletePlantPhoto(owner.id, photo.id, {
+        expectedUpdatedAt: result.plantUpdatedAt.toISOString(),
+        confirmed: true,
+      }),
+    ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    expect(fake.storage.removePhotoAsset).toHaveBeenCalledOnce();
+  }));
+
+test('conflicting shared asset rows are preserved rather than deleting another photo files', () =>
+  fixture(async (tx, fake) => {
+    const owner = await plant(tx);
+    const other = await plant(tx);
+    const photo = await deletionPhoto(tx, fake, owner.id);
+    const conflict = await tx.plantPhoto.create({
+      data: {
+        plantId: other.id,
+        storageKey: photo.storageKey.replace('original.png', 'original.jpg'),
+      },
+    });
+    await expect(
+      deletePlantPhoto(owner.id, photo.id, { ...token(owner), confirmed: true }),
+    ).rejects.toMatchObject({ code: 'CONFLICT' });
+    expect(await tx.plantPhoto.findUnique({ where: { id: photo.id } })).toEqual(photo);
+    expect(await tx.plantPhoto.findUnique({ where: { id: conflict.id } })).toEqual(conflict);
+    expect(fake.storage.removePhotoAsset).not.toHaveBeenCalled();
+  }));
 
 test.each([false, true])(
   'browser upload, gallery, primary selection and list reads preserve archive state (%s)',

@@ -137,6 +137,10 @@ The approved square thumbnail crop checkpoint adds normalised cropX, cropY, crop
 
 The shared square selector uses oriented image dimensions and supports pointer and keyboard input. A new upload first obtains a server generated preview through the bounded same origin photo boundary. This extra read only processing pass guarantees the same EXIF orientation as Sharp rather than relying on browser JPEG decoding. Existing editors reuse the full display and read oriented dimensions from the private original server side. Originals are never delivered to the browser. Full behaviour, storage paths and manual review are in [thumbnail crops](plant-photo-crops.md). No new dependency or provider is added.
 
+## Plant photo deletion
+
+The approved photo deletion checkpoint is a narrow exception to preserving nursery records. A strict `deletePlantPhoto` operation locks the Plant, checks expectedUpdatedAt and photo ownership, removes the selected metadata and promotes a deterministic remaining primary in one transaction. Plant.updatedAt advances strictly; status, archive state, identity and historical relationships stay unchanged. After confirmed commit, the R2 boundary lists and removes only the validated photo asset prefix, including superseded crop revisions. Database failure never triggers blind cleanup. Storage failure after commit leaves the database consistent and returns a warning with safe server diagnostics, without recreating metadata. There is no schema change, job framework or broad cleanup. The route retains the existing local origin protection; public deployment still needs authentication and access checks. Full rules and recovery limits are in [Plant photo deletion](plant-photo-deletion.md).
+
 ## Keeping it tidy as it grows
 
 Any meaningful architecture change should be recorded here with a short reason. New dependencies need to help with the current phase, not a vague future idea. When the database starts, each migration should be reviewed and committed with the code and tests that use it.

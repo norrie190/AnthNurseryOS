@@ -5,6 +5,7 @@ import {
   DeleteObjectCommand,
   HeadObjectCommand,
   GetObjectCommand,
+  ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { z } from 'zod';
@@ -12,6 +13,8 @@ import {
   assertPhotoObjectKey,
   parsePhotoStorageKey,
   photoVariantKey,
+  photoAssetPrefix,
+  assertPhotoAssetObjectKey,
   type PhotoVariant,
 } from './plant-photo-keys';
 import { MAX_PHOTO_BYTES } from './plant-photo-input';
@@ -32,6 +35,7 @@ export type PlantPhotoStorage = {
     revision?: string | null,
   ) => Promise<string>;
   readOriginal: (key: string) => Promise<Buffer>;
+  removePhotoAsset: (originalKey: string) => Promise<void>;
 };
 
 const configurationSchema = z.object({
@@ -124,6 +128,55 @@ export function getPlantPhotoStorage(): PlantPhotoStorage {
       );
     },
     lookup,
+    async removePhotoAsset(originalKey) {
+      const prefix = photoAssetPrefix(originalKey);
+      const deadline = AbortSignal.timeout(60000);
+      const options = () => ({
+        abortSignal: AbortSignal.any([deadline, AbortSignal.timeout(20000)]),
+      });
+      const keys = new Set<string>();
+      const tokens = new Set<string>();
+      let continuation: string | undefined;
+      // Collect and validate before deleting. A malformed/outside key fails closed.
+      // Bound work even if a corrupt listing repeats pages or an asset is enormous.
+      for (let page = 0; ; page++) {
+        if (page >= 10) throw new Error('Photo asset cleanup exceeded its listing limit.');
+        const result = await client.send(
+          new ListObjectsV2Command({
+            Bucket: bucket,
+            Prefix: prefix,
+            MaxKeys: 1000,
+            ContinuationToken: continuation,
+          }),
+          options(),
+        );
+        for (const item of result.Contents ?? []) {
+          if (!item.Key) throw new Error('Photo asset listing contained an invalid key.');
+          assertPhotoAssetObjectKey(originalKey, item.Key);
+          keys.add(item.Key);
+        }
+        if (!result.IsTruncated) break;
+        continuation = result.NextContinuationToken;
+        if (!continuation || tokens.has(continuation))
+          throw new Error('Photo asset listing could not be completed safely.');
+        tokens.add(continuation);
+      }
+      for (const key of keys) {
+        if (deadline.aborted) throw new Error('Photo asset cleanup timed out.');
+        try {
+          await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }), options());
+        } catch {
+          // Continue with this asset only. The final listing also resolves a lost
+          // DELETE acknowledgement; raw provider errors never reach diagnostics.
+        }
+      }
+      const remaining = await client.send(
+        new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, MaxKeys: 1 }),
+        options(),
+      );
+      if (remaining.IsTruncated || (remaining.Contents?.length ?? 0) > 0)
+        throw new Error('Some objects remain in the deleted photo asset.');
+    },
     async remove(key, uploadId) {
       z.uuid().parse(uploadId);
       const existing = await lookup(key);

@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { randomUUID } from 'node:crypto';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
-import { createPhotoKeys } from '../../src/modules/plants/plant-photo-keys';
+import {
+  createPhotoKeys,
+  photoAssetPrefix,
+  photoVariantKey,
+} from '../../src/modules/plants/plant-photo-keys';
 const sdk = vi.hoisted(() => ({ send: vi.fn(), configure: vi.fn(), sign: vi.fn() }));
 vi.mock('server-only', () => ({}));
 vi.mock('@aws-sdk/client-s3', async (importOriginal) => ({
@@ -35,6 +39,116 @@ async function mockedStorage() {
   for (const [key, value] of Object.entries(environment)) vi.stubEnv(key, value);
   return (await import('../../src/modules/plants/plant-photo-storage')).getPlantPhotoStorage();
 }
+
+test('asset deletion paginates only the exact folder and removes original, display, legacy and all revisions', async () => {
+  const storage = await mockedStorage();
+  const keys = createPhotoKeys(randomUUID(), 'jpg');
+  const revisions = [
+    photoVariantKey(keys.original, 'thumbnail', randomUUID()),
+    photoVariantKey(keys.original, 'thumbnail', randomUUID()),
+  ];
+  const prefix = photoAssetPrefix(keys.original);
+  const all = [...Object.values(keys), ...revisions];
+  sdk.send.mockResolvedValueOnce({
+    Contents: Object.values(keys).map((Key) => ({ Key })),
+    IsTruncated: true,
+    NextContinuationToken: 'next',
+  });
+  sdk.send.mockResolvedValueOnce({
+    Contents: revisions.map((Key) => ({ Key })),
+    IsTruncated: false,
+  });
+  for (const key of all) sdk.send.mockResolvedValueOnce({ key });
+  sdk.send.mockResolvedValueOnce({ Contents: [] });
+  await storage.removePhotoAsset(keys.original);
+  const calls = sdk.send.mock.calls.map(([command]) => command);
+  const lists = calls.filter((command) => command.constructor.name === 'ListObjectsV2Command');
+  expect(lists).toHaveLength(3);
+  for (const command of lists)
+    expect(command.input).toMatchObject({ Bucket: environment.R2_BUCKET_NAME, Prefix: prefix });
+  expect(lists[1].input.ContinuationToken).toBe('next');
+  expect(
+    calls
+      .filter((command) => command.constructor.name === 'DeleteObjectCommand')
+      .map((command) => command.input.Key),
+  ).toEqual(all);
+  expect(calls.some((command) => command.constructor.name === 'HeadObjectCommand')).toBe(false);
+});
+
+test.each(['plants/', '../original.png', 'https://example.invalid/original.png'])(
+  'asset removal rejects arbitrary prefix/key %s without SDK calls',
+  async (key) => {
+    const storage = await mockedStorage();
+    await expect(storage.removePhotoAsset(key)).rejects.toThrow();
+    expect(sdk.send).not.toHaveBeenCalled();
+  },
+);
+
+test.each(['another-plant', 'another-photo', 'traversal', 'missing-key', 'unrecognised-file'])(
+  'unsafe listing %s fails before any deletion',
+  async (failure) => {
+    const storage = await mockedStorage();
+    const owner = randomUUID();
+    const keys = createPhotoKeys(owner, 'png');
+    const prefix = photoAssetPrefix(keys.original);
+    const foreign =
+      failure === 'another-plant'
+        ? createPhotoKeys(randomUUID(), 'png').original
+        : failure === 'another-photo'
+          ? createPhotoKeys(owner, 'png').original
+          : failure === 'traversal'
+            ? `${prefix}../original.png`
+            : failure === 'missing-key'
+              ? undefined
+              : `${prefix}unrecognised.txt`;
+    sdk.send.mockResolvedValueOnce({ Contents: [{ Key: keys.original }, { Key: foreign }] });
+    await expect(storage.removePhotoAsset(keys.original)).rejects.toThrow();
+    expect(sdk.send).toHaveBeenCalledOnce();
+  },
+);
+
+test('a failed deletion does not prevent other exact asset deletes and reports remaining objects', async () => {
+  const storage = await mockedStorage();
+  const keys = createPhotoKeys(randomUUID(), 'png');
+  sdk.send.mockResolvedValueOnce({ Contents: [{ Key: keys.original }, { Key: keys.display }] });
+  sdk.send.mockRejectedValueOnce(new Error('provider secret'));
+  sdk.send.mockResolvedValueOnce({});
+  sdk.send.mockResolvedValueOnce({ Contents: [{ Key: keys.original }] });
+  await expect(storage.removePhotoAsset(keys.original)).rejects.toThrow('Some objects remain');
+  expect(sdk.send.mock.calls[2][0].input.Key).toBe(keys.display);
+});
+
+test('empty assets and lost DELETE acknowledgement resolved by absence succeed', async () => {
+  const storage = await mockedStorage();
+  const key = createPhotoKeys(randomUUID(), 'png').original;
+  sdk.send.mockResolvedValueOnce({ Contents: [] }).mockResolvedValueOnce({ Contents: [] });
+  await storage.removePhotoAsset(key);
+  expect(sdk.send).toHaveBeenCalledTimes(2);
+  sdk.send
+    .mockResolvedValueOnce({ Contents: [{ Key: key }] })
+    .mockRejectedValueOnce(new Error('lost acknowledgement'))
+    .mockResolvedValueOnce({ Contents: [] });
+  await storage.removePhotoAsset(key);
+});
+
+test.each(['missing', 'repeated', 'failure'])(
+  'incomplete listing %s never starts deletion',
+  async (failure) => {
+    const storage = await mockedStorage();
+    const key = createPhotoKeys(randomUUID(), 'png').original;
+    if (failure === 'failure') sdk.send.mockRejectedValue(new Error('offline'));
+    else
+      sdk.send.mockResolvedValue({
+        Contents: [{ Key: key }],
+        IsTruncated: true,
+        NextContinuationToken: failure === 'missing' ? undefined : 'repeated',
+      });
+    await expect(storage.removePhotoAsset(key)).rejects.toThrow();
+    expect(
+      sdk.send.mock.calls.every(([command]) => command.constructor.name === 'ListObjectsV2Command'),
+    ).toBe(true);
+  },
+);
 test('fails closed in tests even when all R2 settings exist', async () => {
   for (const [key, value] of Object.entries(environment)) vi.stubEnv(key, value);
   const { getPlantPhotoStorage } = await import('../../src/modules/plants/plant-photo-storage');

@@ -9,6 +9,7 @@ import {
   updatePlantPhotoCrop,
   previewNewPlantPhoto,
   getPlantPhotoCropPreview,
+  deletePlantPhoto,
 } from '../../src/modules/plants/plant-photo-service';
 import { getPlantPhotoReadUrl } from '../../src/modules/plants/plant-photo-queries';
 import {
@@ -25,6 +26,7 @@ import {
   GET as cropPreviewRoute,
 } from '../../src/app/plants/[plantId]/photos/[photoId]/crop/route';
 import { POST as newPreviewRoute } from '../../src/app/plants/[plantId]/photos/preview/route';
+import { DELETE as deleteRoute } from '../../src/app/plants/[plantId]/photos/[photoId]/route';
 
 vi.mock('server-only', () => ({}));
 vi.mock('../../src/modules/plants/plant-photo-service', () => ({
@@ -33,6 +35,7 @@ vi.mock('../../src/modules/plants/plant-photo-service', () => ({
   updatePlantPhotoCrop: vi.fn(),
   previewNewPlantPhoto: vi.fn(),
   getPlantPhotoCropPreview: vi.fn(),
+  deletePlantPhoto: vi.fn(),
 }));
 vi.mock('../../src/modules/plants/plant-photo-queries', () => ({ getPlantPhotoReadUrl: vi.fn() }));
 const plantId = randomUUID();
@@ -81,6 +84,82 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
   vi.useRealTimers();
+});
+
+function deleteRequest(
+  body = JSON.stringify({ expectedUpdatedAt: token, confirmed: true }),
+  headers: Record<string, string> = {},
+) {
+  return new Request(`${origin}/plants/${plantId}/photos/${photoId}`, {
+    method: 'DELETE',
+    headers: { origin, 'content-type': 'application/json', ...headers },
+    body,
+  });
+}
+test.each([false, true])(
+  'delete route returns committed deletion with cleanup warning %s and no storage details',
+  async (cleanupPending) => {
+    vi.mocked(deletePlantPhoto).mockResolvedValue({
+      deletedPhotoId: photoId,
+      primaryPhotoId: null,
+      plantUpdatedAt: new Date(nextToken),
+      cleanupPending,
+    });
+    const response = await deleteRoute(deleteRequest(), {
+      params: Promise.resolve({ plantId, photoId }),
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(await response.json()).toMatchObject({
+      success: true,
+      deletedPhotoId: photoId,
+      primaryPhotoId: null,
+      plantUpdatedAt: nextToken,
+      cleanupPending,
+    });
+    expect(deletePlantPhoto).toHaveBeenCalledExactlyOnceWith(plantId, photoId, {
+      expectedUpdatedAt: token,
+      confirmed: true,
+    });
+  },
+);
+test.each([
+  ['origin', 403],
+  ['content-type', 415],
+  ['oversize', 413],
+  ['malformed', 400],
+])('delete route rejects %s at the boundary', async (failure, status) => {
+  const request = deleteRequest(
+    failure === 'oversize' ? 'x'.repeat(1025) : '{',
+    failure === 'origin'
+      ? { origin: 'https://elsewhere.invalid' }
+      : failure === 'content-type'
+        ? { 'content-type': 'text/plain' }
+        : {},
+  );
+  expect(
+    (await deleteRoute(request, { params: Promise.resolve({ plantId, photoId }) })).status,
+  ).toBe(status);
+  expect(deletePlantPhoto).not.toHaveBeenCalled();
+});
+test.each([
+  ['NOT_FOUND', 404],
+  ['STALE_UPDATE', 409],
+  ['VALIDATION_FAILED', 400],
+  ['unexpected', 500],
+] as const)('delete route safely maps %s', async (code, status) => {
+  vi.mocked(deletePlantPhoto).mockRejectedValue(
+    code === 'unexpected' ? new Error('provider secret') : new PlantError(code, 'Safe photo error'),
+  );
+  const response = await deleteRoute(deleteRequest(), {
+    params: Promise.resolve({ plantId, photoId }),
+  });
+  expect(response.status).toBe(status);
+  const body = await response.json();
+  expect(body.success).toBe(false);
+  expect(JSON.stringify(body)).not.toContain('provider secret');
+  if (code === 'STALE_UPDATE') expect(body.stale).toBe(true);
+  if (code === 'unexpected') expect(body.checkSaved).toBe(true);
 });
 
 test('upload passes an explicit crop but rejects malformed or expanded crop data', async () => {

@@ -98,7 +98,7 @@ The approved PostgreSQL partial unique index will enforce uniqueness of plantId 
 
 The index is introduced in the new data layer migration, without editing either existing migration. The preflight inspection found zero photo rows in development and test, so there were no conflicting primaries to resolve. Future conflicting history must still be reviewed rather than silently rewritten. The index is documented and tested alongside the project's existing custom SQL. See [database migration notes](database-migrations.md).
 
-Photo deletion is not included. If it is designed later, replacement of a deleted primary must be atomic with the metadata change, choosing a deterministic remaining photo or leaving no primary when none remain. That future rule does not authorise deletion now.
+The separately approved [photo deletion checkpoint](plant-photo-deletion.md) now adds explicit permanent deletion with confirmation. Primary replacement is atomic with metadata deletion, choosing the next deterministic photo or leaving no primary when none remain. Only after commit does targeted cleanup remove that photo's exact asset prefix, including the original and superseded thumbnails. Other nursery history remains preserved.
 
 ## Gallery, list and archived Plants
 
@@ -122,7 +122,7 @@ The app currently has no authentication. Continue binding development and local 
 
 Provider credentials must remain server only, outside Git and outside NEXT_PUBLIC environment variables. Restrict them to the intended bucket and required operations. Use separate development and production storage configuration with no fallback between them. Enforce trusted request origins and appropriate CSRF protection at the browser boundary; CORS and origin checks are not a substitute for authentication.
 
-Before public deployment, add authentication and access checks to every upload, primary change, gallery read and image delivery operation. Also review HTTPS, upload quotas and rate limits, processing resources, secret management and diagnostics. Authentication is not being added in the photo milestone. Backups must cover both PostgreSQL metadata and R2 files; restoring the database alone will not restore the photographs.
+Before public deployment, add authentication and access checks to every upload, primary change, crop change, deletion, gallery read and image delivery operation. Also review HTTPS, upload quotas and rate limits, processing resources, secret management and diagnostics. Authentication is not being added in the photo milestone. Backups must cover both PostgreSQL metadata and R2 files; restoring the database alone will not restore the photographs.
 
 ## Hosting assumption
 
@@ -150,4 +150,4 @@ The completed checkpoint `feat: add plant photo storage and data layer` introduc
 
 The current browser checkpoint is `feat: add plant photo gallery and list images`. It connects upload and primary selection to the detail page and adds the primary thumbnail to the responsive lists, with UI and workflow tests. No dependencies, schema changes or migrations are added. The owner will review and commit the work.
 
-The next approved checkpoint adds only square thumbnail cropping, documented in [thumbnail crops](plant-photo-crops.md). These checkpoints do not include photo deletion, a general reconciliation/admin tool, authentication, bulk uploads, advanced image editing, drag and drop sorting, Location CRUD, care, observations, breeding, pollen, seed batches, seedlings, sales or dashboard integration.
+The subsequent square thumbnail crop checkpoint is documented in [thumbnail crops](plant-photo-crops.md). The owner has now also approved the separate [photo deletion checkpoint](plant-photo-deletion.md). A general reconciliation/admin tool, authentication, bulk uploads, advanced image editing, drag and drop sorting, Location CRUD, care, observations, breeding, pollen, seed batches, seedlings, sales and dashboard integration remain outside these checkpoints.

@@ -90,3 +90,18 @@ export function parseUpdatePlantPhotoCrop(
   const body = parsePhotoRequest(cropInputSchema.omit({ photoId: true }), plantId, input);
   return parsePhotoRequest(cropInputSchema, body.plantId, { ...body.input, photoId });
 }
+
+const deletePhotoSchema = z.strictObject({
+  photoId: plantIdSchema,
+  expectedUpdatedAt: photoTokenSchema,
+  confirmed: z.literal(true),
+});
+export type DeletePlantPhotoInput = Omit<z.input<typeof deletePhotoSchema>, 'photoId'>;
+export function parseDeletePlantPhoto(
+  plantId: unknown,
+  photoId: unknown,
+  input: DeletePlantPhotoInput,
+) {
+  const body = parsePhotoRequest(deletePhotoSchema.omit({ photoId: true }), plantId, input);
+  return parsePhotoRequest(deletePhotoSchema, body.plantId, { ...body.input, photoId });
+}
