@@ -107,6 +107,14 @@ The indexes are the two UUID primary keys, the two GiST indexes created by exclu
 
 The [energy schema tests](../tests/database/energy-schema.test.ts) use the guarded test database with all fixtures rolled back, including generated Prisma model coverage. This new suite does not allocate ANT or EQP references. Existing full regression tests do allocate test references and may leave intentional test sequence gaps. Development row fingerprints and both development sequence states are compared before and after verification. No services, calculations or energy UI are included; see [Equipment energy history](equipment-energy.md).
 
+## Equipment photo schema migration
+
+`prisma/migrations/20260901000000_add_equipment_photos/migration.sql` creates only EquipmentPhoto and its approved constraints. Prisma generated the table, primary key, unique storage key, `(equipmentId, sortOrder)` index and restrictive Equipment foreign key. The reviewed custom SQL wraps the migration in a transaction and adds the partial `EquipmentPhoto_one_primary_per_equipment_key` index plus the crop consistency and range checks that Prisma cannot express.
+
+The Equipment foreign key uses ON DELETE RESTRICT and ON UPDATE RESTRICT. The partial unique index applies only where isPrimary is true, allowing no primary and any number of nonprimary rows. `EquipmentPhoto_crop_consistency_check` requires cropX, cropY, cropSize and derivativeRevision to be all null or all populated. `EquipmentPhoto_crop_ranges_check` enforces zero inclusive to one exclusive for x/y and greater than zero through one inclusive for size. NaN and infinities fail these bounds. Complete image dependent bounds remain a later application rule.
+
+Preflight confirmed the table was absent in development and test. The migration was inspected, then deployed to both local databases. It creates no EquipmentPhoto rows, changes no existing Equipment or Plant record, and does not call either reference sequence or R2. Equipment photo services and browser behaviour remain a later checkpoint. See [Equipment photo data model](equipment-photo-data-model.md).
+
 ## Applying migrations
 
 `pnpm db:deploy` applies existing migration files to `DATABASE_URL`. It does not generate a migration. `pnpm db:migrate:test` applies the same migration files to `TEST_DATABASE_URL` through a separate Prisma process, without changing `.env`.

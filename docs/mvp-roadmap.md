@@ -76,7 +76,7 @@ The storage and data layer is complete, including its separately approved real R
 
 The subsequent approved [photo deletion checkpoint](plant-photo-deletion.md) adds only confirmed permanent photo removal, deterministic primary replacement and cleanup of that exact photo asset after the database commit. No schema change is needed. A general orphan/reconciliation scanner, broad bucket cleanup, authentication, bulk uploads and advanced image tools remain outside scope. No production host has been selected, so keep the approved server side 10 MiB transport and revisit host limits at deployment rather than implementing hypothetical alternatives now.
 
-The approved shared photo infrastructure refactor moves only image processing, crop geometry, the private R2 transport, exact path safeguards, per asset cleanup and two small UI primitives behind compatible Plant wrappers. Plant behaviour and stored paths remain unchanged. EquipmentPhoto is the next approved consumer but has not been added yet. See [Shared photo infrastructure](shared-photo-infrastructure.md).
+The approved shared photo infrastructure refactor moves only image processing, crop geometry, the private R2 transport, exact path safeguards, per asset cleanup and two small UI primitives behind compatible Plant wrappers. Plant behaviour and stored paths remain unchanged. EquipmentPhoto is the next separate consumer. See [Shared photo infrastructure](shared-photo-infrastructure.md).
 
 ## 5. Equipment inventory - complete
 
@@ -94,7 +94,11 @@ The owner approved [Equipment energy history](equipment-energy.md) before Care. 
 
 Decimal validation, Equipment stale protection, tariff timeline locking, explicit correction/void operations, exact derived calculations and missing coverage reporting are implemented and exposed in the browser. `/energy/tariffs` is the first Energy route; there is no Energy overview or main dashboard integration. Standing charges, time of use schedules, telemetry and cached monthly totals remain outside scope.
 
-## 7. Care tracking
+## 7. Equipment photos - schema checkpoint
+
+The EquipmentPhoto schema checkpoint adds the separate metadata table, restrictive Equipment relationship, partial primary index and crop checks. It adds no photo services, R2 calls, routes or UI. The next Equipment photo checkpoint will build those domain behaviours against the existing shared mechanics. See [Equipment photo data model](equipment-photo-data-model.md).
+
+## 8. Care tracking
 
 - Watering events
 - Fertiliser events
@@ -103,7 +107,7 @@ Decimal validation, Equipment stale protection, tariff timeline locking, explici
 - Accessible care status indicators
 - Care history
 
-## 8. Expenses and later Equipment work
+## 9. Expenses and later Equipment work
 
 - General nursery expenses
 - Equipment maintenance, after its own design review

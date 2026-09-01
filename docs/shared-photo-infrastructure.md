@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Plant photographs remain owned by the Plant domain and stored as PlantPhoto records. The reusable mechanics underneath them now live in small neutral photo modules so EquipmentPhoto can use the same proven processing and R2 safeguards later. This is not a generic media or attachment framework, and EquipmentPhoto is not implemented yet.
+Plant photographs remain owned by the Plant domain and stored as PlantPhoto records. The reusable mechanics underneath them live in small neutral photo modules so the separate EquipmentPhoto model can use the same proven processing and R2 safeguards later. This is not a generic media or attachment framework. EquipmentPhoto now exists as schema only; its application layer is not implemented yet.
 
 ## Shared mechanics
 
@@ -43,6 +43,6 @@ Deletion cleanup starts from a known original key, derives its exact asset prefi
 
 ## Next consumer
 
-The approved Equipment photo design will add a separate EquipmentPhoto relation and Equipment specific services later. It may compose these shared mechanics through an Equipment wrapper fixed to the `equipment` namespace. It will not make PlantPhoto polymorphic or move Plant concurrency and ownership rules into the shared layer.
+The separate EquipmentPhoto table and `Equipment.photos` relation are now the next schema consumer. Later Equipment specific services may compose these shared mechanics through an Equipment wrapper fixed to the `equipment` namespace. They will not make PlantPhoto polymorphic or move Equipment concurrency and ownership rules into the shared layer.
 
-This checkpoint changes no Prisma model, migration, persisted photo metadata or stored R2 object.
+The shared infrastructure refactor itself changed no persisted photo metadata or stored R2 object. The later Equipment schema checkpoint creates only database structure and does not call these storage mechanics.

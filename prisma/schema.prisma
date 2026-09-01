@@ -113,8 +113,31 @@ model Equipment {
   location     Location?              @relation(fields: [locationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   purchase     EquipmentPurchase?
   powerPeriods EquipmentPowerPeriod[]
+  photos       EquipmentPhoto[]
 
   @@index([locationId])
+}
+
+model EquipmentPhoto {
+  id                 String    @id @default(uuid()) @db.Uuid
+  equipmentId        String    @db.Uuid
+  storageKey         String    @unique
+  originalFilename   String?
+  caption            String?
+  takenAt            DateTime? @db.Timestamptz(3)
+  isPrimary          Boolean   @default(false)
+  sortOrder          Int       @default(0)
+  // All-or-none crop metadata and ranges are enforced by migration checks.
+  cropX              Float?    @db.DoublePrecision
+  cropY              Float?    @db.DoublePrecision
+  cropSize           Float?    @db.DoublePrecision
+  derivativeRevision String?   @db.Uuid
+  createdAt          DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(3)
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([equipmentId, sortOrder])
 }
 
 model EquipmentPurchase {

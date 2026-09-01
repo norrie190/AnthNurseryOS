@@ -47,7 +47,7 @@ The `components`, `lib`, and `modules` folders are not being created just to mak
 
 ## Database starting point
 
-The original Plant foundation contains Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. Plant creation, browsing, editing, archive/restore and photo features are implemented. Equipment, EquipmentPurchase and an independent EQP sequence reuse Location. Equipment creation, editing, archive/restore, reads and inventory pages are implemented.
+The original Plant foundation contains Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. Plant creation, browsing, editing, archive/restore and photo features are implemented. Equipment, EquipmentPurchase, EquipmentPhoto and an independent EQP sequence reuse the same foundation and Location. Equipment creation, editing, archive/restore, reads and inventory pages are implemented; EquipmentPhoto currently has schema only.
 
 Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. Timestamps use `timestamptz` with millisecond precision, while the purchase date uses a calendar `date`. Foreign keys restrict deletion and ID updates so referenced nursery records cannot disappear through a cascade. Schema limitations and rules reserved for the migration or data layer are recorded in `docs/plant-data-model.md`.
 
@@ -174,6 +174,14 @@ Every accepted logical edit advances updatedAt to max(server time, previous time
 ## Equipment browser workflow
 
 The Equipment browser checkpoint uses one shared Add/Edit form and small server actions that call the existing services. Its list query adds only brand/model to the selected fields. Exact money parsing/formatting is shared in src/lib/purchase-money.ts; the previous Plant exports remain compatible aliases. Routes use connection() for fresh reads, create/edit redirect to UUID detail URLs, and archive/restore refresh the current page. Forms retain values and their original expectedUpdatedAt token rather than silently authorising a newer edit. The archived list links to each detail page for restoration. No schema, dependency, energy, photo or dashboard changes are included. The full boundary, security and UX decisions are in [Equipment browser workflow](equipment-browser-flow.md).
+
+## Equipment photo schema foundation
+
+EquipmentPhoto is a separate required Equipment ownership model, not a polymorphic PlantPhoto replacement. It mirrors the approved metadata needed for a private original, natural aspect display derivative and square cropped revision thumbnail. `storageKey` uniquely identifies only the immutable original. The Equipment foreign key restricts deletion and ID updates; archive state remains independent.
+
+A PostgreSQL partial unique index allows zero or one primary photo per Equipment while leaving nonprimary photos unrestricted. Migration checks require cropX, cropY, cropSize and derivativeRevision to be all null or all populated, and protect their independent normalised ranges. Full image bounds remain a later service rule. The table has only its primary key, unique storage key, `(equipmentId, sortOrder)` index and partial primary index.
+
+The schema will later consume the shared photo infrastructure through the closed `equipment/<equipment UUID>/<asset UUID>/...` namespace. No Equipment photo service, query, R2 operation, route, delivery boundary, gallery or list image is part of this checkpoint. Details are in [Equipment photo data model](equipment-photo-data-model.md).
 
 ## Keeping it tidy as it grows
 

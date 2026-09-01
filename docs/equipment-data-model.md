@@ -11,7 +11,8 @@ Equipment inventory now follows Plant Management, before Care, as requested by t
 ```text
 Equipment
 ├── 0 or 1 EquipmentPurchase
-└── 0 or 1 current Location
+├── 0 or 1 current Location
+└── 0 to many EquipmentPhoto records
 
 Location
 ├── 0 to many Plants
@@ -103,7 +104,7 @@ getEquipmentList reads non archived items ordered by createdAt descending then r
 
 The implemented browser routes are /equipment, /equipment/new, /equipment/[equipmentId], /equipment/[equipmentId]/edit and /equipment/archived. Services, validation, forms, actions and reads stay in the Equipment module. The [browser workflow](equipment-browser-flow.md) documents presentation, money entry, safe error handling and archive confirmation.
 
-EquipmentPhoto is the approved next separate ownership model. It will attach through Equipment.id and consume the neutral processing, crop, R2 and targeted cleanup mechanics described in [Shared photo infrastructure](shared-photo-infrastructure.md), without making PlantPhoto polymorphic. This refactor does not add the EquipmentPhoto model, migration, services, routes or UI. The committed [energy history foundation](equipment-energy.md) adds Equipment.powerPeriods and the EquipmentPowerPeriod and ElectricityTariff tables. The current [energy data layer](energy-data-layer.md) implements restricted operations and exact calculations without changing that schema. Equipment editing rejects disabling usesPower while nonvoid current/future periods remain, under its existing row lock. Historical records and archive independence are preserved. Inventory purchase amounts and both reference sequences remain unchanged.
+The separate EquipmentPhoto schema now attaches through Equipment.id and reuses the neutral processing, crop, R2 and targeted cleanup mechanics described in [Shared photo infrastructure](shared-photo-infrastructure.md), without making PlantPhoto polymorphic. Only its table, constraints and reverse relation exist at this checkpoint; services, queries, routes, delivery and UI are not implemented. See [Equipment photo data model](equipment-photo-data-model.md). The committed [energy history foundation](equipment-energy.md) adds Equipment.powerPeriods and the EquipmentPowerPeriod and ElectricityTariff tables. The current [energy data layer](energy-data-layer.md) implements restricted operations and exact calculations without changing that schema. Equipment editing rejects disabling usesPower while nonvoid current/future periods remain, under its existing row lock. Historical records and archive independence are preserved. Inventory purchase amounts and both reference sequences remain unchanged.
 
 ## Verification
 
