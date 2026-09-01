@@ -13,10 +13,12 @@ const timestamp = new Intl.DateTimeFormat('en-GB', {
 const calendarDate = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: 'UTC' });
 export function EquipmentDetail({
   equipment,
+  photos,
   energy,
   hasOngoingPowerPeriod = false,
 }: {
   equipment: EquipmentDetailRecord;
+  photos?: ReactNode;
   energy?: ReactNode;
   hasOngoingPowerPeriod?: boolean;
 }) {
@@ -128,6 +130,7 @@ export function EquipmentDetail({
           <p className={styles.sectionIntro}>No purchase information recorded.</p>
         )}
       </section>
+      {photos}
       {energy}
       <EquipmentArchiveControls
         equipmentId={equipment.id}

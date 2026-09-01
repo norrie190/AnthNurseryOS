@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { EquipmentList } from './equipment-list';
 import { EquipmentDetail } from './equipment-detail';
@@ -17,9 +17,11 @@ import {
 import { equipmentEditValues } from '../equipment-edit-values';
 import { equipmentEnergyView } from '../../energy/energy-view';
 import { loadEquipmentEnergyView } from '../../energy/energy-page-data';
+import { getEquipmentPhotoGallery } from '../equipment-photo-queries';
 
 vi.mock('../../energy/energy-page-data', () => ({ loadEquipmentEnergyView: vi.fn() }));
 vi.mock('../../energy/energy-actions', () => ({ saveEnergyAction: vi.fn() }));
+vi.mock('../equipment-photo-queries', () => ({ getEquipmentPhotoGallery: vi.fn() }));
 
 vi.mock('next/server', () => ({ connection: vi.fn() }));
 vi.mock('next/navigation', () => ({
@@ -76,6 +78,7 @@ beforeEach(() => {
   vi.mocked(getArchivedEquipmentList).mockResolvedValue([]);
   vi.mocked(getEquipmentById).mockResolvedValue(item);
   vi.mocked(getEquipmentLocationOptions).mockResolvedValue([]);
+  vi.mocked(getEquipmentPhotoGallery).mockResolvedValue([]);
 });
 test.each([false, true])('empty state archived=%s provides a useful next action', (archived) => {
   render(<EquipmentList equipment={[]} archived={archived} />);
@@ -113,6 +116,26 @@ test('list shows reference, manufacturer, power, Location fallback and determini
   expect(container.querySelectorAll('li')).toHaveLength(2);
   // One semantic list supports both CSS presentations, without duplicate mobile links.
   expect(screen.getAllByText('EQP-0001')).toHaveLength(1);
+});
+test('active and archived list rows show primary thumbnails with a safe fallback', () => {
+  const photo = {
+    id: '7e065a7b-0543-4c62-a36f-7f92731e1499',
+    derivativeRevision: '82d40c04-439f-430d-a473-c4dcba6b88ec',
+  };
+  const { rerender } = render(<EquipmentList equipment={[{ ...item, photos: [photo] }]} />);
+  const image = screen.getByRole('img', { name: 'EQP-0001 primary photo' });
+  expect(image).toHaveAttribute(
+    'src',
+    `/equipment/${item.id}/photos/${photo.id}/thumbnail?v=${photo.derivativeRevision}`,
+  );
+  fireEvent.error(image);
+  expect(
+    screen.getByRole('img', { name: 'Photo unavailable: EQP-0001 primary photo' }),
+  ).toBeInTheDocument();
+  rerender(
+    <EquipmentList equipment={[{ ...item, archivedAt: item.updatedAt, photos: [] }]} archived />,
+  );
+  expect(screen.getByRole('img', { name: 'No photo' })).toBeInTheDocument();
 });
 test('archived list shows archive date and a clear path to restore', () => {
   render(
@@ -167,7 +190,7 @@ test('archived detail remains viewable and distinguishes unknown from zero purch
   expect(screen.queryByRole('button', { name: 'Archive Equipment' })).not.toBeInTheDocument();
 });
 test('active page reads active list and exposes add/archive navigation', async () => {
-  vi.mocked(getEquipmentList).mockResolvedValue([item]);
+  vi.mocked(getEquipmentList).mockResolvedValue([{ ...item, photos: [] }]);
   render(await EquipmentPage());
   expect(getEquipmentList).toHaveBeenCalledOnce();
   expect(getArchivedEquipmentList).not.toHaveBeenCalled();
@@ -198,6 +221,30 @@ test('detail route uses UUID lookup', async () => {
   render(await DetailPage({ params: Promise.resolve({ equipmentId: item.id }) }));
   expect(getEquipmentById).toHaveBeenCalledWith(item.id);
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(item.reference);
+});
+test('detail route loads the ordered Equipment gallery without exposing storage metadata', async () => {
+  vi.mocked(getEquipmentPhotoGallery).mockResolvedValue([
+    {
+      id: '7e065a7b-0543-4c62-a36f-7f92731e1499',
+      equipmentId: item.id,
+      originalFilename: 'equipment.jpg',
+      caption: 'Controller face',
+      takenAt: new Date('2026-09-01T08:30:00.000Z'),
+      isPrimary: true,
+      sortOrder: 0,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      cropX: 0,
+      cropY: 0,
+      cropSize: 1,
+      derivativeRevision: '82d40c04-439f-430d-a473-c4dcba6b88ec',
+    },
+  ]);
+  render(await DetailPage({ params: Promise.resolve({ equipmentId: item.id }) }));
+  expect(getEquipmentPhotoGallery).toHaveBeenCalledWith(item.id);
+  expect(screen.getByRole('heading', { name: 'Photos' })).toBeInTheDocument();
+  expect(screen.getAllByText('Controller face')).toHaveLength(2);
+  expect(screen.queryByText('equipment.jpg')).not.toBeInTheDocument();
 });
 test('edit route retains and labels only the existing archived Location', async () => {
   const location = {

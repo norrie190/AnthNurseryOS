@@ -51,4 +51,10 @@ The data layer provides ordered gallery metadata, primary metadata, owned-photo 
 
 The future browser delivery route can request only `display` or `thumbnail` for a known EquipmentPhoto. The service resolves the current thumbnail revision from PostgreSQL and passes the derived Equipment key to the namespace-fixed signing wrapper. Original files, arbitrary revisions, arbitrary keys and remote URLs are not exposed.
 
-Browser routes, gallery composition, upload forms and Equipment list thumbnails remain a later checkpoint.
+The later browser checkpoint now composes this boundary into Equipment-specific upload, delivery, crop, primary and deletion routes. The data layer itself remains independent from React and browser state.
+
+## Browser consumer
+
+The Equipment detail page now has its own gallery composition and uses the shared crop selector and image fallback. Upload previews are orientation corrected before the crop is chosen. The browser supplies only the image, optional caption and taken instant, normalised crop and current Equipment token.
+
+Display and thumbnail requests route through known EquipmentPhoto identity. A thumbnail query marker refreshes browser caches after a crop revision but never selects storage. Active and archived Equipment lists select only primary photo identity and revision rather than loading galleries.

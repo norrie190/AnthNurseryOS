@@ -1,0 +1,69 @@
+.main {
+  margin: 0 0 1.5rem;
+}
+
+.mainImage {
+  height: clamp(15rem, 45vw, 32rem);
+  background: var(--surface-muted);
+  border-radius: var(--radius-small);
+  overflow: hidden;
+}
+
+.main figcaption {
+  margin-top: 1rem;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.photo {
+  margin: 0;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  overflow: hidden;
+}
+
+.thumbnail {
+  aspect-ratio: 1;
+  background: var(--surface-muted);
+}
+
+.photo figcaption {
+  padding: 0.85rem;
+}
+
+.caption {
+  margin: 0.6rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+.upload {
+  margin-top: 1.5rem;
+}
+
+.uploadFields {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.uploadFields legend {
+  margin-bottom: 1rem;
+  padding: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.uploadFields button[type='submit'] {
+  margin-top: 1.25rem;
+}

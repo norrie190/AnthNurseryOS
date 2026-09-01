@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import type { EquipmentListItem } from '../equipment-queries';
+import { equipmentPhotoImagePath } from '../equipment-photo-browser';
+import { EquipmentPhotoImage } from './equipment-photo-image';
 import styles from './equipment-management.module.css';
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', {
@@ -12,7 +14,9 @@ export function EquipmentList({
   equipment,
   archived = false,
 }: {
-  equipment: readonly EquipmentListItem[];
+  equipment: readonly (Omit<EquipmentListItem, 'photos'> & {
+    photos?: EquipmentListItem['photos'];
+  })[];
   archived?: boolean;
 }) {
   if (!equipment.length)
@@ -49,13 +53,30 @@ export function EquipmentList({
             <li key={item.id}>
               <Link className={styles.row} href={`/equipment/${item.id}`}>
                 <strong className={styles.reference}>{item.reference}</strong>
-                <span>
-                  {item.name}
-                  {(item.brand || item.model) && (
-                    <span className={styles.manufacturer}>
-                      {[item.brand, item.model].filter(Boolean).join(' · ')}
-                    </span>
-                  )}
+                <span className={styles.name}>
+                  <span className={styles.listPhoto}>
+                    <EquipmentPhotoImage
+                      src={
+                        item.photos?.[0]
+                          ? equipmentPhotoImagePath(
+                              item.id,
+                              item.photos[0].id,
+                              'thumbnail',
+                              item.photos[0].derivativeRevision,
+                            )
+                          : undefined
+                      }
+                      alt={`${item.reference} primary photo`}
+                    />
+                  </span>
+                  <span>
+                    {item.name}
+                    {(item.brand || item.model) && (
+                      <span className={styles.manufacturer}>
+                        {[item.brand, item.model].filter(Boolean).join(' · ')}
+                      </span>
+                    )}
+                  </span>
                 </span>
                 <span>
                   <span className={styles.mobileLabel}>Category: </span>

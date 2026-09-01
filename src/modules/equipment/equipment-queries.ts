@@ -11,6 +11,11 @@ const listSelect = {
   model: true,
   usesPower: true,
   location: { select: { id: true, name: true, archivedAt: true } },
+  photos: {
+    where: { isPrimary: true },
+    take: 1,
+    select: { id: true, derivativeRevision: true },
+  },
   createdAt: true,
   archivedAt: true,
 } as const;

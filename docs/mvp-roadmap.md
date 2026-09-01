@@ -96,7 +96,7 @@ Decimal validation, Equipment stale protection, tariff timeline locking, explici
 
 ## 7. Equipment photos - schema checkpoint
 
-The EquipmentPhoto schema checkpoint adds the separate metadata table, restrictive Equipment relationship, partial primary index and crop checks. The following data-layer checkpoint adds Equipment-owned upload, primary, crop, deletion and metadata-read services using the shared mechanics and closed `equipment` namespace. Browser delivery routes, gallery UI and list thumbnails remain the next checkpoint. See [Equipment photo data model](equipment-photo-data-model.md) and [Equipment photo data layer](equipment-photo-data-layer.md).
+The EquipmentPhoto schema checkpoint adds the separate metadata table, restrictive Equipment relationship, partial primary index and crop checks. The data-layer checkpoint adds Equipment-owned upload, primary, crop, deletion and metadata-read services using the shared mechanics and closed `equipment` namespace. The browser checkpoint adds private delivery routes, the Equipment detail gallery and active/archived list thumbnails without coupling Equipment to Plant composition. See [Equipment photo data model](equipment-photo-data-model.md) and [Equipment photo data layer](equipment-photo-data-layer.md).
 
 ## 8. Care tracking
 
