@@ -4,7 +4,7 @@
 
 The Equipment photo schema checkpoint adds a separate EquipmentPhoto table and the reverse `Equipment.photos` relation. PlantPhoto remains unchanged. Both domains keep proper foreign keys and use the neutral processing, crop and private R2 mechanics in [Shared photo infrastructure](shared-photo-infrastructure.md) underneath their own ownership rules.
 
-This checkpoint adds no Equipment photo service, query, browser route, delivery endpoint, gallery or list thumbnail. It creates no photo rows and does not contact R2.
+The schema checkpoint added no application behaviour. The later [Equipment photo data layer](equipment-photo-data-layer.md) now implements Equipment-owned services, metadata queries and the restricted future delivery boundary. Browser routes, gallery composition and list thumbnails are still not implemented.
 
 ## Relationship
 
@@ -49,4 +49,4 @@ equipment/<equipment UUID>/<asset UUID>/thumbnail.webp
 equipment/<equipment UUID>/<asset UUID>/thumbnails/<revision UUID>.webp
 ```
 
-The original will stay private and unchanged. Display will keep the orientation corrected photograph's natural aspect ratio. The active thumbnail will use the saved square crop. None of that processing or storage behaviour is invoked in this schema checkpoint.
+The original stays private and unchanged. Display keeps the orientation corrected photograph's natural aspect ratio. The active thumbnail uses the saved square crop. The Equipment photo data layer now invokes these mechanics through an Equipment-only wrapper; browser delivery and UI remain later work.

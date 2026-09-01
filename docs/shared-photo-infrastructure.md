@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Plant photographs remain owned by the Plant domain and stored as PlantPhoto records. The reusable mechanics underneath them live in small neutral photo modules so the separate EquipmentPhoto model can use the same proven processing and R2 safeguards later. This is not a generic media or attachment framework. EquipmentPhoto now exists as schema only; its application layer is not implemented yet.
+Plant photographs remain owned by the Plant domain and stored as PlantPhoto records. The reusable mechanics underneath them live in small neutral photo modules so the separate EquipmentPhoto model uses the same proven processing and R2 safeguards. This is not a generic media or attachment framework. Plant and Equipment retain separate application services, ownership and transactions.
 
 ## Shared mechanics
 
@@ -41,8 +41,8 @@ plants/<plant UUID>/<asset UUID>/thumbnails/<revision UUID>.webp
 
 Deletion cleanup starts from a known original key, derives its exact asset prefix and requires the trailing slash. Listing is bounded and paginated. Every returned key is checked against the same namespace, owner and asset before deletion, and the prefix is checked again afterwards. The primitive cannot list or delete an entire owner folder and does not perform broad bucket cleanup.
 
-## Next consumer
+## Equipment consumer
 
-The separate EquipmentPhoto table and `Equipment.photos` relation are now the next schema consumer. Later Equipment specific services may compose these shared mechanics through an Equipment wrapper fixed to the `equipment` namespace. They will not make PlantPhoto polymorphic or move Equipment concurrency and ownership rules into the shared layer.
+The separate EquipmentPhoto table and `Equipment.photos` relation compose these shared mechanics through an Equipment wrapper fixed to the `equipment` namespace. Equipment services own their validation, Equipment locking, `updatedAt` concurrency, persistence, primary rules, crop revision switch and database-first deletion. They do not make PlantPhoto polymorphic or move domain concurrency and ownership rules into the shared layer.
 
-The shared infrastructure refactor itself changed no persisted photo metadata or stored R2 object. The later Equipment schema checkpoint creates only database structure and does not call these storage mechanics.
+Equipment browser routes and gallery/list UI remain a later checkpoint. The Equipment data-layer implementation does not change Plant paths or behaviour.

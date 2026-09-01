@@ -47,7 +47,7 @@ The `components`, `lib`, and `modules` folders are not being created just to mak
 
 ## Database starting point
 
-The original Plant foundation contains Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. Plant creation, browsing, editing, archive/restore and photo features are implemented. Equipment, EquipmentPurchase, EquipmentPhoto and an independent EQP sequence reuse the same foundation and Location. Equipment creation, editing, archive/restore, reads and inventory pages are implemented; EquipmentPhoto currently has schema only.
+The original Plant foundation contains Plant, PlantParentage, PlantPurchase, PlantPhoto, Location, PlantStatus and the ANT sequence. Plant creation, browsing, editing, archive/restore and photo features are implemented. Equipment, EquipmentPurchase, EquipmentPhoto and an independent EQP sequence reuse the same foundation and Location. Equipment creation, editing, archive/restore, reads and inventory pages are implemented. Equipment photo storage and database services are implemented; its browser gallery and list images remain a later checkpoint.
 
 Internal IDs use Prisma generated UUIDs stored in PostgreSQL UUID columns. Timestamps use `timestamptz` with millisecond precision, while the purchase date uses a calendar `date`. Foreign keys restrict deletion and ID updates so referenced nursery records cannot disappear through a cascade. Schema limitations and rules reserved for the migration or data layer are recorded in `docs/plant-data-model.md`.
 
@@ -181,7 +181,7 @@ EquipmentPhoto is a separate required Equipment ownership model, not a polymorph
 
 A PostgreSQL partial unique index allows zero or one primary photo per Equipment while leaving nonprimary photos unrestricted. Migration checks require cropX, cropY, cropSize and derivativeRevision to be all null or all populated, and protect their independent normalised ranges. Full image bounds remain a later service rule. The table has only its primary key, unique storage key, `(equipmentId, sortOrder)` index and partial primary index.
 
-The schema will later consume the shared photo infrastructure through the closed `equipment/<equipment UUID>/<asset UUID>/...` namespace. No Equipment photo service, query, R2 operation, route, delivery boundary, gallery or list image is part of this checkpoint. Details are in [Equipment photo data model](equipment-photo-data-model.md).
+Equipment photo services consume the shared photo infrastructure through the closed `equipment/<equipment UUID>/<asset UUID>/...` namespace. Equipment owns its storage wrapper, validation mapping, transactions, primary selection, crop revision switch, database-first deletion and `Equipment.updatedAt` concurrency. Metadata reads remain storage free, while the restricted read boundary resolves only a known photo's display or current thumbnail variant before signing. No Equipment photo browser route, gallery or list image is part of this checkpoint. Details are in [Equipment photo data model](equipment-photo-data-model.md) and [Equipment photo data layer](equipment-photo-data-layer.md).
 
 ## Keeping it tidy as it grows
 
