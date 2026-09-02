@@ -115,9 +115,11 @@ The EquipmentPhoto schema checkpoint adds the separate metadata table, restricti
 
 Energy history and estimates have moved to the separate approved checkpoint above. General expenses must not double count future derived electricity estimates as recorded payments without a reviewed accounting rule.
 
-## 9. Dashboard
+## 9. Dashboard - read model checkpoint
 
-Build the approved dashboard layout using real data from completed features.
+The approved read-only coordination layer now provides Plant and Equipment counts, currency-separated acquisition coverage, current Energy projections through the existing exact calculator, the applicable tariff, and bounded recent-item metadata in one Repeatable Read snapshot. It does not contact photo storage and does not add schema, persistence, Care, Watering or homepage presentation.
+
+The dashboard layout remains a separate reviewed checkpoint. Build it using real data from completed features.
 
 - Plant totals
 - Plant investment

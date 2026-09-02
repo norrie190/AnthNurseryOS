@@ -155,6 +155,12 @@ Tariffs use the stable transaction advisory lock namespace 0x414e5448, key 1. Th
 
 The [energy browser workflow](energy-browser-flow.md) adds an Equipment detail section and `/energy/tariffs`. A small energy-specific shared editor calls strict server actions, which map text/date inputs to existing services. Open forms retain their original stale token; shared boundary corrections require explicit adjacent-change confirmation. Inclusive human end dates are translated to exclusive service boundaries. Exact calculations run before rendering and are presented as strings, with projections distinguished from calendar history and incomplete subtotals. Archive confirmation warns about ongoing settings without changing them. No persistence rules or dependencies change.
 
+## Dashboard read model
+
+The dashboard coordination boundary lives in `src/modules/dashboard` and exposes one read-only summary rather than coupling future homepage components to Plant, Equipment and Energy persistence. One Prisma Repeatable Read transaction performs a fixed set of batched reads for inventory, acquisition costs, current power settings, the one applicable tariff and recent primary-photo metadata. It uses no row or advisory locks and resolves no storage URLs.
+
+Plant and Equipment acquisition coverage includes active and archived records. Known cost components are subtotalled even when another component is unknown, and missing purchases remain in the coverage denominator. Totals are grouped by currency; only matching Plant and Equipment currencies are combined. Current energy projections reuse the established exact calculation layer, keep unconfigured active powered Equipment separate from archived Equipment with ongoing settings, and do not represent measurements or bills. Recent lists contain at most four active records ordered by `createdAt` descending and UUID ascending, with only primary photo identity and revision. The homepage remains unchanged until its separate UI checkpoint.
+
 ## Equipment inventory foundation
 
 Equipment represents individual physical items, not quantities. Its UUID is the relationship key; createEquipment assigns the unique text reference as EQP-XXXX using the independent sequence. Category is flexible text defaulting to Other. Name is required; brand, model, serial number, notes, Location and archive date are optional. No EquipmentStatus or category table is added.
