@@ -115,18 +115,18 @@ The EquipmentPhoto schema checkpoint adds the separate metadata table, restricti
 
 Energy history and estimates have moved to the separate approved checkpoint above. General expenses must not double count future derived electricity estimates as recorded payments without a reviewed accounting rule.
 
-## 9. Dashboard - read model checkpoint
+## 9. Dashboard - UI checkpoint complete
 
 The approved read-only coordination layer now provides Plant and Equipment counts, currency-separated acquisition coverage, current Energy projections through the existing exact calculator, the applicable tariff, and bounded recent-item metadata in one Repeatable Read snapshot. It does not contact photo storage and does not add schema, persistence, Care, Watering or homepage presentation.
 
-The dashboard layout remains a separate reviewed checkpoint. Build it using real data from completed features.
+The homepage now renders that summary as a responsive nursery overview. It shows compact Plant and Equipment counts, currency-separated known acquisition spend and coverage, current-setting Energy projections, current tariff state and bounded recent items using safe thumbnail routes. Empty and incomplete states remain explicit. There are no charts, Locations, Care, Watering, configurable widgets or new persistence.
 
 - Plant totals
 - Plant investment
 - Equipment investment
-- Total nursery investment
-- Watering overview
-- Recent useful activity where the available data supports it
+- Matching-currency combined investment only
+- Current Energy estimates and tariff coverage
+- Recently added Plants and Equipment
 
 ## 10. MVP review
 

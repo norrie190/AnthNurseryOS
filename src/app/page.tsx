@@ -1,12 +1,10 @@
-import { PagePlaceholder } from '@/components/page-placeholder/page-placeholder';
+import { connection } from 'next/server';
+import { Dashboard } from '@/modules/dashboard/components/dashboard';
+import { getDashboardSummary } from '@/modules/dashboard';
 
-export default function HomePage() {
-  return (
-    <PagePlaceholder
-      eyebrow="Nursery overview"
-      title="Dashboard"
-      description="This will become the daily view of the nursery, with useful totals, recent activity and work that needs attention."
-      nextStep="The dashboard layout will be built after the core nursery features have real data to summarise."
-    />
-  );
+export default async function HomePage() {
+  await connection();
+  const summary = await getDashboardSummary();
+
+  return <Dashboard summary={summary} />;
 }

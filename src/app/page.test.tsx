@@ -1,14 +1,29 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mocks = vi.hoisted(() => ({
+  connection: vi.fn(),
+  getDashboardSummary: vi.fn(),
+}));
+
+vi.mock('next/server', () => ({ connection: mocks.connection }));
+vi.mock('@/modules/dashboard', () => ({ getDashboardSummary: mocks.getDashboardSummary }));
+vi.mock('@/modules/dashboard/components/dashboard', () => ({
+  Dashboard: ({ summary }: { summary: { marker: string } }) => <div>{summary.marker}</div>,
+}));
 
 import HomePage from './page';
 
 describe('HomePage', () => {
-  it('shows the dashboard as the current nursery overview', () => {
-    render(<HomePage />);
+  beforeEach(() => vi.clearAllMocks());
 
-    expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
-    expect(screen.getByText('Nursery overview')).toBeInTheDocument();
-    expect(screen.getByText(/daily view of the nursery, with useful totals/i)).toBeInTheDocument();
+  it('loads the approved Dashboard read model at request time', async () => {
+    mocks.getDashboardSummary.mockResolvedValue({ marker: 'Current nursery summary' });
+
+    render(await HomePage());
+
+    expect(mocks.connection).toHaveBeenCalledOnce();
+    expect(mocks.getDashboardSummary).toHaveBeenCalledOnce();
+    expect(screen.getByText('Current nursery summary')).toBeInTheDocument();
   });
 });
