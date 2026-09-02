@@ -1,4 +1,4 @@
-// Approved Plant, Equipment inventory and energy history schema. Custom constraints live in migrations.
+// Approved Plant, Equipment inventory, energy history and watering history schema. Custom constraints live in migrations.
 
 generator client {
   provider = "prisma-client"
@@ -27,14 +27,48 @@ model Plant {
   updatedAt  DateTime    @updatedAt @db.Timestamptz(3)
   archivedAt DateTime?   @db.Timestamptz(3)
 
-  location                Location?        @relation(fields: [locationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  parentage               PlantParentage?  @relation("PlantParentage")
+  location                Location?                @relation(fields: [locationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  parentage               PlantParentage?          @relation("PlantParentage")
   purchase                PlantPurchase?
   photos                  PlantPhoto[]
-  offspringAsSeedParent   PlantParentage[] @relation("SeedParent")
-  offspringAsPollenParent PlantParentage[] @relation("PollenParent")
+  wateringEvents          WateringEvent[]
+  wateringSchedulePeriods WateringSchedulePeriod[]
+  offspringAsSeedParent   PlantParentage[]         @relation("SeedParent")
+  offspringAsPollenParent PlantParentage[]         @relation("PollenParent")
 
   @@index([locationId])
+}
+
+// Historical watering facts. Timestamp validity and void reasons are enforced by migration SQL.
+model WateringEvent {
+  id               String    @id @default(uuid()) @db.Uuid
+  plantId          String    @db.Uuid
+  wateredAt        DateTime  @db.Timestamptz(3)
+  notes            String?
+  voidedAt         DateTime? @db.Timestamptz(3)
+  correctionReason String?
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(3)
+
+  plant Plant @relation(fields: [plantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+// Bounds, interval validity, void reasons and nonvoid overlap protection are migration SQL.
+model WateringSchedulePeriod {
+  id               String    @id @default(uuid()) @db.Uuid
+  plantId          String    @db.Uuid
+  intervalDays     Int
+  effectiveFrom    DateTime  @db.Date
+  effectiveTo      DateTime? @db.Date
+  notes            String?
+  voidedAt         DateTime? @db.Timestamptz(3)
+  correctionReason String?
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(3)
+
+  plant Plant @relation(fields: [plantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([plantId, effectiveFrom])
 }
 
 model PlantParentage {
