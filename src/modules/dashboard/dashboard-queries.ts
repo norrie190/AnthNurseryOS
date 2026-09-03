@@ -11,6 +11,7 @@ import {
   type DashboardRecentPlant,
   type DashboardSummary,
 } from './dashboard-summary';
+import { readWateringQueue } from '../watering/watering-queue-queries';
 
 const purchaseSelect = {
   currency: true,
@@ -107,6 +108,25 @@ export async function getDashboardSummary(on = nurseryToday()): Promise<Dashboar
           photos: primaryPhotoSelect,
         },
       });
+      const wateringQueue = await readWateringQueue(tx, on);
+      const watering = {
+        ...wateringQueue.counts,
+        attention: wateringQueue.entries
+          .filter(({ due }) =>
+            ['OVERDUE', 'DUE_TODAY', 'NEEDS_FIRST_WATERING'].includes(due.status),
+          )
+          .slice(0, 4)
+          .map(({ plant, due }) => ({
+            id: plant.id,
+            reference: plant.reference,
+            displayName: plant.name || 'Unnamed Plant',
+            status: due.status as 'OVERDUE' | 'DUE_TODAY' | 'NEEDS_FIRST_WATERING',
+            daysUntilDue: due.daysUntilDue,
+            nextDueDate: due.nextDueDate,
+            location: plant.location,
+            primaryPhoto: plant.primaryPhoto,
+          })),
+      };
 
       const plantInputs: DashboardPlantInput[] = plants.map((plant) => ({
         status: plant.status,
@@ -175,6 +195,7 @@ export async function getDashboardSummary(on = nurseryToday()): Promise<Dashboar
         currentTariff,
         recentPlants: recentPlantInputs,
         recentEquipment: recentEquipmentInputs,
+        watering,
       });
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },

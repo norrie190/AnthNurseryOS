@@ -6,6 +6,7 @@ import {
   type DashboardPlantInput,
   type DashboardRecentEquipment,
   type DashboardRecentPlant,
+  type DashboardSummary,
 } from './dashboard-summary';
 
 const archivedAt = new Date('2026-01-01T00:00:00.000Z');
@@ -52,6 +53,7 @@ function summary(
     currentTariff?: DashboardCurrentTariff | null;
     recentPlants?: DashboardRecentPlant[];
     recentEquipment?: DashboardRecentEquipment[];
+    watering?: DashboardSummary['watering'];
   } = {},
 ) {
   return buildDashboardSummary({
@@ -60,10 +62,39 @@ function summary(
     currentTariff: overrides.currentTariff ?? null,
     recentPlants: overrides.recentPlants ?? [],
     recentEquipment: overrides.recentEquipment ?? [],
+    watering: overrides.watering,
   });
 }
 
 describe('buildDashboardSummary', () => {
+  it('carries the queue-equivalent Watering summary without changing other sections', () => {
+    const result = summary({
+      watering: {
+        totalEligible: 3,
+        overdue: 1,
+        dueToday: 1,
+        needsFirstWatering: 0,
+        dueSoon: 0,
+        upcoming: 0,
+        notConfigured: 1,
+        attention: [
+          {
+            id: 'plant-1',
+            reference: 'ANT-0001',
+            displayName: 'Plant 1',
+            status: 'OVERDUE',
+            daysUntilDue: -2,
+            nextDueDate: '2026-09-01',
+            location: null,
+            primaryPhoto: null,
+          },
+        ],
+      },
+    });
+    expect(result.watering?.totalEligible).toBe(3);
+    expect(result.watering?.attention[0]?.status).toBe('OVERDUE');
+  });
+
   it('represents an empty dashboard without inventing spend or energy', () => {
     const result = summary();
 

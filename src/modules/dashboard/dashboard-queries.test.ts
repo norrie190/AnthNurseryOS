@@ -24,6 +24,7 @@ describe('getDashboardSummary query plan', () => {
           photos: [{ id: 'plant-photo-1', derivativeRevision: 'revision-1' }],
         },
       ]);
+    plantFindMany.mockResolvedValueOnce([]);
     const equipmentFindMany = vi
       .fn()
       .mockResolvedValueOnce([
@@ -61,6 +62,8 @@ describe('getDashboardSummary query plan', () => {
       plant: { findMany: plantFindMany },
       equipment: { findMany: equipmentFindMany },
       electricityTariff: { findFirst: tariffFindFirst },
+      wateringSchedulePeriod: { findMany: vi.fn() },
+      wateringEvent: { findMany: vi.fn() },
     };
     const transaction = vi.fn(async (operation, options) => {
       expect(options).toEqual({ isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
@@ -71,7 +74,7 @@ describe('getDashboardSummary query plan', () => {
     const result = await getDashboardSummary('2026-08-15');
 
     expect(transaction).toHaveBeenCalledTimes(1);
-    expect(plantFindMany).toHaveBeenCalledTimes(2);
+    expect(plantFindMany).toHaveBeenCalledTimes(3);
     expect(equipmentFindMany).toHaveBeenCalledTimes(2);
     expect(tariffFindFirst).toHaveBeenCalledTimes(1);
     const equipmentSummaryQuery = equipmentFindMany.mock.calls[0]?.[0];

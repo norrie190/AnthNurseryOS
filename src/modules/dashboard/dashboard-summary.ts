@@ -58,6 +58,39 @@ export type DashboardRecentEquipment = {
   } | null;
 };
 
+export type DashboardWateringAttention = {
+  id: string;
+  reference: string;
+  displayName: string;
+  status: 'OVERDUE' | 'DUE_TODAY' | 'NEEDS_FIRST_WATERING';
+  daysUntilDue: number | null;
+  nextDueDate: string | null;
+  location: { id: string; name: string } | null;
+  primaryPhoto: { id: string; derivativeRevision: string | null } | null;
+};
+
+export type DashboardWateringInput = {
+  totalEligible: number;
+  overdue: number;
+  dueToday: number;
+  needsFirstWatering: number;
+  dueSoon: number;
+  upcoming: number;
+  notConfigured: number;
+  attention: DashboardWateringAttention[];
+};
+
+const emptyWatering: DashboardWateringInput = {
+  totalEligible: 0,
+  overdue: 0,
+  dueToday: 0,
+  needsFirstWatering: 0,
+  dueSoon: 0,
+  upcoming: 0,
+  notConfigured: 0,
+  attention: [],
+};
+
 export type InvestmentCurrencySummary = {
   currency: string;
   knownItemPriceSubtotalMinor: number | null;
@@ -78,6 +111,7 @@ export type InvestmentDomainSummary = {
 };
 
 export type DashboardSummary = {
+  watering?: DashboardWateringInput;
   plants: {
     activeCount: number;
     growingCount: number;
@@ -357,6 +391,7 @@ export function buildDashboardSummary(input: {
   currentTariff: DashboardCurrentTariff | null;
   recentPlants: readonly DashboardRecentPlant[];
   recentEquipment: readonly DashboardRecentEquipment[];
+  watering?: DashboardWateringInput;
 }): DashboardSummary {
   const activePlants = input.plants.filter((plant) => plant.archivedAt === null);
   const activeEquipment = input.equipment.filter((item) => item.archivedAt === null);
@@ -364,6 +399,7 @@ export function buildDashboardSummary(input: {
   const equipmentInvestment = summarizeInvestment(input.equipment);
 
   return {
+    watering: input.watering ?? emptyWatering,
     plants: {
       activeCount: activePlants.length,
       growingCount: activePlants.filter((plant) => plant.status === 'GROWING').length,
