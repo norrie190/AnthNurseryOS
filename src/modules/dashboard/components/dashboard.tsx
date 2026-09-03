@@ -1,5 +1,13 @@
 import Link from 'next/link';
-import { AlertTriangle, ArrowRight, Leaf, PlugZap, ReceiptText, Wrench } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowRight,
+  Droplets,
+  Leaf,
+  PlugZap,
+  ReceiptText,
+  Wrench,
+} from 'lucide-react';
 import { formatPurchaseMoney } from '../../../lib/purchase-money';
 import { EquipmentPhotoImage } from '../../equipment/components/equipment-photo-image';
 import { equipmentPhotoImagePath } from '../../equipment/equipment-photo-browser';
@@ -44,6 +52,119 @@ function currencySummary(
 function coverageSentence(label: string, summary: InvestmentDomainSummary) {
   if (summary.relevantRecordCount === 0) return `No ${label} records to cost yet.`;
   return `${summary.completeCostRecordCount} of ${summary.relevantRecordCount} ${label} records have complete cost information.`;
+}
+
+function wateringState(
+  item: DashboardSummary['watering'] extends infer W
+    ? W extends { attention: (infer A)[] }
+      ? A
+      : never
+    : never,
+) {
+  if (item.status === 'OVERDUE') return Math.abs(item.daysUntilDue ?? 0) + ' days overdue';
+  if (item.status === 'DUE_TODAY') return 'Due today';
+  return 'First watering not recorded';
+}
+
+function Watering({ summary }: { summary: DashboardSummary }) {
+  const watering = summary.watering;
+  if (!watering) return null;
+  const urgent = watering.overdue + watering.dueToday + watering.needsFirstWatering;
+  return (
+    <section className={styles.section} aria-labelledby="watering-heading">
+      <div className={styles.sectionHeading}>
+        <div>
+          <p className={styles.eyebrow}>Daily care</p>
+          <h2 id="watering-heading">Watering overview</h2>
+        </div>
+        <Droplets aria-hidden="true" size={22} />
+      </div>
+      {watering.totalEligible === 0 ? (
+        <div className={styles.emptyState}>
+          <h3>No active Plants need watering tracking</h3>
+          <p>Active Growing and Quarantine Plants will appear here once available.</p>
+          <Link className={styles.textLink} href="/plants">
+            View Plants <ArrowRight aria-hidden="true" size={15} />
+          </Link>
+        </div>
+      ) : (
+        <>
+          <dl className={styles.wateringMetrics}>
+            <div>
+              <dt>Overdue</dt>
+              <dd>{watering.overdue}</dd>
+            </div>
+            <div>
+              <dt>Due today</dt>
+              <dd>{watering.dueToday}</dd>
+            </div>
+            <div>
+              <dt>Needs first watering</dt>
+              <dd>{watering.needsFirstWatering}</dd>
+            </div>
+            <div>
+              <dt>Due soon</dt>
+              <dd>{watering.dueSoon}</dd>
+            </div>
+            <div>
+              <dt>Not configured</dt>
+              <dd>{watering.notConfigured}</dd>
+            </div>
+          </dl>
+          {urgent === 0 ? (
+            <p className={styles.wateringQuiet} role="status">
+              No urgent watering tasks today.
+            </p>
+          ) : null}
+          {watering.dueSoon || watering.notConfigured ? (
+            <p className={styles.cardNote}>
+              {watering.dueSoon ? watering.dueSoon + ' due soon' : ''}
+              {watering.dueSoon && watering.notConfigured ? ' · ' : ''}
+              {watering.notConfigured ? watering.notConfigured + ' not configured' : ''}
+            </p>
+          ) : null}
+          {watering.attention.length ? (
+            <ul className={styles.wateringAttention} aria-label="Watering attention Plants">
+              {watering.attention.map((item) => (
+                <li key={item.id}>
+                  <Link href={'/plants/' + item.id}>
+                    <span className={styles.thumbnail}>
+                      <PlantPhotoImage
+                        src={
+                          item.primaryPhoto
+                            ? photoImagePath(
+                                item.id,
+                                item.primaryPhoto.id,
+                                'thumbnail',
+                                item.primaryPhoto.derivativeRevision,
+                              )
+                            : undefined
+                        }
+                        alt={item.reference + ' primary photo'}
+                      />
+                    </span>
+                    <span className={styles.recentDetails}>
+                      <strong>{item.displayName}</strong>
+                      <span>
+                        {item.reference}
+                        {item.location ? ' · ' + item.location.name : ''}
+                      </span>
+                      <span>{wateringState(item)}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={styles.wateringQuiet}>Nothing needs immediate watering attention.</p>
+          )}
+          <Link className={styles.textLink} href="/watering">
+            View watering queue <ArrowRight aria-hidden="true" size={15} />
+          </Link>
+        </>
+      )}
+    </section>
+  );
 }
 
 function Overview({ summary }: { summary: DashboardSummary }) {
@@ -437,6 +558,7 @@ export function Dashboard({ summary }: { summary: DashboardSummary }) {
         <p>A current view of your collection, equipment, investment and energy estimates.</p>
       </header>
       <Overview summary={summary} />
+      <Watering summary={summary} />
       <Investment summary={summary} />
       <Energy summary={summary} />
       <RecentlyAdded summary={summary} />

@@ -57,6 +57,16 @@ function summary(overrides: Partial<DashboardSummary> = {}): DashboardSummary {
       combinedByCurrency: [],
     },
     energy: energy(),
+    watering: {
+      totalEligible: 0,
+      overdue: 0,
+      dueToday: 0,
+      needsFirstWatering: 0,
+      dueSoon: 0,
+      upcoming: 0,
+      notConfigured: 0,
+      attention: [],
+    },
     recentlyAdded: { plants: [], equipment: [] },
     ...overrides,
   };
@@ -81,6 +91,64 @@ function currency(
 }
 
 describe('Dashboard', () => {
+  it('renders the compact Watering overview and ordered attention links', () => {
+    render(
+      <Dashboard
+        summary={summary({
+          watering: {
+            totalEligible: 3,
+            overdue: 1,
+            dueToday: 1,
+            needsFirstWatering: 0,
+            dueSoon: 1,
+            upcoming: 0,
+            notConfigured: 0,
+            attention: [
+              {
+                id: 'plant-1',
+                reference: 'ANT-0001',
+                displayName: 'Aloe',
+                status: 'OVERDUE',
+                daysUntilDue: -4,
+                nextDueDate: '2026-09-01',
+                location: { id: 'loc-1', name: 'Shelf A' },
+                primaryPhoto: { id: 'photo-1', derivativeRevision: 'rev-1' },
+              },
+              {
+                id: 'plant-2',
+                reference: 'ANT-0002',
+                displayName: 'Unnamed Plant',
+                status: 'DUE_TODAY',
+                daysUntilDue: 0,
+                nextDueDate: '2026-09-03',
+                location: null,
+                primaryPhoto: null,
+              },
+            ],
+          },
+        })}
+      />,
+    );
+    const section = screen.getByRole('heading', { name: 'Watering overview' }).closest('section')!;
+    expect(section).toHaveTextContent('Overdue1');
+    expect(section).toHaveTextContent('Due today1');
+    expect(section).toHaveTextContent('1 due soon');
+    expect(section).toHaveTextContent('4 days overdue');
+    expect(section).toHaveTextContent('Due today');
+    expect(section).toHaveTextContent('Shelf A');
+    expect(within(section).getByRole('link', { name: /Aloe/ })).toHaveAttribute(
+      'href',
+      '/plants/plant-1',
+    );
+    expect(within(section).getByRole('link', { name: 'View watering queue' })).toHaveAttribute(
+      'href',
+      '/watering',
+    );
+    expect(within(section).getByAltText('ANT-0001 primary photo')).toHaveAttribute(
+      'src',
+      '/plants/plant-1/photos/photo-1/thumbnail?v=rev-1',
+    );
+  });
   it('renders Plant and Equipment overview counts with capability wording', () => {
     render(
       <Dashboard

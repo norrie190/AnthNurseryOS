@@ -64,6 +64,60 @@
   background: var(--surface);
   box-shadow: var(--shadow-soft);
 }
+.wateringMetrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium);
+  background: var(--surface);
+}
+.wateringMetrics div {
+  padding: 0.9rem 1rem;
+}
+.wateringMetrics div + div {
+  border-left: 1px solid var(--border);
+}
+.wateringMetrics dt {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+.wateringMetrics dd {
+  margin: 0.25rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+.wateringAttention {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium);
+  background: var(--surface);
+}
+.wateringAttention li + li {
+  border-left: 1px solid var(--border);
+}
+.wateringAttention li:nth-child(3) {
+  border-top: 1px solid var(--border);
+}
+.wateringAttention a {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  text-decoration: none;
+}
+.wateringQuiet {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  color: var(--text-muted);
+  background: var(--surface-muted);
+}
 .overviewCard {
   display: grid;
   align-content: start;
@@ -476,6 +530,21 @@
   }
   .energyMetrics {
     grid-template-columns: 1fr;
+  }
+  .wateringMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .wateringMetrics div + div {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .wateringAttention {
+    grid-template-columns: 1fr;
+  }
+  .wateringAttention li + li,
+  .wateringAttention li:nth-child(3) {
+    border-top: 1px solid var(--border);
+    border-left: 0;
   }
   .energyMetrics div + div,
   .energyMetrics div:nth-child(4) {

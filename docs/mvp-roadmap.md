@@ -107,7 +107,7 @@ The EquipmentPhoto schema checkpoint adds the separate metadata table, restricti
 - Accessible care status indicators
 - Care history
 
-The Watering event, schedule, due-state and Plant-detail history workflows are complete. The nursery-wide Watering queue read model, its `/watering` operational page, and transactional batch Watering data layer and selection UI are complete. Location filtering, notifications, generic Care integration and Dashboard Care integration remain pending.
+The Watering event, schedule, due-state and Plant-detail history workflows are complete. The nursery-wide Watering queue read model, its `/watering` operational page, transactional batch Watering data layer and selection UI, and compact Dashboard Watering summary are complete. Location filtering, notifications, generic Care integration and broader Dashboard Care integration remain pending.
 
 ## 9. Expenses and later Equipment work
 
