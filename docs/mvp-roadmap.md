@@ -111,7 +111,9 @@ The Watering event, schedule, due-state and Plant-detail history workflows are c
 
 ## Breeding workflow checkpoints
 
-The approved Inflorescence/Pollination data layer, SeedBatch harvest/germination data layer, and Plant-detail Breeding operational workflow are complete. The Plant detail hierarchy supports retained breeding history, provenance-aware corrections and voids, harvest/sowing/germination/outcome actions, and stale-token handling. A nursery-wide Breeding overview, Dashboard summary, seedling promotion, Plant provenance links, photos, individual seeds and Location integration remain pending.
+The approved Inflorescence/Pollination data layer, SeedBatch harvest/germination data layer, and Plant-detail Breeding operational workflow are complete. The Plant detail hierarchy supports retained breeding history, provenance-aware corrections and voids, harvest/sowing/germination/outcome actions, and stale-token handling. A nursery-wide Breeding overview UI, Dashboard summary, seedling promotion, Plant provenance links, photos, individual seeds and Location integration remain pending.
+
+The nursery-wide Breeding overview read model is now complete. It provides fixed-query operational counts and a bounded, deterministically ordered attention list across live Inflorescences, PollinationAttempts and SeedBatches. The Breeding overview UI remains pending.
 
 ## 9. Expenses and later Equipment work
 
