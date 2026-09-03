@@ -5,6 +5,7 @@ import {
 } from '../../../lib/calendar-date';
 import type { PlantWateringDetail } from '../watering-schedule-queries';
 import { RecordWateringForm, WateringScheduleForm } from './watering-forms';
+import { EventHistoryRow, ScheduleHistoryRow } from './watering-history-controls';
 import styles from './plant-watering.module.css';
 
 const calendarDate = new Intl.DateTimeFormat('en-GB', { dateStyle: 'long', timeZone: 'UTC' });
@@ -168,6 +169,7 @@ export function PlantWatering({ watering }: { watering: PlantWateringDetail }) {
                       {event.correctionReason}
                     </p>
                   )}
+                  <EventHistoryRow plantId={plant.id} event={event} />
                 </li>
               ))}
             </ol>
@@ -209,6 +211,7 @@ export function PlantWatering({ watering }: { watering: PlantWateringDetail }) {
                         {period.correctionReason}
                       </p>
                     )}
+                    <ScheduleHistoryRow plantId={plant.id} period={period} />
                   </li>
                 );
               })}

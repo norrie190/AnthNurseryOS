@@ -23,3 +23,16 @@ export const initialScheduleState: ScheduleFormState = {
   message: '',
   fieldErrors: {},
 };
+
+export type HistoryActionState = {
+  success: boolean;
+  message: string;
+  fieldErrors: Record<string, string>;
+  stale?: boolean;
+};
+
+export const initialHistoryActionState: HistoryActionState = {
+  success: false,
+  message: '',
+  fieldErrors: {},
+};

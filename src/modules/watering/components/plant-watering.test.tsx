@@ -245,7 +245,7 @@ test('current schedule, event history and schedule states retain gaps and void i
   for (const state of ['Historical', 'Current', 'Future', 'Voided'])
     expect(screen.getByText(state)).toBeInTheDocument();
   expect(screen.getByText('Void reason: Wrong dates')).toBeInTheDocument();
-  expect(screen.queryByRole('button', { name: /correct|void/i })).not.toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: /correct|void/i })).toHaveLength(8);
 });
 
 test('empty histories and a genuine current gap are explicit', () => {
