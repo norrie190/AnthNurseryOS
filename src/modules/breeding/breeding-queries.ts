@@ -1,0 +1,102 @@
+import 'server-only';
+import { z } from 'zod';
+import { getPrisma } from '../../lib/prisma';
+import { BreedingError } from './breeding-errors';
+
+const id = z.string().uuid();
+const pollenParent = { select: { id: true, reference: true, name: true } } as const;
+const attemptSelect = {
+  id: true,
+  inflorescenceId: true,
+  pollinatedOn: true,
+  status: true,
+  pollenSourceMode: true,
+  pollenParentPlantId: true,
+  pollenParentName: true,
+  pollenBreeder: true,
+  pollenCultivar: true,
+  notes: true,
+  voidedAt: true,
+  correctionReason: true,
+  createdAt: true,
+  updatedAt: true,
+  pollenParent: pollenParent,
+} as const;
+
+export async function getPlantInflorescenceHistory(plantId: string) {
+  const parsed = id.safeParse(plantId);
+  if (!parsed.success) return [];
+  return getPrisma().inflorescence.findMany({
+    where: { plantId: parsed.data },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    include: {
+      pollinationAttempts: {
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        select: attemptSelect,
+      },
+    },
+  });
+}
+export type PlantInflorescenceHistory = Awaited<ReturnType<typeof getPlantInflorescenceHistory>>;
+
+export async function getInflorescenceDetail(inflorescenceId: string) {
+  const parsed = id.safeParse(inflorescenceId);
+  if (!parsed.success) return null;
+  return getPrisma().inflorescence.findUnique({
+    where: { id: parsed.data },
+    include: {
+      pollinationAttempts: {
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        select: attemptSelect,
+      },
+    },
+  });
+}
+
+export async function getOwnedInflorescenceDetail(plantId: string, inflorescenceId: string) {
+  const plant = id.safeParse(plantId);
+  const inflorescence = id.safeParse(inflorescenceId);
+  if (!plant.success || !inflorescence.success) return null;
+  return getPrisma().inflorescence.findFirst({
+    where: { id: inflorescence.data, plantId: plant.data },
+    include: {
+      pollinationAttempts: {
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        select: attemptSelect,
+      },
+    },
+  });
+}
+
+export async function getPollinationAttemptDetail(attemptId: string) {
+  const parsed = id.safeParse(attemptId);
+  if (!parsed.success) return null;
+  return getPrisma().pollinationAttempt.findUnique({
+    where: { id: parsed.data },
+    select: {
+      ...attemptSelect,
+      inflorescence: { select: { id: true, plantId: true, status: true } },
+    },
+  });
+}
+
+export async function getOwnedPollinationAttemptDetail(inflorescenceId: string, attemptId: string) {
+  const parent = id.safeParse(inflorescenceId);
+  const attempt = id.safeParse(attemptId);
+  if (!parent.success || !attempt.success) return null;
+  return getPrisma().pollinationAttempt.findFirst({
+    where: { id: attempt.data, inflorescenceId: parent.data },
+    select: {
+      ...attemptSelect,
+      inflorescence: { select: { id: true, plantId: true, status: true } },
+    },
+  });
+}
+
+export function requireOwned<T>(
+  record: T | null,
+  message = 'This breeding record could not be found.',
+) {
+  if (!record) throw new BreedingError('CONFLICT', message);
+  return record;
+}
