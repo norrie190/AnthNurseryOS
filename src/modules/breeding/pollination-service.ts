@@ -54,6 +54,23 @@ function sourceData(source: PollenSource) {
   };
 }
 
+function sameSource(current: PollinationAttempt, source: PollenSource): boolean {
+  return (
+    current.pollenSourceMode === source.mode &&
+    (source.mode === 'INTERNAL'
+      ? current.pollenParentPlantId === source.pollenParentPlantId
+      : source.mode === 'EXTERNAL'
+        ? current.pollenParentPlantId === null &&
+          current.pollenParentName === source.pollenParentName &&
+          current.pollenBreeder === source.pollenBreeder &&
+          current.pollenCultivar === source.pollenCultivar
+        : current.pollenParentPlantId === null &&
+          current.pollenParentName === null &&
+          current.pollenBreeder === null &&
+          current.pollenCultivar === null)
+  );
+}
+
 export async function createPollinationAttempt(
   inflorescenceId: string,
   input: CreatePollinationAttemptInput,
@@ -183,6 +200,16 @@ export async function correctPollinationAttempt(
               }
             : { mode: 'UNKNOWN' };
       const source = parsed.pollenSource ?? currentSource;
+      const liveBatches = await tx.seedBatch.count({
+        where: { pollinationAttemptId: id, voidedAt: null },
+      });
+      const pollinatedDateChanged =
+        pollinatedOn !== current.pollinatedOn.toISOString().slice(0, 10);
+      if (liveBatches && (pollinatedDateChanged || !sameSource(current, source)))
+        throw new BreedingError(
+          'PROVENANCE_LOCKED',
+          'Live SeedBatch history locks this PollinationAttempt provenance. Void the dependent batches before changing it.',
+        );
       if (source.mode === 'INTERNAL') {
         const pollenPlant = await tx.plant.findUnique({
           where: { id: source.pollenParentPlantId },

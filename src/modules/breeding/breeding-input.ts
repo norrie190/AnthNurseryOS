@@ -119,3 +119,53 @@ export function parseCreatePollinationAttemptInput(
 export function parseBreedingInput<S extends z.ZodType>(schema: S, input: unknown): z.output<S> {
   return parse(schema, input);
 }
+
+const seedCount = z.number().int().min(0).nullable().optional();
+const germinatedCount = z.number().int().min(0).nullable().optional();
+const seedBatchStatusSchema = z.enum([
+  'HARVESTED',
+  'AWAITING_GERMINATION',
+  'GERMINATING',
+  'EXHAUSTED',
+  'FAILED',
+]);
+
+export const recordSeedBatchHarvestSchema = z.strictObject({
+  harvestedOn: calendarDateSchema,
+  seedCount,
+  notes: optionalText,
+  expectedPollinationUpdatedAt: token,
+});
+export const recordSeedBatchSowingSchema = z.strictObject({
+  sownOn: calendarDateSchema,
+  expectedUpdatedAt: token,
+});
+export const recordSeedBatchGerminationSchema = z.strictObject({
+  germinatedCount: z.number().int().min(0),
+  expectedUpdatedAt: token,
+});
+export const closeSeedBatchSchema = z.strictObject({
+  status: z.enum(['EXHAUSTED', 'FAILED']),
+  expectedUpdatedAt: token,
+});
+export const correctSeedBatchSchema = z.strictObject({
+  harvestedOn: calendarDateSchema.optional(),
+  sownOn: optionalDate.optional(),
+  seedCount,
+  germinatedCount,
+  notes: optionalText.optional(),
+  status: seedBatchStatusSchema.optional(),
+  correctionReason: reason,
+  expectedUpdatedAt: token,
+});
+export const voidSeedBatchSchema = z.strictObject({
+  correctionReason: reason,
+  expectedUpdatedAt: token,
+});
+
+export type RecordSeedBatchHarvestInput = z.input<typeof recordSeedBatchHarvestSchema>;
+export type RecordSeedBatchSowingInput = z.input<typeof recordSeedBatchSowingSchema>;
+export type RecordSeedBatchGerminationInput = z.input<typeof recordSeedBatchGerminationSchema>;
+export type CloseSeedBatchInput = z.input<typeof closeSeedBatchSchema>;
+export type CorrectSeedBatchInput = z.input<typeof correctSeedBatchSchema>;
+export type VoidSeedBatchInput = z.input<typeof voidSeedBatchSchema>;

@@ -4,6 +4,7 @@ import {
   type Inflorescence,
   type Plant,
   type PollinationAttempt,
+  type SeedBatch,
 } from '../../generated/prisma/client';
 import { nurseryDateForInstant } from '../../lib/calendar-date';
 import { BreedingError } from './breeding-errors';
@@ -11,6 +12,7 @@ import { BreedingError } from './breeding-errors';
 export type LockedPlant = Pick<Plant, 'id' | 'status' | 'archivedAt'> & { databaseNow: Date };
 export type LockedInflorescence = Inflorescence & { databaseNow: Date };
 export type LockedAttempt = PollinationAttempt & { databaseNow: Date };
+export type LockedSeedBatch = SeedBatch & { databaseNow: Date };
 
 export function nextBreedingTimestamp(previous: Date, databaseNow: Date): Date {
   return new Date(Math.max(databaseNow.getTime(), previous.getTime() + 1));
@@ -92,6 +94,18 @@ export async function lockAttempt(
       'POLLINATION_ATTEMPT_NOT_FOUND',
       'This PollinationAttempt could not be found.',
     );
+  return row;
+}
+
+export async function lockSeedBatch(
+  tx: Prisma.TransactionClient,
+  id: string,
+): Promise<LockedSeedBatch> {
+  const [row] = await tx.$queryRaw<LockedSeedBatch[]>`
+    SELECT b.*, clock_timestamp() AS "databaseNow"
+    FROM public."SeedBatch" b WHERE b."id" = ${id}::uuid FOR NO KEY UPDATE
+  `;
+  if (!row) throw new BreedingError('SEED_BATCH_NOT_FOUND', 'This SeedBatch could not be found.');
   return row;
 }
 

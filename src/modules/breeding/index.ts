@@ -5,3 +5,5 @@ export * from './breeding-provenance';
 export * from './breeding-queries';
 export * from './inflorescence-service';
 export * from './pollination-service';
+export * from './seed-batch-display';
+export * from './seed-batch-service';

@@ -22,6 +22,20 @@ const attemptSelect = {
   updatedAt: true,
   pollenParent: pollenParent,
 } as const;
+const seedBatchSelect = {
+  id: true,
+  pollinationAttemptId: true,
+  harvestedOn: true,
+  sownOn: true,
+  seedCount: true,
+  germinatedCount: true,
+  status: true,
+  notes: true,
+  voidedAt: true,
+  correctionReason: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
 
 export async function getPlantInflorescenceHistory(plantId: string) {
   const parsed = id.safeParse(plantId);
@@ -89,6 +103,63 @@ export async function getOwnedPollinationAttemptDetail(inflorescenceId: string, 
     select: {
       ...attemptSelect,
       inflorescence: { select: { id: true, plantId: true, status: true } },
+    },
+  });
+}
+
+export async function getPollinationSeedBatchHistory(pollinationAttemptId: string) {
+  const parsed = id.safeParse(pollinationAttemptId);
+  if (!parsed.success) return [];
+  return getPrisma().seedBatch.findMany({
+    where: { pollinationAttemptId: parsed.data },
+    orderBy: [{ harvestedOn: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+    select: seedBatchSelect,
+  });
+}
+export type PollinationSeedBatchHistory = Awaited<
+  ReturnType<typeof getPollinationSeedBatchHistory>
+>;
+
+export async function getSeedBatchDetail(seedBatchId: string) {
+  const parsed = id.safeParse(seedBatchId);
+  if (!parsed.success) return null;
+  return getPrisma().seedBatch.findUnique({
+    where: { id: parsed.data },
+    select: {
+      ...seedBatchSelect,
+      pollinationAttempt: {
+        select: {
+          id: true,
+          status: true,
+          inflorescence: {
+            select: {
+              id: true,
+              plant: { select: { id: true, reference: true, name: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+export async function getOwnedSeedBatchDetail(pollinationAttemptId: string, seedBatchId: string) {
+  const attempt = id.safeParse(pollinationAttemptId);
+  const batch = id.safeParse(seedBatchId);
+  if (!attempt.success || !batch.success) return null;
+  return getPrisma().seedBatch.findFirst({
+    where: { id: batch.data, pollinationAttemptId: attempt.data },
+    select: {
+      ...seedBatchSelect,
+      pollinationAttempt: {
+        select: {
+          id: true,
+          status: true,
+          inflorescence: {
+            select: { id: true, plant: { select: { id: true, reference: true, name: true } } },
+          },
+        },
+      },
     },
   });
 }
