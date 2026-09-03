@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import type { PlantDetailRecord } from '../plant-queries';
 import { formatPlantMoney } from '../plant-money';
 import { plantStatusLabels } from '../plant-form-state';
@@ -26,9 +27,11 @@ function ParentValue({
 export function PlantDetail({
   plant,
   photos = [],
+  watering,
 }: {
   plant: PlantDetailRecord;
   photos?: readonly PlantGalleryPhoto[];
+  watering?: ReactNode;
 }) {
   const purchase = plant.purchase;
   return (
@@ -83,13 +86,14 @@ export function PlantDetail({
         </dl>
       </section>
       <PlantPhotos
-        key={plant.id}
+        key={`photos-${plant.id}`}
         plantId={plant.id}
         reference={plant.reference}
         archived={plant.archivedAt !== null}
         expectedUpdatedAt={plant.updatedAt.toISOString()}
         photos={photos}
       />
+      {watering}
       <section className={styles.card} aria-labelledby="parentage-heading">
         <h2 id="parentage-heading">Parentage</h2>
         <dl className={styles.detailsGrid}>
@@ -173,7 +177,7 @@ export function PlantDetail({
         </Link>
       </div>
       <PlantArchiveControls
-        key={plant.id}
+        key={`archive-${plant.id}`}
         plantId={plant.id}
         reference={plant.reference}
         archived={plant.archivedAt !== null}

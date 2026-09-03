@@ -118,3 +118,66 @@ export async function getPlantWateringDueState(plantId: string, nurseryDate = nu
     { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
   );
 }
+
+export async function getPlantWateringDetail(plantId: string, nurseryDate = nurseryToday()) {
+  const id = parseWateringPlantId(plantId);
+  const date = parseWateringScheduleDate(nurseryDate);
+  const before = nurseryDateStartInstant(addCalendarDays(date, 1));
+  return getPrisma().$transaction(
+    async (tx) => {
+      const plant = await tx.plant.findUnique({ where: { id }, select: plantSelect });
+      if (!plant) throw new WateringError('PLANT_NOT_FOUND', 'This Plant could not be found.');
+      const schedule = await tx.wateringSchedulePeriod.findFirst({
+        where: applicableScheduleWhere(id, date),
+        select: scheduleSelect,
+      });
+      const latestWateringEvent = await tx.wateringEvent.findFirst({
+        where: { plantId: id, voidedAt: null, wateredAt: { lt: before } },
+        orderBy: [{ wateredAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+        select: { id: true, wateredAt: true, updatedAt: true },
+      });
+      const events = await tx.wateringEvent.findMany({
+        where: { plantId: id },
+        orderBy: [{ wateredAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+        select: {
+          id: true,
+          plantId: true,
+          wateredAt: true,
+          notes: true,
+          voidedAt: true,
+          correctionReason: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+      const periods = await tx.wateringSchedulePeriod.findMany({
+        where: { plantId: id },
+        select: scheduleSelect,
+        orderBy: [{ effectiveFrom: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+      });
+      const due = calculateWateringDueState({
+        nurseryDate: date,
+        schedule: schedule ? { intervalDays: schedule.intervalDays } : null,
+        events: latestWateringEvent
+          ? [{ wateredAt: latestWateringEvent.wateredAt, voidedAt: null }]
+          : [],
+      });
+      return {
+        plant: {
+          ...plant,
+          activeCareEligible:
+            plant.archivedAt === null &&
+            (plant.status === 'GROWING' || plant.status === 'QUARANTINE'),
+        },
+        schedule,
+        latestWateringEvent,
+        due,
+        events,
+        periods,
+      };
+    },
+    { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+  );
+}
+
+export type PlantWateringDetail = Awaited<ReturnType<typeof getPlantWateringDetail>>;

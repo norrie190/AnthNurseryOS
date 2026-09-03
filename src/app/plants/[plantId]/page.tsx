@@ -3,13 +3,18 @@ import { connection } from 'next/server';
 import { getPlantById } from '@/modules/plants/plant-queries';
 import { PlantDetail } from '@/modules/plants/components/plant-detail';
 import { getPlantPhotoGallery } from '@/modules/plants/plant-photo-queries';
+import { getPlantWateringDetail } from '@/modules/watering/watering-schedule-queries';
+import { PlantWatering } from '@/modules/watering/components/plant-watering';
 
 export default async function PlantPage({ params }: { params: Promise<{ plantId: string }> }) {
   await connection();
   const { plantId } = await params;
   const plant = await getPlantById(plantId);
   if (!plant) notFound();
-  const photos = await getPlantPhotoGallery(plantId);
+  const [photos, watering] = await Promise.all([
+    getPlantPhotoGallery(plantId),
+    getPlantWateringDetail(plantId),
+  ]);
   return (
     <PlantDetail
       plant={plant}
@@ -20,6 +25,7 @@ export default async function PlantPage({ params }: { params: Promise<{ plantId:
         isPrimary,
         derivativeRevision,
       }))}
+      watering={<PlantWatering watering={watering} />}
     />
   );
 }

@@ -109,3 +109,10 @@ test('archived detail retains information and status, shows archive date and off
     '/plants/archived',
   );
 });
+
+test('places the supplied Watering module in the Plant detail without changing existing queries', () => {
+  render(
+    <PlantDetail plant={plant} watering={<section aria-label="Watering test">Care</section>} />,
+  );
+  expect(screen.getByRole('region', { name: 'Watering test' })).toHaveTextContent('Care');
+});
