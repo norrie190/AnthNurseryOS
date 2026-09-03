@@ -1,16 +1,22 @@
 import { z } from 'zod';
 
+export const NURSERY_TIME_ZONE = 'Europe/London';
+
 export const calendarDateSchema = z.iso.date().refine((value) => !value.startsWith('0000-'), {
   message: 'Use a calendar date with a year from 0001 to 9999.',
 });
 
 export function nurseryToday(): string {
+  return nurseryDateForInstant(new Date());
+}
+
+export function nurseryDateForInstant(instant: Date): string {
   const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Europe/London',
+    timeZone: NURSERY_TIME_ZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).formatToParts(new Date());
+  }).formatToParts(instant);
   const part = (type: string) => parts.find((value) => value.type === type)!.value;
   return `${part('year')}-${part('month')}-${part('day')}`;
 }
@@ -37,4 +43,68 @@ export function calendarOrdinal(value: string): number {
     (leap && month > 2 ? 1 : 0) +
     day
   );
+}
+
+export function addCalendarDays(value: string, days: number): string {
+  const date = dateToSql(value);
+  date.setUTCDate(date.getUTCDate() + days);
+  return calendarDateSchema.parse(date.toISOString().slice(0, 10));
+}
+
+export function calendarDaysBetween(from: string, to: string): number {
+  return calendarOrdinal(to) - calendarOrdinal(from);
+}
+
+function nurseryDateTimeParts(instant: Date) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: NURSERY_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(instant);
+  const part = (type: string) => Number(parts.find((value) => value.type === type)!.value);
+  return {
+    year: part('year'),
+    month: part('month'),
+    day: part('day'),
+    hour: part('hour'),
+    minute: part('minute'),
+    second: part('second'),
+  };
+}
+
+// Resolve local nursery midnight iteratively; this remains correct across 23/25-hour DST days.
+export function nurseryDateStartInstant(value: string): Date {
+  const date = calendarDateSchema.parse(value);
+  const desired = Date.parse(`${date}T00:00:00.000Z`);
+  let candidate = desired;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const local = nurseryDateTimeParts(new Date(candidate));
+    const representedAsUtc = Date.UTC(
+      local.year,
+      local.month - 1,
+      local.day,
+      local.hour,
+      local.minute,
+      local.second,
+    );
+    const difference = desired - representedAsUtc;
+    candidate += difference;
+    if (difference === 0) break;
+  }
+  const result = new Date(candidate);
+  const local = nurseryDateTimeParts(result);
+  if (
+    nurseryDateForInstant(result) !== date ||
+    local.hour !== 0 ||
+    local.minute !== 0 ||
+    local.second !== 0
+  ) {
+    throw new RangeError(`Could not resolve nursery midnight for ${date}.`);
+  }
+  return result;
 }

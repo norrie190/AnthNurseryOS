@@ -4,40 +4,40 @@ import { WateringError } from './watering-errors';
 export const wateringIdSchema = z.string().trim().uuid().toLowerCase();
 
 const timestampSchema = z.iso.datetime({ precision: 3 }).transform((value) => new Date(value));
-const textSchema = z
+export const wateringTextSchema = z
   .string()
   .trim()
   .max(10000)
   .refine((value) => !value.includes('\0'), 'Text cannot contain a null character.');
-const notesSchema = textSchema
+export const wateringNotesSchema = wateringTextSchema
   .transform((value) => value || null)
   .nullable()
   .optional();
-const correctionReasonSchema = textSchema.min(
+export const wateringCorrectionReasonSchema = wateringTextSchema.min(
   1,
   'Explain why this watering record is being corrected or voided.',
 );
-const expectedUpdatedAtSchema = z.iso.datetime({ precision: 3 });
+export const wateringExpectedUpdatedAtSchema = z.iso.datetime({ precision: 3 });
 
 export const recordWateringEventSchema = z.strictObject({
   wateredAt: timestampSchema,
-  notes: notesSchema,
+  notes: wateringNotesSchema,
 });
 
 export const correctWateringEventSchema = z
   .strictObject({
     wateredAt: timestampSchema.optional(),
-    notes: notesSchema,
-    correctionReason: correctionReasonSchema,
-    expectedUpdatedAt: expectedUpdatedAtSchema,
+    notes: wateringNotesSchema,
+    correctionReason: wateringCorrectionReasonSchema,
+    expectedUpdatedAt: wateringExpectedUpdatedAtSchema,
   })
   .refine((input) => input.wateredAt !== undefined || input.notes !== undefined, {
     message: 'Supply a watering time or notes to correct.',
   });
 
 export const voidWateringEventSchema = z.strictObject({
-  correctionReason: correctionReasonSchema,
-  expectedUpdatedAt: expectedUpdatedAtSchema,
+  correctionReason: wateringCorrectionReasonSchema,
+  expectedUpdatedAt: wateringExpectedUpdatedAtSchema,
 });
 
 export type RecordWateringEventInput = z.input<typeof recordWateringEventSchema>;

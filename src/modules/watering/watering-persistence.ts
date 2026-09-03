@@ -23,6 +23,13 @@ function databaseCode(error: unknown, depth = 0): string | undefined {
 export function throwWateringDatabaseError(error: unknown): never {
   if (error instanceof WateringError) throw error;
   const sqlCode = databaseCode(error);
+  if (sqlCode === '23P01') {
+    throw new WateringError(
+      'SCHEDULE_CONFLICT',
+      'These dates overlap another watering schedule period. Review the schedule history.',
+      { cause: error },
+    );
+  }
   if (sqlCode === '23514') {
     throw new WateringError(
       'VALIDATION_FAILED',
