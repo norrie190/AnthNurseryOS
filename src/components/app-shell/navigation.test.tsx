@@ -25,6 +25,7 @@ describe('DesktopNavigation', () => {
     expect(screen.getByRole('link', { name: 'Plants' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Plants' })).toHaveAttribute('href', '/plants');
     expect(screen.getByRole('link', { name: 'Watering' })).toHaveAttribute('href', '/watering');
+    expect(screen.getByRole('link', { name: 'Breeding' })).toHaveAttribute('href', '/breeding');
     expect(screen.getByRole('link', { name: 'Care' })).toHaveAttribute('href', '/care');
     expect(screen.getByRole('link', { name: 'Equipment' })).toHaveAttribute('href', '/equipment');
     expect(screen.getByRole('link', { name: 'Expenses' })).toHaveAttribute('href', '/expenses');
