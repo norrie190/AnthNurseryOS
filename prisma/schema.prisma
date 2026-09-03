@@ -16,6 +16,34 @@ enum PlantStatus {
   DECEASED
 }
 
+enum InflorescenceStatus {
+  OBSERVED
+  OPEN
+  FINISHED
+  ABORTED
+}
+
+enum PollinationAttemptStatus {
+  PENDING
+  DEVELOPING
+  FAILED
+  HARVESTED
+}
+
+enum PollenSourceMode {
+  INTERNAL
+  EXTERNAL
+  UNKNOWN
+}
+
+enum SeedBatchStatus {
+  HARVESTED
+  AWAITING_GERMINATION
+  GERMINATING
+  EXHAUSTED
+  FAILED
+}
+
 model Plant {
   id         String      @id @default(uuid()) @db.Uuid
   reference  String      @unique
@@ -33,10 +61,74 @@ model Plant {
   photos                  PlantPhoto[]
   wateringEvents          WateringEvent[]
   wateringSchedulePeriods WateringSchedulePeriod[]
+  inflorescences          Inflorescence[]
+  pollenSourceAttempts    PollinationAttempt[]     @relation("PollinationPollenParent")
   offspringAsSeedParent   PlantParentage[]         @relation("SeedParent")
   offspringAsPollenParent PlantParentage[]         @relation("PollenParent")
 
   @@index([locationId])
+}
+
+model Inflorescence {
+  id               String              @id @default(uuid()) @db.Uuid
+  plantId          String              @db.Uuid
+  status           InflorescenceStatus @default(OBSERVED)
+  emergedOn        DateTime?           @db.Date
+  openedOn         DateTime?           @db.Date
+  notes            String?
+  voidedAt         DateTime?           @db.Timestamptz(3)
+  correctionReason String?
+  createdAt        DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime            @updatedAt @db.Timestamptz(3)
+
+  plant               Plant                @relation(fields: [plantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  pollinationAttempts PollinationAttempt[]
+
+  @@index([plantId, createdAt])
+  @@index([plantId, emergedOn])
+}
+
+model PollinationAttempt {
+  id                  String                   @id @default(uuid()) @db.Uuid
+  inflorescenceId     String                   @db.Uuid
+  pollinatedOn        DateTime                 @db.Date
+  status              PollinationAttemptStatus @default(PENDING)
+  pollenSourceMode    PollenSourceMode
+  pollenParentPlantId String?                  @db.Uuid
+  pollenParentName    String?
+  pollenBreeder       String?
+  pollenCultivar      String?
+  notes               String?
+  voidedAt            DateTime?                @db.Timestamptz(3)
+  correctionReason    String?
+  createdAt           DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime                 @updatedAt @db.Timestamptz(3)
+
+  inflorescence Inflorescence @relation(fields: [inflorescenceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  pollenParent  Plant?        @relation("PollinationPollenParent", fields: [pollenParentPlantId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  seedBatches   SeedBatch[]
+
+  @@index([inflorescenceId, pollinatedOn])
+  @@index([pollenParentPlantId, pollinatedOn])
+}
+
+model SeedBatch {
+  id                   String          @id @default(uuid()) @db.Uuid
+  pollinationAttemptId String          @db.Uuid
+  harvestedOn          DateTime        @db.Date
+  sownOn               DateTime?       @db.Date
+  seedCount            Int?
+  germinatedCount      Int?
+  status               SeedBatchStatus @default(HARVESTED)
+  notes                String?
+  voidedAt             DateTime?       @db.Timestamptz(3)
+  correctionReason     String?
+  createdAt            DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime        @updatedAt @db.Timestamptz(3)
+
+  pollinationAttempt PollinationAttempt @relation(fields: [pollinationAttemptId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([pollinationAttemptId, harvestedOn])
 }
 
 // Historical watering facts. Timestamp validity and void reasons are enforced by migration SQL.
