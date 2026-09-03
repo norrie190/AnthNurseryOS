@@ -24,7 +24,7 @@ The main layout is shared by every route. It uses a fixed sidebar on larger scre
 
 Shared colours, spacing, borders, and type values are kept as CSS variables in `src/app/globals.css`. Individual components use CSS Modules so their layout rules stay with them. Lucide React supplies the simple line icons used throughout the shell. This avoids drawing and maintaining our own icons, while keeping them consistent and accessible.
 
-Only the current MVP areas are shown in the main navigation: Dashboard, Plants, Care, Equipment, and Expenses. Later features should be added when their phase starts, rather than appearing as empty promises in the app now. Search, notifications, and theme controls are present only as disabled layout placeholders and have no behaviour yet.
+Only current MVP areas are shown in the main navigation: Dashboard, Plants, Watering, Care, Equipment, and Expenses. Later features should be added when their phase starts, rather than appearing as empty promises in the app now. Search, notifications, and theme controls are present only as disabled layout placeholders and have no behaviour yet.
 
 ## Folder structure
 
@@ -195,6 +195,9 @@ Equipment photo services consume the shared photo infrastructure through the clo
 
 ## Nursery Watering queue read model
 
-The nursery-wide Watering queue read model lives in `src/modules/watering` and exposes `getWateringQueue(nurseryDate?)`. It includes only current active-care Plants (unarchived Growing or Quarantine), while retaining historical records for other lifecycle states outside the queue. One Repeatable Read transaction loads minimal Plant/location/primary-photo metadata, applicable non-void schedules, and latest qualifying events in three batched reads; the existing pure due-state calculator then supplies category state, counts and deterministic operational ordering in memory. The model never loads histories or storage URLs and does not contact R2. Queue UI, Location filtering, batch recording and Dashboard Care integration remain pending.
+The nursery-wide Watering queue read model lives in `src/modules/watering` and exposes `getWateringQueue(nurseryDate?)`. It includes only current active-care Plants (unarchived Growing or Quarantine), while retaining historical records for other lifecycle states outside the queue. One Repeatable Read transaction loads minimal Plant/location/primary-photo metadata, applicable non-void schedules, and latest qualifying events in three batched reads; the existing pure due-state calculator then supplies category state, counts and deterministic operational ordering in memory. The model never loads histories or storage URLs and does not contact R2. The read-only queue UI is complete; Location filtering, batch recording and Dashboard Care integration remain pending.
 
 Any meaningful architecture change should be recorded here with a short reason. New dependencies need to help with the current phase, not a vague future idea. When the database starts, each migration should be reviewed and committed with the code and tests that use it.
+## Nursery watering queue browser
+
+The nursery-wide Watering queue read model is consumed by `/watering` through a server-side App Router page. The page groups the model's already-sorted entries and uses its category counts and due-state fields without querying Prisma or recalculating dates in presentation components. Entries link to the existing Plant detail workflow; this checkpoint intentionally adds no watering mutations, batch actions, filtering, notifications or Dashboard integration. Primary photos use the existing safe thumbnail route and shared neutral fallback.

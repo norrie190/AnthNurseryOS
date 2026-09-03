@@ -26,6 +26,7 @@ type NavigationItem = Readonly<{
 const navigationItems: readonly NavigationItem[] = [
   { href: '/', label: 'Dashboard', icon: Gauge },
   { href: '/plants', label: 'Plants', icon: Sprout },
+  { href: '/watering', label: 'Watering', icon: Droplets },
   { href: '/care', label: 'Care', icon: Droplets },
   { href: '/equipment', label: 'Equipment', icon: Wrench },
   { href: '/expenses', label: 'Expenses', icon: WalletCards },
