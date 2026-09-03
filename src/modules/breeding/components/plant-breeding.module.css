@@ -1,0 +1,244 @@
+.section {
+  display: grid;
+  gap: 1.25rem;
+}
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+.sectionHeader h2,
+.section h3,
+.section h4 {
+  margin: 0;
+}
+.intro,
+.hint,
+.empty,
+.reason,
+.notice {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+.notice {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  background: var(--surface-muted);
+}
+.forms {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.form,
+.record {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  background: var(--surface-muted);
+}
+.form {
+  display: grid;
+  gap: 0.9rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+.field {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.7rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.field textarea {
+  resize: vertical;
+}
+.full {
+  grid-column: 1 / -1;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+.primary,
+.secondary {
+  min-height: 2.65rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: var(--radius-small);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.primary {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+.secondary {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+}
+.primary:disabled,
+.secondary:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+.feedback {
+  padding: 0.75rem;
+  border-radius: var(--radius-small);
+  line-height: 1.45;
+}
+.success {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.error {
+  border: 1px solid #a02d24;
+  background: #fff7f5;
+  color: #84231b;
+}
+.feedback p {
+  margin: 0;
+}
+.feedback p + p {
+  margin-top: 0.35rem;
+}
+.errorText {
+  margin: 0;
+  color: #a02d24;
+  font-size: 0.82rem;
+}
+.history {
+  display: grid;
+  gap: 1rem;
+}
+.record {
+  display: grid;
+  gap: 0.9rem;
+  background: var(--surface);
+}
+.recordHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+}
+.recordHeader strong {
+  overflow-wrap: anywhere;
+}
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.35rem;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.78rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.voided {
+  border-color: var(--border-strong);
+  opacity: 0.78;
+}
+.details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem 1rem;
+  margin: 0;
+}
+.details dt {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+.details dd {
+  margin: 0.15rem 0 0;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+.nested {
+  display: grid;
+  gap: 0.8rem;
+  padding-left: 1rem;
+  border-left: 3px solid var(--accent-soft);
+}
+.nested h4 {
+  font-size: 0.95rem;
+}
+.subrecord {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-small);
+  background: var(--surface-muted);
+}
+.source {
+  overflow-wrap: anywhere;
+}
+.source strong {
+  font-weight: 650;
+}
+.collapsible {
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+.collapsible summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.collapsible > form {
+  margin-top: 0.75rem;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 44rem) {
+  .forms,
+  .grid,
+  .details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .recordHeader,
+  .sectionHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .nested {
+    padding-left: 0.65rem;
+  }
+}

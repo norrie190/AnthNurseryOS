@@ -28,10 +28,12 @@ export function PlantDetail({
   plant,
   photos = [],
   watering,
+  breeding,
 }: {
   plant: PlantDetailRecord;
   photos?: readonly PlantGalleryPhoto[];
   watering?: ReactNode;
+  breeding?: ReactNode;
 }) {
   const purchase = plant.purchase;
   return (
@@ -94,6 +96,7 @@ export function PlantDetail({
         photos={photos}
       />
       {watering}
+      {breeding}
       <section className={styles.card} aria-labelledby="parentage-heading">
         <h2 id="parentage-heading">Parentage</h2>
         <dl className={styles.detailsGrid}>

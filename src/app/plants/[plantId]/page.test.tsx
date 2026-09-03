@@ -6,6 +6,7 @@ import type { PlantDetailRecord } from '@/modules/plants/plant-queries';
 import PlantPage from './page';
 import { getPlantPhotoGallery } from '@/modules/plants/plant-photo-queries';
 import { getPlantWateringDetail } from '@/modules/watering/watering-schedule-queries';
+import { getPlantBreedingDetail } from '@/modules/breeding/breeding-queries';
 
 vi.mock('next/server', () => ({ connection: vi.fn() }));
 vi.mock('next/navigation', () => ({ notFound: vi.fn(), useRouter: () => ({ refresh: vi.fn() }) }));
@@ -21,10 +22,18 @@ vi.mock('@/modules/watering/watering-schedule-queries', () => ({
 vi.mock('@/modules/watering/components/plant-watering', () => ({
   PlantWatering: () => <section aria-label="Watering">Watering detail</section>,
 }));
+vi.mock('@/modules/breeding/breeding-queries', () => ({ getPlantBreedingDetail: vi.fn() }));
+vi.mock('@/modules/breeding/components/plant-breeding', () => ({
+  PlantBreeding: () => <section aria-label="Breeding">Breeding detail</section>,
+}));
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(getPlantPhotoGallery).mockResolvedValue([]);
   vi.mocked(getPlantWateringDetail).mockResolvedValue({} as never);
+  vi.mocked(getPlantBreedingDetail).mockResolvedValue({
+    inflorescences: [],
+    pollenPlants: [],
+  } as never);
 });
 
 test('loads the saved UUID and renders its generated reference', async () => {
@@ -47,8 +56,10 @@ test('loads the saved UUID and renders its generated reference', async () => {
   expect(getPlantById).toHaveBeenCalledWith('saved-id');
   expect(getPlantPhotoGallery).toHaveBeenCalledWith('saved-id');
   expect(getPlantWateringDetail).toHaveBeenCalledWith('saved-id');
+  expect(getPlantBreedingDetail).toHaveBeenCalledWith('saved-id');
   expect(screen.getByRole('heading', { name: 'Photos' })).toBeInTheDocument();
   expect(screen.getByRole('region', { name: 'Watering' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Breeding' })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'ANT-0001' })).toBeInTheDocument();
 });
 test('uses the not found page for a missing Plant', async () => {

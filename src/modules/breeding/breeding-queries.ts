@@ -1,5 +1,6 @@
 import 'server-only';
 import { z } from 'zod';
+import { Prisma } from '../../generated/prisma/client';
 import { getPrisma } from '../../lib/prisma';
 import { BreedingError } from './breeding-errors';
 
@@ -21,7 +22,24 @@ const attemptSelect = {
   createdAt: true,
   updatedAt: true,
   pollenParent: pollenParent,
-} as const;
+  seedBatches: {
+    orderBy: [{ harvestedOn: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+    select: {
+      id: true,
+      pollinationAttemptId: true,
+      harvestedOn: true,
+      sownOn: true,
+      seedCount: true,
+      germinatedCount: true,
+      status: true,
+      notes: true,
+      voidedAt: true,
+      correctionReason: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  },
+} satisfies Prisma.PollinationAttemptSelect;
 const seedBatchSelect = {
   id: true,
   pollinationAttemptId: true,
@@ -52,6 +70,31 @@ export async function getPlantInflorescenceHistory(plantId: string) {
   });
 }
 export type PlantInflorescenceHistory = Awaited<ReturnType<typeof getPlantInflorescenceHistory>>;
+
+export async function getPlantBreedingDetail(plantId: string) {
+  const parsed = id.safeParse(plantId);
+  if (!parsed.success) return null;
+  const [plant, inflorescences, pollenPlants] = await Promise.all([
+    getPrisma().plant.findUnique({ where: { id: parsed.data }, select: { id: true } }),
+    getPrisma().inflorescence.findMany({
+      where: { plantId: parsed.data },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      include: {
+        pollinationAttempts: {
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+          select: attemptSelect,
+        },
+      },
+    }),
+    getPrisma().plant.findMany({
+      select: { id: true, reference: true, name: true, status: true, archivedAt: true },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+    }),
+  ]);
+  if (!plant) return null;
+  return { inflorescences, pollenPlants };
+}
+export type PlantBreedingDetail = NonNullable<Awaited<ReturnType<typeof getPlantBreedingDetail>>>;
 
 export async function getInflorescenceDetail(inflorescenceId: string) {
   const parsed = id.safeParse(inflorescenceId);

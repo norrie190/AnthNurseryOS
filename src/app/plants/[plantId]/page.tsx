@@ -5,16 +5,20 @@ import { PlantDetail } from '@/modules/plants/components/plant-detail';
 import { getPlantPhotoGallery } from '@/modules/plants/plant-photo-queries';
 import { getPlantWateringDetail } from '@/modules/watering/watering-schedule-queries';
 import { PlantWatering } from '@/modules/watering/components/plant-watering';
+import { getPlantBreedingDetail } from '@/modules/breeding/breeding-queries';
+import { PlantBreeding } from '@/modules/breeding/components/plant-breeding';
 
 export default async function PlantPage({ params }: { params: Promise<{ plantId: string }> }) {
   await connection();
   const { plantId } = await params;
   const plant = await getPlantById(plantId);
   if (!plant) notFound();
-  const [photos, watering] = await Promise.all([
+  const [photos, watering, breeding] = await Promise.all([
     getPlantPhotoGallery(plantId),
     getPlantWateringDetail(plantId),
+    getPlantBreedingDetail(plantId),
   ]);
+  if (!breeding) notFound();
   return (
     <PlantDetail
       plant={plant}
@@ -26,6 +30,7 @@ export default async function PlantPage({ params }: { params: Promise<{ plantId:
         derivativeRevision,
       }))}
       watering={<PlantWatering watering={watering} />}
+      breeding={<PlantBreeding plant={plant} detail={breeding} />}
     />
   );
 }
