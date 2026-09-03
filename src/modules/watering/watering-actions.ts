@@ -3,13 +3,14 @@
 import { revalidatePath } from 'next/cache';
 import { WateringError } from './watering-errors';
 import { parseRecordWateringForm, parseScheduleForm } from './watering-form-data';
+import { parseRecordWateringBatchInput } from './watering-input';
 import type {
   RecordWateringField,
   RecordWateringFormState,
   ScheduleField,
   ScheduleFormState,
 } from './watering-form-state';
-import { recordWateringEvent } from './watering-event-service';
+import { recordWateringBatch, recordWateringEvent } from './watering-event-service';
 import { changeWateringSchedule } from './watering-schedule-service';
 import { correctWateringEvent, voidWateringEvent } from './watering-event-service';
 import {
@@ -18,6 +19,7 @@ import {
 } from './watering-schedule-service';
 import { nurseryInstantForDateTimeInput } from '../../lib/calendar-date';
 import type { HistoryActionState } from './watering-form-state';
+import type { BatchWateringActionState } from './watering-form-state';
 
 function issues<Fields extends string>(
   error: WateringError,
@@ -60,6 +62,42 @@ export async function recordWateringAction(
       message:
         'We could not confirm that the watering was recorded. Reload the Plant details to check before trying again.',
       fieldErrors: {},
+    };
+  }
+}
+
+export async function recordWateringBatchAction(
+  _previous: BatchWateringActionState,
+  formData: FormData,
+): Promise<BatchWateringActionState> {
+  const selectedIds = formData
+    .getAll('plantIds')
+    .filter((value): value is string => typeof value === 'string');
+  const notes = typeof formData.get('notes') === 'string' ? String(formData.get('notes')) : '';
+  const state = { success: false, message: '', selectedIds, notes };
+  try {
+    const { input } = parseRecordWateringBatchInput({ plantIds: selectedIds, notes });
+    const result = await recordWateringBatch(input);
+    revalidatePath('/watering');
+    return {
+      success: true,
+      message: result.recorded + ' plants recorded as watered.',
+      selectedIds: [],
+      notes: '',
+    };
+  } catch (error) {
+    if (error instanceof WateringError) {
+      const message =
+        error.code === 'PLANT_NOT_ELIGIBLE' || error.code === 'PLANT_NOT_FOUND'
+          ? 'One or more selected plants can no longer be watered. Nothing was recorded. Refresh the queue and try again.'
+          : error.message;
+      return { ...state, message };
+    }
+    console.error('Batch watering save failed', error);
+    return {
+      ...state,
+      message:
+        'We could not confirm that the batch watering was recorded. Nothing was recorded. Refresh the queue before trying again.',
     };
   }
 }

@@ -1,10 +1,16 @@
+'use client';
+
 import Link from 'next/link';
+import { useActionState, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { photoImagePath } from '../../plants/plant-photo-browser';
 import { PlantPhotoImage } from '../../plants/components/plant-photo-image';
 import { plantStatusLabels } from '../../plants/plant-form-state';
 import type { WateringQueue } from '../watering-queue-queries';
 import type { WateringQueueEntry } from '../watering-queue';
 import styles from './watering-queue-page.module.css';
+import { initialBatchWateringState } from '../watering-form-state';
+import type { recordWateringBatchAction } from '../watering-actions';
 
 const categories = [
   ['OVERDUE', 'Overdue'],
@@ -39,11 +45,29 @@ function dueLabel(entry: WateringQueueEntry) {
   return 'No watering schedule';
 }
 
-function QueueEntry({ entry }: { entry: WateringQueueEntry }) {
+function QueueEntry({
+  entry,
+  selected,
+  onToggle,
+}: {
+  entry: WateringQueueEntry;
+  selected: boolean;
+  onToggle: (id: string) => void;
+}) {
   const { plant, due } = entry;
   const photo = plant.primaryPhoto;
   return (
     <li className={styles.entry}>
+      <label className={styles.checkbox}>
+        <input
+          type="checkbox"
+          name="plantIds"
+          value={plant.id}
+          checked={selected}
+          onChange={() => onToggle(plant.id)}
+          aria-label={'Select ' + plant.reference + ' for batch watering'}
+        />
+      </label>
       <span className={styles.photo}>
         <PlantPhotoImage
           src={
@@ -96,7 +120,34 @@ function QueueEntry({ entry }: { entry: WateringQueueEntry }) {
   );
 }
 
-export function WateringQueuePage({ queue }: { queue: WateringQueue }) {
+export function WateringQueuePage({
+  queue,
+  batchAction,
+}: {
+  queue: WateringQueue;
+  batchAction: typeof recordWateringBatchAction;
+}) {
+  const router = useRouter();
+  const [selected, setSelected] = useState<string[]>([]);
+  const [confirming, setConfirming] = useState(false);
+  const [state, formAction, pending] = useActionState(batchAction, initialBatchWateringState);
+  useEffect(() => {
+    if (state.success) router.refresh();
+  }, [router, state.success]);
+  const effectiveSelected = state.success ? [] : selected;
+  const effectiveConfirming = confirming && !state.success;
+  const toggle = (id: string) =>
+    setSelected((current) =>
+      current.includes(id)
+        ? current.filter((value) => value !== id)
+        : current.length >= 100
+          ? current
+          : [...current, id],
+    );
+  const clear = () => {
+    setSelected([]);
+    setConfirming(false);
+  };
   const grouped = new Map(
     categories.map(([status]) => [
       status,
@@ -129,6 +180,54 @@ export function WateringQueuePage({ queue }: { queue: WateringQueue }) {
           ))}
         </dl>
       </section>
+      {queue.entries.length > 0 ? (
+        <form action={formAction} className={styles.batchPanel}>
+          {effectiveSelected.map((id) => (
+            <input key={id} type="hidden" name="plantIds" value={id} />
+          ))}
+          <div className={styles.batchToolbar}>
+            <strong>{effectiveSelected.length} plants selected</strong>
+            <button type="button" onClick={clear} disabled={!effectiveSelected.length}>
+              Clear selection
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              disabled={!effectiveSelected.length || effectiveSelected.length > 100 || pending}
+            >
+              Record selected as watered
+            </button>
+          </div>
+          {effectiveSelected.length === 100 ? (
+            <p className={styles.meta}>The batch limit is 100 Plants.</p>
+          ) : null}
+          {state.message ? (
+            <p className={state.success ? styles.success : styles.error} role="status">
+              {state.message}
+            </p>
+          ) : null}
+          {effectiveConfirming ? (
+            <section className={styles.confirmation} aria-labelledby="batch-confirm-heading">
+              <h2 id="batch-confirm-heading">Confirm batch watering</h2>
+              <p>
+                Record watering for {effectiveSelected.length} selected plants now? They will all
+                use the same watered-now timestamp. If any selected plant can no longer be watered,
+                nothing will be recorded.
+              </p>
+              <label htmlFor="batch-notes">Shared note (applied to every record, optional)</label>
+              <textarea id="batch-notes" name="notes" defaultValue={state.notes} rows={2} />
+              <div className={styles.confirmActions}>
+                <button type="button" onClick={() => setConfirming(false)} disabled={pending}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={pending}>
+                  {pending ? 'Recording…' : 'Confirm watering'}
+                </button>
+              </div>
+            </section>
+          ) : null}
+        </form>
+      ) : null}
       {queue.entries.length === 0 ? (
         <section className={styles.empty}>
           <h2>No active Plants currently need watering tracking.</h2>
@@ -155,7 +254,12 @@ export function WateringQueuePage({ queue }: { queue: WateringQueue }) {
                 </h2>
                 <ul>
                   {entries.map((entry) => (
-                    <QueueEntry key={entry.plant.id} entry={entry} />
+                    <QueueEntry
+                      key={entry.plant.id}
+                      entry={entry}
+                      selected={effectiveSelected.includes(entry.plant.id)}
+                      onToggle={toggle}
+                    />
                   ))}
                 </ul>
               </section>

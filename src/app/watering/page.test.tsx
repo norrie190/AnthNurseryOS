@@ -6,6 +6,8 @@ import { getWateringQueue } from '@/modules/watering/watering-queue-queries';
 import type { WateringQueue } from '@/modules/watering/watering-queue-queries';
 
 vi.mock('next/server', () => ({ connection: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock('server-only', () => ({}));
 vi.mock('@/modules/watering/watering-queue-queries', () => ({ getWateringQueue: vi.fn() }));
 vi.mock('@/components/photos/photo-image', () => ({
   PhotoImage: ({ src, alt }: { src?: string; alt: string }) =>
@@ -86,6 +88,9 @@ test('loads the read model server-side and presents all queue categories and ent
   expect(connection).toHaveBeenCalledOnce();
   expect(getWateringQueue).toHaveBeenCalledOnce();
   expect(screen.getByRole('heading', { level: 1, name: 'Watering' })).toBeInTheDocument();
+  expect(screen.getAllByRole('checkbox')).toHaveLength(6);
+  expect(screen.getByText('0 plants selected')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Record selected as watered' })).toBeDisabled();
   expect(screen.getByText('active-care Plants in queue')).toBeInTheDocument();
   expect(screen.getByText('3 days overdue')).toBeInTheDocument();
   expect(screen.getAllByText('Due today').length).toBeGreaterThan(0);

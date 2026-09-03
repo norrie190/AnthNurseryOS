@@ -36,3 +36,17 @@ export const initialHistoryActionState: HistoryActionState = {
   message: '',
   fieldErrors: {},
 };
+
+export type BatchWateringActionState = {
+  success: boolean;
+  message: string;
+  selectedIds: string[];
+  notes: string;
+};
+
+export const initialBatchWateringState: BatchWateringActionState = {
+  success: false,
+  message: '',
+  selectedIds: [],
+  notes: '',
+};
