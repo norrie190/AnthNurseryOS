@@ -5,12 +5,14 @@ import { afterAll, afterEach, beforeAll, expect, test, vi } from 'vitest';
 import { getTestDatabaseUrl } from '../../scripts/test-database-target';
 import { PrismaClient, type Prisma } from '../../src/generated/prisma/client';
 import { updatePlant } from '../../src/modules/plants/plant-update-service';
+import { archivePlant } from '../../src/modules/plants/plant-archive-service';
 import {
   getLatestQualifyingWateringEvent,
   getPlantWateringHistory,
 } from '../../src/modules/watering/watering-event-queries';
 import {
   correctWateringEvent,
+  recordWateringBatch,
   recordWateringEvent,
   voidWateringEvent,
 } from '../../src/modules/watering/watering-event-service';
@@ -21,6 +23,9 @@ vi.mock('../../src/lib/prisma', () => ({ getPrisma: () => binding ?? database })
 const url = getTestDatabaseUrl();
 const database = new PrismaClient({
   adapter: new PrismaPg({ connectionString: url, connectionTimeoutMillis: 5000, max: 8 }),
+});
+const observer = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: url, connectionTimeoutMillis: 5000, max: 2 }),
 });
 const realTransaction = database.$transaction.bind(database);
 const rollback = new Error('Rollback all watering event fixtures');
@@ -55,7 +60,10 @@ afterEach(async () => {
   expect(await snapshot()).toEqual(baseline);
 });
 
-afterAll(() => database.$disconnect());
+afterAll(async () => {
+  await observer.$disconnect();
+  await database.$disconnect();
+});
 
 async function fixture(check: (tx: Prisma.TransactionClient) => Promise<void>) {
   try {
@@ -388,3 +396,102 @@ test('latest qualifying event excludes voids and empty history returns null', ()
       code: 'PLANT_NOT_FOUND',
     });
   }));
+
+test('batch records one common database-clock event per eligible Plant without changing Plants or schedules', () =>
+  fixture(async (tx) => {
+    const growing = await plant(tx);
+    const quarantine = await plant(tx, { status: 'QUARANTINE' });
+    const beforeGrowing = growing.updatedAt;
+    const beforeQuarantine = quarantine.updatedAt;
+    const result = await recordWateringBatch({
+      plantIds: [quarantine.id, growing.id],
+      notes: '  Shared round  ',
+    });
+    expect(result.recorded).toBe(2);
+    const events = await tx.wateringEvent.findMany({
+      where: { plantId: { in: [growing.id, quarantine.id] } },
+      orderBy: { plantId: 'asc' },
+    });
+    expect(events).toHaveLength(2);
+    expect(new Set(events.map((event) => event.wateredAt.toISOString())).size).toBe(1);
+    expect(events.every((event) => event.notes === 'Shared round')).toBe(true);
+    expect(
+      events.every((event) => event.wateredAt.toISOString() === result.wateredAt.toISOString()),
+    ).toBe(true);
+    expect((await tx.plant.findUniqueOrThrow({ where: { id: growing.id } })).updatedAt).toEqual(
+      beforeGrowing,
+    );
+    expect((await tx.plant.findUniqueOrThrow({ where: { id: quarantine.id } })).updatedAt).toEqual(
+      beforeQuarantine,
+    );
+  }));
+
+test('batch rejects a missing Plant atomically', () =>
+  fixture(async (tx) => {
+    const valid = await plant(tx);
+    await expect(recordWateringBatch({ plantIds: [valid.id, randomUUID()] })).rejects.toMatchObject(
+      {
+        code: 'PLANT_NOT_FOUND',
+      },
+    );
+    expect(await tx.wateringEvent.count({ where: { plantId: valid.id } })).toBe(0);
+  }));
+
+test.each(['SOLD', 'DECEASED'] as const)('batch rejects %s atomically', (status) =>
+  fixture(async (tx) => {
+    const valid = await plant(tx);
+    const invalid = await plant(tx, { status });
+    await expect(recordWateringBatch({ plantIds: [valid.id, invalid.id] })).rejects.toMatchObject({
+      code: 'PLANT_NOT_ELIGIBLE',
+    });
+    expect(await tx.wateringEvent.count({ where: { plantId: valid.id } })).toBe(0);
+  }),
+);
+
+test('batch rejects an archived Plant atomically', () =>
+  fixture(async (tx) => {
+    const valid = await plant(tx);
+    const archived = await plant(tx, { archivedAt: new Date('2026-01-01T00:00:00.000Z') });
+    await expect(recordWateringBatch({ plantIds: [valid.id, archived.id] })).rejects.toMatchObject({
+      code: 'PLANT_NOT_ELIGIBLE',
+    });
+    expect(await tx.wateringEvent.count({ where: { plantId: valid.id } })).toBe(0);
+  }));
+
+test('batch waits for a lifecycle lock, then rechecks the committed archived state', async () => {
+  const reference = `watering-concurrency-${randomUUID()}`;
+  let targetId = '';
+  let batchPromise: Promise<unknown> | undefined;
+  try {
+    const created = await database.plant.create({ data: { reference } });
+    targetId = created.id;
+    await database.$transaction(async (tx) => {
+      binding = {
+        $transaction: async (operation: (client: Prisma.TransactionClient) => Promise<unknown>) =>
+          operation(tx),
+      };
+      await archivePlant(created.id, { expectedUpdatedAt: created.updatedAt.toISOString() });
+      binding = undefined;
+      batchPromise = recordWateringBatch({ plantIds: [created.id] });
+      let waiting = false;
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        const rows = await observer.$queryRaw<{ waiting: boolean }[]>`
+          SELECT EXISTS (
+            SELECT 1 FROM pg_stat_activity
+            WHERE wait_event_type = 'Lock' AND query ILIKE '%FROM public."Plant"%'
+          ) AS waiting`;
+        if (rows[0]?.waiting) {
+          waiting = true;
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      expect(waiting).toBe(true);
+    });
+    await expect(batchPromise).rejects.toMatchObject({ code: 'PLANT_NOT_ELIGIBLE' });
+    expect(await database.wateringEvent.count({ where: { plantId: targetId } })).toBe(0);
+  } finally {
+    binding = undefined;
+    if (targetId) await database.plant.delete({ where: { id: targetId } }).catch(() => undefined);
+  }
+});

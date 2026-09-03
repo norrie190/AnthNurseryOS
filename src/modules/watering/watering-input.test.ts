@@ -3,6 +3,7 @@ import { expect, test } from 'vitest';
 import {
   parseCorrectWateringEventInput,
   parseRecordWateringEventInput,
+  parseRecordWateringBatchInput,
   parseVoidWateringEventInput,
   parseWateringPlantId,
 } from './watering-input';
@@ -101,4 +102,28 @@ test('query Plant IDs use the same strict UUID boundary', () => {
   expect(() => parseWateringPlantId('ANT-0001')).toThrowError(
     expect.objectContaining({ code: 'VALIDATION_FAILED' }),
   );
+});
+
+test('batch input enforces a bounded unique selection and normalizes notes', () => {
+  expect(
+    parseRecordWateringBatchInput({
+      plantIds: [plantId.toUpperCase()],
+      notes: '  Shared  ',
+    }),
+  ).toEqual({
+    input: { plantIds: [plantId], notes: 'Shared' },
+  });
+  expect(
+    parseRecordWateringBatchInput({ plantIds: [plantId], notes: '   ' }).input.notes,
+  ).toBeNull();
+  for (const input of [
+    { plantIds: [] },
+    { plantIds: [plantId, plantId] },
+    { plantIds: ['not-a-uuid'] },
+    { plantIds: Array.from({ length: 101 }, () => randomUUID()) },
+  ]) {
+    expect(() => parseRecordWateringBatchInput(input)).toThrowError(
+      expect.objectContaining({ code: 'VALIDATION_FAILED' }),
+    );
+  }
 });

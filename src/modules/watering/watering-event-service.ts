@@ -5,9 +5,11 @@ import { WateringError } from './watering-errors';
 import {
   parseCorrectWateringEventInput,
   parseRecordWateringEventInput,
+  parseRecordWateringBatchInput,
   parseVoidWateringEventInput,
   type CorrectWateringEventInput,
   type RecordWateringEventInput,
+  type RecordWateringBatchInput,
   type VoidWateringEventInput,
 } from './watering-input';
 import { nextWateringTimestamp, throwWateringDatabaseError } from './watering-persistence';
@@ -15,6 +17,7 @@ import { nextWateringTimestamp, throwWateringDatabaseError } from './watering-pe
 export type {
   CorrectWateringEventInput,
   RecordWateringEventInput,
+  RecordWateringBatchInput,
   VoidWateringEventInput,
 } from './watering-input';
 
@@ -28,6 +31,59 @@ function ensureNotFuture(wateredAt: Date, databaseNow: Date) {
       'A watering event cannot be recorded in the future.',
       { issues: [{ field: 'wateredAt', message: 'Enter a time that is not in the future.' }] },
     );
+  }
+}
+
+export type WateringBatchResult = { recorded: number; wateredAt: Date };
+
+export async function recordWateringBatch(
+  input: RecordWateringBatchInput,
+): Promise<WateringBatchResult> {
+  const parsed = parseRecordWateringBatchInput(input);
+  try {
+    return await getPrisma().$transaction(
+      async (tx) => {
+        const ids = [...parsed.input.plantIds].sort();
+        const plants = await tx.$queryRaw<Pick<Plant, 'id' | 'status' | 'archivedAt'>[]>`
+          SELECT "id", "status", "archivedAt"
+          FROM public."Plant"
+          WHERE "id" IN (${Prisma.join(ids.map((id) => Prisma.sql`${id}::uuid`))})
+          ORDER BY "id"
+          FOR NO KEY UPDATE
+        `;
+        if (plants.length !== ids.length) {
+          throw new WateringError(
+            'PLANT_NOT_FOUND',
+            'One or more selected Plants could not be found.',
+          );
+        }
+        if (
+          plants.some(
+            (plant) =>
+              plant.archivedAt !== null || !['GROWING', 'QUARANTINE'].includes(plant.status),
+          )
+        ) {
+          throw new WateringError(
+            'PLANT_NOT_ELIGIBLE',
+            'One or more selected Plants are no longer eligible for watering.',
+          );
+        }
+        const [{ databaseNow }] = await tx.$queryRaw<{ databaseNow: Date }[]>`
+          SELECT clock_timestamp() AS "databaseNow"
+        `;
+        await tx.wateringEvent.createMany({
+          data: ids.map((plantId) => ({
+            plantId,
+            wateredAt: databaseNow,
+            notes: parsed.input.notes ?? null,
+          })),
+        });
+        return { recorded: ids.length, wateredAt: databaseNow };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+    );
+  } catch (error) {
+    throwWateringDatabaseError(error);
   }
 }
 

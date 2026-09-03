@@ -24,6 +24,19 @@ export const recordWateringEventSchema = z.strictObject({
   notes: wateringNotesSchema,
 });
 
+export const recordWateringBatchSchema = z.strictObject({
+  plantIds: z
+    .array(wateringIdSchema)
+    .min(1, 'Select at least one Plant.')
+    .max(100, 'Select no more than 100 Plants at once.')
+    .superRefine((ids, context) => {
+      if (new Set(ids).size !== ids.length) {
+        context.addIssue({ code: 'custom', message: 'Each Plant may only be selected once.' });
+      }
+    }),
+  notes: wateringNotesSchema,
+});
+
 export const correctWateringEventSchema = z
   .strictObject({
     wateredAt: timestampSchema.optional(),
@@ -41,9 +54,11 @@ export const voidWateringEventSchema = z.strictObject({
 });
 
 export type RecordWateringEventInput = z.input<typeof recordWateringEventSchema>;
+export type RecordWateringBatchInput = z.input<typeof recordWateringBatchSchema>;
 export type CorrectWateringEventInput = z.input<typeof correctWateringEventSchema>;
 export type VoidWateringEventInput = z.input<typeof voidWateringEventSchema>;
 export type ParsedRecordWateringEventInput = z.output<typeof recordWateringEventSchema>;
+export type ParsedRecordWateringBatchInput = z.output<typeof recordWateringBatchSchema>;
 export type ParsedCorrectWateringEventInput = z.output<typeof correctWateringEventSchema>;
 export type ParsedVoidWateringEventInput = z.output<typeof voidWateringEventSchema>;
 
@@ -70,6 +85,12 @@ const eventRequestSchema = z.strictObject({
 
 export function parseRecordWateringEventInput(plantId: unknown, input: unknown) {
   return parse(recordRequestSchema, { plantId, input }, 'Check the supplied watering information.');
+}
+
+export function parseRecordWateringBatchInput(input: unknown) {
+  return {
+    input: parse(recordWateringBatchSchema, input, 'Check the selected Plants and watering notes.'),
+  };
 }
 
 export function parseCorrectWateringEventInput(plantId: unknown, eventId: unknown, input: unknown) {

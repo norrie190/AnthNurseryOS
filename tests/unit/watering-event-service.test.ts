@@ -2,7 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { Prisma } from '../../src/generated/prisma/client';
 import { getPrisma } from '../../src/lib/prisma';
-import { recordWateringEvent } from '../../src/modules/watering/watering-event-service';
+import {
+  recordWateringBatch,
+  recordWateringEvent,
+} from '../../src/modules/watering/watering-event-service';
 import { nextWateringTimestamp } from '../../src/modules/watering/watering-persistence';
 
 vi.mock('server-only', () => ({}));
@@ -78,4 +81,46 @@ test('unexpected infrastructure failures remain unchanged', async () => {
     throw cause;
   });
   await expect(recordWateringEvent(plantId, { wateredAt })).rejects.toBe(cause);
+});
+
+test('batch locks sorted Plants, reads one database timestamp and inserts one event per Plant', async () => {
+  const first = randomUUID();
+  const second = randomUUID();
+  const now = new Date('2026-09-03T10:00:00.123Z');
+  const queryRaw = vi
+    .fn()
+    .mockResolvedValueOnce([
+      { id: second, status: 'QUARANTINE', archivedAt: null },
+      { id: first, status: 'GROWING', archivedAt: null },
+    ])
+    .mockResolvedValueOnce([{ databaseNow: now }]);
+  const createMany = vi.fn().mockResolvedValue({ count: 2 });
+  const tx = { $queryRaw: queryRaw, wateringEvent: { createMany } };
+  const transaction = vi.fn(async (operation, options) => {
+    expect(options).toEqual({ isolationLevel: 'ReadCommitted' });
+    return operation(tx);
+  });
+  vi.mocked(getPrisma).mockReturnValue({ $transaction: transaction } as never);
+
+  await expect(
+    recordWateringBatch({ plantIds: [second, first], notes: '  Morning round  ' }),
+  ).resolves.toEqual({
+    recorded: 2,
+    wateredAt: now,
+  });
+  const sql = (queryRaw.mock.calls[0][0] as TemplateStringsArray).join('?');
+  expect(sql).toContain('ORDER BY "id"');
+  expect(sql).toContain('FOR NO KEY UPDATE');
+  expect((queryRaw.mock.calls[1][0] as TemplateStringsArray).join('?')).toContain(
+    'clock_timestamp()',
+  );
+  expect(createMany).toHaveBeenCalledWith({
+    data: [
+      ...[first, second].sort().map((plantId) => ({
+        plantId,
+        wateredAt: now,
+        notes: 'Morning round',
+      })),
+    ],
+  });
 });
