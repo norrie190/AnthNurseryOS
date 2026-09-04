@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { EmptyState } from '@/components/ui/empty-state';
+import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import type { PlantListItem, ArchivedPlantListItem } from '../plant-queries';
 import { plantStatusLabels } from '../plant-form-state';
 import { photoImagePath } from '../plant-photo-browser';
@@ -25,17 +27,19 @@ export function PlantList(props: PlantListProps) {
     : props.plants.map((plant) => ({ ...plant, date: plant.createdAt }));
   if (rows.length === 0) {
     return (
-      <section className={shared.card} aria-labelledby="empty-plants-heading">
-        <h2 id="empty-plants-heading">{archived ? 'No archived Plants' : 'No active Plants'}</h2>
-        <p className={shared.sectionIntro}>
-          {archived
+      <EmptyState
+        title={archived ? 'No archived Plants' : 'No active Plants'}
+        description={
+          archived
             ? 'Plants you archive will appear here. Their details remain available.'
-            : 'Add a Plant to your collection, or restore one from Archived Plants.'}
-        </p>
-        <Link href={archived ? '/plants' : '/plants/new'} className={shared.primaryButton}>
-          {archived ? 'Back to active Plants' : 'Add Plant'}
-        </Link>
-      </section>
+            : 'Add a Plant to your collection, or restore one from Archived Plants.'
+        }
+        action={
+          <Link href={archived ? '/plants' : '/plants/new'} className={shared.primaryButton}>
+            {archived ? 'Back to active Plants' : 'Add Plant'}
+          </Link>
+        }
+      />
     );
   }
 
@@ -72,7 +76,9 @@ export function PlantList(props: PlantListProps) {
                 <span>{plant.name || 'Unnamed Plant'}</span>
               </span>
               <span className={styles.status}>
-                <span className={shared.badge}>{plantStatusLabels[plant.status]}</span>
+                <StatusBadge variant={plantStatusVariant(plant.status)}>
+                  {plantStatusLabels[plant.status]}
+                </StatusBadge>
               </span>
               <span className={styles.location}>
                 <span className={styles.mobileLabel}>Location: </span>
@@ -92,4 +98,10 @@ export function PlantList(props: PlantListProps) {
       </ul>
     </div>
   );
+}
+
+function plantStatusVariant(status: keyof typeof plantStatusLabels): StatusBadgeVariant {
+  if (status === 'GROWING') return 'success';
+  if (status === 'QUARANTINE') return 'attention';
+  return 'neutral';
 }

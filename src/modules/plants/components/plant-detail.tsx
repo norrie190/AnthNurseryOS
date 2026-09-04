@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import type { PlantDetailRecord } from '../plant-queries';
 import { formatPlantMoney } from '../plant-money';
 import { plantStatusLabels } from '../plant-form-state';
@@ -55,8 +56,10 @@ export function PlantDetail({
         <h1>{plant.reference}</h1>
         <p className={styles.plantName}>{plant.name || 'Unnamed Plant'}</p>
         <div className={styles.badges}>
-          <span className={styles.badge}>{plantStatusLabels[plant.status]}</span>
-          {plant.archivedAt && <span className={styles.badge}>Archived</span>}
+          <StatusBadge variant={plantStatusVariant(plant.status)}>
+            {plantStatusLabels[plant.status]}
+          </StatusBadge>
+          {plant.archivedAt && <StatusBadge>Archived</StatusBadge>}
         </div>
       </header>
       <section className={styles.card} aria-labelledby="details-heading">
@@ -230,4 +233,10 @@ export function PlantDetail({
       />
     </div>
   );
+}
+
+function plantStatusVariant(status: keyof typeof plantStatusLabels): StatusBadgeVariant {
+  if (status === 'GROWING') return 'success';
+  if (status === 'QUARANTINE') return 'attention';
+  return 'neutral';
 }
