@@ -8,6 +8,7 @@ import {
   type WateringFormState,
 } from '../watering-form-state';
 import styles from './plant-watering.module.css';
+import { InlineNotice } from '../../../components/ui/inline-notice';
 
 function Feedback<Fields extends string>({
   state,
@@ -24,10 +25,11 @@ function Feedback<Fields extends string>({
 }) {
   if (!state.message) return null;
   return (
-    <div
+    <InlineNotice
       ref={feedbackRef}
       tabIndex={-1}
       role={state.success ? 'status' : 'alert'}
+      variant={state.success ? 'success' : 'error'}
       className={state.success ? styles.success : styles.errorSummary}
     >
       <p className={styles.feedbackTitle}>{state.success ? state.message : title}</p>
@@ -43,7 +45,7 @@ function Feedback<Fields extends string>({
           ))}
         </ul>
       )}
-    </div>
+    </InlineNotice>
   );
 }
 

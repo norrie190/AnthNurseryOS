@@ -11,6 +11,7 @@ import type { WateringQueueEntry } from '../watering-queue';
 import styles from './watering-queue-page.module.css';
 import { initialBatchWateringState } from '../watering-form-state';
 import type { recordWateringBatchAction } from '../watering-actions';
+import { InlineNotice } from '../../../components/ui/inline-notice';
 
 const categories = [
   ['OVERDUE', 'Overdue'],
@@ -202,9 +203,13 @@ export function WateringQueuePage({
             <p className={styles.meta}>The batch limit is 100 Plants.</p>
           ) : null}
           {state.message ? (
-            <p className={state.success ? styles.success : styles.error} role="status">
+            <InlineNotice
+              variant={state.success ? 'success' : 'error'}
+              role={state.success ? 'status' : 'alert'}
+              className={state.success ? styles.success : styles.error}
+            >
               {state.message}
-            </p>
+            </InlineNotice>
           ) : null}
           {effectiveConfirming ? (
             <section className={styles.confirmation} aria-labelledby="batch-confirm-heading">

@@ -14,6 +14,9 @@ import {
 } from '../plant-form-state';
 import { ParentSelector } from './parent-selector';
 import styles from './plant-management.module.css';
+import { ActionBar } from '../../../components/ui/action-bar';
+import { FormSection } from '../../../components/ui/form-section';
+import { InlineNotice, STALE_CONFLICT_MESSAGE } from '../../../components/ui/inline-notice';
 
 export type PlantFormOptions = {
   parents: readonly PlantSelectOption[];
@@ -89,15 +92,17 @@ export function PlantForm({
       }}
     >
       {state.message && (
-        <div
+        <InlineNotice
           ref={summary}
           tabIndex={-1}
           role="alert"
+          variant="error"
           className={styles.errorSummary}
           aria-labelledby="plant-error-title"
         >
           <h2 id="plant-error-title">Please check your Plant details</h2>
           <p>{state.message}</p>
+          {state.stale && <p>{STALE_CONFLICT_MESSAGE}</p>}
           {state.stale && edit && (
             <p>
               <a href={`/plants/${edit.plantId}`} target="_blank" rel="noopener noreferrer">
@@ -129,12 +134,17 @@ export function PlantForm({
               )}
             </ul>
           )}
-        </div>
+        </InlineNotice>
       )}
 
-      <fieldset className={styles.card} disabled={pending}>
-        <legend>Plant details</legend>
-        <p className={styles.sectionIntro}>Start with what you know. A name is optional.</p>
+      <FormSection
+        title="Plant details"
+        description={
+          <p className={styles.sectionIntro}>Start with what you know. A name is optional.</p>
+        }
+        className={styles.card}
+        disabled={pending}
+      >
         <div className={styles.grid}>
           <div className={styles.field}>
             <label htmlFor="plant-name">
@@ -192,10 +202,9 @@ export function PlantForm({
             {error('notes')}
           </div>
         </div>
-      </fieldset>
+      </FormSection>
 
-      <fieldset className={styles.card} disabled={pending}>
-        <legend>Parentage</legend>
+      <FormSection title="Parentage" className={styles.card} disabled={pending}>
         {parentageLocked ? (
           <p className={styles.hint}>
             Parentage is derived from this Plant’s recorded breeding provenance and cannot be edited
@@ -234,10 +243,9 @@ export function PlantForm({
             </div>
           </>
         )}
-      </fieldset>
+      </FormSection>
 
-      <fieldset className={styles.card} disabled={pending}>
-        <legend>Purchase information</legend>
+      <FormSection title="Purchase information" className={styles.card} disabled={pending}>
         {edit?.hasPurchase ? (
           <>
             <input type="hidden" name="recordPurchase" value="on" />
@@ -328,7 +336,7 @@ export function PlantForm({
             </p>
           </div>
         )}
-      </fieldset>
+      </FormSection>
 
       <div className={styles.formFooter}>
         <p className={styles.hint} aria-live="polite">
@@ -338,7 +346,7 @@ export function PlantForm({
               ? `Your reference ${edit.reference} will stay the same.`
               : 'Your ANT reference will be assigned when you save.'}
         </p>
-        <div className={styles.actions}>
+        <ActionBar className={styles.actions}>
           <Link
             href={edit ? `/plants/${edit.plantId}` : '/plants'}
             className={styles.secondaryLink}
@@ -354,7 +362,7 @@ export function PlantForm({
                 ? 'Save Changes'
                 : 'Save Plant'}
           </button>
-        </div>
+        </ActionBar>
       </div>
     </form>
   );

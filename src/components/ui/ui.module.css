@@ -1,0 +1,69 @@
+.formSection {
+  min-width: 0;
+}
+.formSection > legend {
+  padding: 0 0.5rem;
+  font-weight: 650;
+  font-size: 1.15rem;
+}
+.formSectionDescription,
+.formSectionSupporting {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.formSectionDescription > :first-child,
+.formSectionSupporting > :first-child {
+  margin-top: 0;
+}
+.formSectionDescription > :last-child,
+.formSectionSupporting > :last-child {
+  margin-bottom: 0;
+}
+.actionBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.inlineNotice {
+  padding: 1rem 1.1rem;
+  border: 1px solid;
+  border-radius: var(--radius-small);
+  line-height: 1.6;
+}
+.inlineNotice > :first-child {
+  margin-top: 0;
+}
+.inlineNotice > :last-child {
+  margin-bottom: 0;
+}
+.inlineNoticeInfo {
+  border-color: #b9cedb;
+  background: #f0f6f9;
+  color: #294b5d;
+}
+.inlineNoticeSuccess {
+  border-color: #b9d4bd;
+  background: #eef7ef;
+  color: #285d38;
+}
+.inlineNoticeWarning {
+  border-color: #dfc98e;
+  background: #fff8e7;
+  color: #6f5110;
+}
+.inlineNoticeError {
+  border-color: #d9aaa4;
+  background: #fff5f3;
+  color: #84231b;
+}
+@media (max-width: 44rem) {
+  .actionBar {
+    justify-content: stretch;
+  }
+  .actionBar > * {
+    flex: 1 1 auto;
+  }
+}

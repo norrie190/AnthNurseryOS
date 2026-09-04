@@ -24,6 +24,7 @@ import {
 } from '../breeding-actions';
 import type { PlantBreedingDetail } from '../breeding-queries';
 import styles from './plant-breeding.module.css';
+import { InlineNotice, STALE_CONFLICT_MESSAGE } from '../../../components/ui/inline-notice';
 
 const inflorescenceLabels = {
   OBSERVED: 'Observed',
@@ -54,9 +55,10 @@ type Action = (previous: BreedingActionState, formData: FormData) => Promise<Bre
 function Feedback({ state }: { state: BreedingActionState }) {
   if (!state.message) return null;
   return (
-    <div
+    <InlineNotice
       className={`${styles.feedback} ${state.success ? styles.success : styles.error}`}
       role={state.success ? 'status' : 'alert'}
+      variant={state.success ? 'success' : state.stale ? 'warning' : 'error'}
     >
       <p>{state.message}</p>
       {Object.entries(state.fieldErrors).map(([field, message]) => (
@@ -64,8 +66,10 @@ function Feedback({ state }: { state: BreedingActionState }) {
           {field}: {message}
         </p>
       ))}
-      {state.stale && <p>Reload the Plant details to review the current record.</p>}
-    </div>
+      {state.stale && (
+        <p>{STALE_CONFLICT_MESSAGE} Reload the Plant details to review the current record.</p>
+      )}
+    </InlineNotice>
   );
 }
 function MutationForm({

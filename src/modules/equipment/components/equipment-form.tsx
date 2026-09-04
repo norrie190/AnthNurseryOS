@@ -13,6 +13,9 @@ import {
   type EquipmentLocationOption,
 } from '../equipment-form-state';
 import styles from './equipment-management.module.css';
+import { ActionBar } from '../../../components/ui/action-bar';
+import { FormSection } from '../../../components/ui/form-section';
+import { InlineNotice, STALE_CONFLICT_MESSAGE } from '../../../components/ui/inline-notice';
 
 type EquipmentFormProps = {
   locations: readonly EquipmentLocationOption[];
@@ -91,9 +94,16 @@ export function EquipmentForm({
       }}
     >
       {state.message && (
-        <div ref={summary} role="alert" tabIndex={-1} className={styles.errorSummary}>
+        <InlineNotice
+          ref={summary}
+          variant="error"
+          role="alert"
+          tabIndex={-1}
+          className={styles.errorSummary}
+        >
           <h2>Please check your Equipment details</h2>
           <p>{state.message}</p>
+          {state.stale && <p>{STALE_CONFLICT_MESSAGE}</p>}
           {state.stale && opened.edit && (
             <p>
               <a
@@ -125,10 +135,9 @@ export function EquipmentForm({
               </li>
             ))}
           </ul>
-        </div>
+        </InlineNotice>
       )}
-      <fieldset disabled={pending} className={styles.card}>
-        <legend>Equipment details</legend>
+      <FormSection title="Equipment details" className={styles.card} disabled={pending}>
         <p className={styles.sectionIntro}>
           Name and a Yes/No power choice are required. Record one physical item at a time.
         </p>
@@ -189,9 +198,8 @@ export function EquipmentForm({
             {error('notes')}
           </div>
         </div>
-      </fieldset>
-      <fieldset disabled={pending} className={styles.card}>
-        <legend>Purchase information</legend>
+      </FormSection>
+      <FormSection title="Purchase information" className={styles.card} disabled={pending}>
         {hasPurchase ? (
           <>
             <input type="hidden" name="recordPurchase" value="on" />
@@ -261,7 +269,7 @@ export function EquipmentForm({
             </p>
           </div>
         )}
-      </fieldset>
+      </FormSection>
       <div className={styles.formFooter}>
         <p className={styles.hint} aria-live="polite">
           {pending
@@ -270,7 +278,7 @@ export function EquipmentForm({
               ? `Your reference ${opened.edit.reference} will stay the same.`
               : 'Your EQP reference will be assigned when you save.'}
         </p>
-        <div className={styles.actions}>
+        <ActionBar className={styles.actions}>
           <Link
             className={styles.secondaryLink}
             href={opened.edit ? `/equipment/${opened.edit.equipmentId}` : '/equipment'}
@@ -280,7 +288,7 @@ export function EquipmentForm({
           <button className={styles.primaryButton} type="submit" disabled={pending}>
             {pending ? 'Saving Equipment…' : opened.edit ? 'Save Changes' : 'Save Equipment'}
           </button>
-        </div>
+        </ActionBar>
       </div>
     </form>
   );

@@ -17,6 +17,7 @@ import {
 } from '../energy-browser';
 import { includesDate } from '../energy-periods';
 import styles from './energy.module.css';
+import { InlineNotice, STALE_CONFLICT_MESSAGE } from '../../../components/ui/inline-notice';
 
 type Props = {
   kind: 'power' | 'tariff';
@@ -60,7 +61,11 @@ export function EnergyHistory({ kind, equipmentId, token, rows, today, canRecord
         {kind === 'power' ? 'Power history' : 'Tariff history'}
       </h3>
       <p>Dates include both the first and last day shown. Gaps mean unknown data, not zero.</p>
-      {message && <p role="status">{message}</p>}
+      {message && (
+        <InlineNotice variant="success" role="status">
+          {message}
+        </InlineNotice>
+      )}
       {!editor && canRecord && (
         <div className={styles.actions}>
           <button className={styles.primary} disabled={refreshing} onClick={() => open('record')}>
@@ -302,7 +307,13 @@ function EnergyEditor({
         </p>
       )}
       {result && !result.success && (
-        <div role="alert" tabIndex={-1} ref={errorRef} className={styles.warning}>
+        <InlineNotice
+          variant={result.stale ? 'warning' : 'error'}
+          role="alert"
+          tabIndex={-1}
+          ref={errorRef}
+          className={styles.warning}
+        >
           <p>{result.message}</p>
           {!!result.issues?.length && (
             <ul>
@@ -321,14 +332,14 @@ function EnergyEditor({
           )}
           {result.stale && (
             <p>
-              Copy any values you want to keep before{' '}
+              {STALE_CONFLICT_MESSAGE} Copy any values you want to keep before{' '}
               <a href={kind === 'power' ? `/equipment/${context.equipmentId}` : '/energy/tariffs'}>
                 reloading the latest history
               </a>
               . No newer changes have been overwritten.
             </p>
           )}
-        </div>
+        </InlineNotice>
       )}
       <fieldset disabled={pending} className={styles.fields}>
         <legend className={styles.srOnly}>{title}</legend>
