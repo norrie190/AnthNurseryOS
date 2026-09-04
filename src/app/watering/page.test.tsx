@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { connection } from 'next/server';
 import { beforeEach, expect, test, vi } from 'vitest';
 import WateringPage from './page';
@@ -89,15 +89,15 @@ test('loads the read model server-side and presents all queue categories and ent
   expect(getWateringQueue).toHaveBeenCalledOnce();
   expect(screen.getByRole('heading', { level: 1, name: 'Watering' })).toBeInTheDocument();
   expect(screen.getAllByRole('checkbox')).toHaveLength(6);
-  expect(screen.getByText('0 plants selected')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Record selected as watered' })).toBeDisabled();
+  expect(screen.getByText('0 Plants selected')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Water selected' })).toBeDisabled();
   expect(screen.getByText('active-care Plants in queue')).toBeInTheDocument();
   expect(screen.getByText('3 days overdue')).toBeInTheDocument();
   expect(screen.getAllByText('Due today').length).toBeGreaterThan(0);
-  expect(screen.getByText('First watering not recorded')).toBeInTheDocument();
+  expect(screen.getByText('No watering recorded yet')).toBeInTheDocument();
   expect(screen.getByText('Due in 2 days')).toBeInTheDocument();
   expect(screen.getByText('Due in 8 days')).toBeInTheDocument();
-  expect(screen.getByText('No watering schedule')).toBeInTheDocument();
+  expect(screen.getByText('Watering schedule not configured')).toBeInTheDocument();
   expect(screen.getByText('Unnamed Plant')).toBeInTheDocument();
   expect(screen.getAllByText(/No location/).length).toBeGreaterThan(0);
   expect(screen.getAllByRole('link', { name: 'Manage watering' })[0]).toHaveAttribute(
@@ -149,4 +149,18 @@ test('announces no urgent tasks when only non-urgent categories are populated', 
   });
   render(await WateringPage());
   expect(screen.getByRole('status')).toHaveTextContent('No urgent watering tasks today.');
+});
+
+test('keeps batch selection and confirmation language visible without changing queue data', async () => {
+  render(await WateringPage());
+  const checkbox = screen.getAllByRole('checkbox')[0];
+  fireEvent.click(checkbox);
+  expect(screen.getByText('1 Plants selected')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Water selected' })).toBeEnabled();
+  expect(checkbox.closest('li')).toHaveAttribute('data-selected', 'true');
+
+  fireEvent.click(screen.getByRole('button', { name: 'Water selected' }));
+  expect(screen.getByRole('heading', { name: 'Water 1 selected Plants now?' })).toBeInTheDocument();
+  expect(screen.getByText(/recorded together using one timestamp/)).toBeInTheDocument();
+  expect(screen.getByLabelText(/Shared note/)).toBeInTheDocument();
 });

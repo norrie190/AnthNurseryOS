@@ -53,9 +53,9 @@ beforeEach(() => {
 });
 
 test.each([
-  ['NOT_CONFIGURED', null, 'No watering schedule configured'],
-  ['NEEDS_FIRST_WATERING', null, 'Schedule configured — first watering not recorded'],
-  ['OVERDUE', -3, 'Overdue by 3 days'],
+  ['NOT_CONFIGURED', null, 'Watering schedule not configured'],
+  ['NEEDS_FIRST_WATERING', null, 'Schedule configured — no watering recorded yet'],
+  ['OVERDUE', -3, '3 days overdue'],
   ['DUE_TODAY', 0, 'Due today'],
   ['DUE_SOON', 2, 'Due in 2 days'],
   ['UPCOMING', 8, 'Due in 8 days'],
@@ -120,6 +120,7 @@ test.each([
   );
   if (controls) {
     expect(screen.getByRole('button', { name: 'Record watering' })).toBeInTheDocument();
+    fireEvent.click(screen.getByText(/Configure watering schedule|Change watering schedule/));
     expect(screen.getByRole('button', { name: 'Configure watering' })).toBeInTheDocument();
   } else {
     expect(screen.queryByRole('button', { name: 'Record watering' })).not.toBeInTheDocument();
@@ -136,6 +137,7 @@ test('record form submits notes/backdated time once and exposes pending state', 
       }),
   );
   render(<PlantWatering watering={detail()} />);
+  fireEvent.click(screen.getByText('Configure watering schedule'));
   fireEvent.change(screen.getByLabelText('Watered at'), { target: { value: '2026-08-20T09:15' } });
   fireEvent.change(screen.getByLabelText('Notes (optional)', { selector: '#watering-notes' }), {
     target: { value: 'Soaked well' },
@@ -237,6 +239,9 @@ test('current schedule, event history and schedule states retain gaps and void i
       })}
     />,
   );
+  fireEvent.click(screen.getAllByText('Change watering schedule')[0]);
+  fireEvent.click(screen.getAllByText('Watering history')[0]);
+  fireEvent.click(screen.getAllByText('Schedule history')[0]);
   expect(screen.getAllByText('Current notes')).toHaveLength(5);
   expect(screen.getByText('Newest')).toBeInTheDocument();
   expect(screen.getByText('Correction reason: Time corrected')).toBeInTheDocument();

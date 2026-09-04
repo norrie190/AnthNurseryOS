@@ -12,6 +12,8 @@ import styles from './watering-queue-page.module.css';
 import { initialBatchWateringState } from '../watering-form-state';
 import type { recordWateringBatchAction } from '../watering-actions';
 import { InlineNotice } from '../../../components/ui/inline-notice';
+import { EmptyState } from '../../../components/ui/empty-state';
+import { StatusBadge, type StatusBadgeVariant } from '../../../components/ui/status-badge';
 
 const categories = [
   ['OVERDUE', 'Overdue'],
@@ -40,10 +42,15 @@ function dueLabel(entry: WateringQueueEntry) {
   const { due } = entry;
   if (due.status === 'OVERDUE') return `${Math.abs(due.daysUntilDue ?? 0)} days overdue`;
   if (due.status === 'DUE_TODAY') return 'Due today';
-  if (due.status === 'NEEDS_FIRST_WATERING') return 'First watering not recorded';
+  if (due.status === 'NEEDS_FIRST_WATERING') return 'No watering recorded yet';
   if (due.status === 'DUE_SOON' || due.status === 'UPCOMING')
     return `Due in ${due.daysUntilDue} days`;
-  return 'No watering schedule';
+  return 'Watering schedule not configured';
+}
+
+function plantStatusVariant(status: WateringQueueEntry['plant']['status']): StatusBadgeVariant {
+  if (status === 'QUARANTINE') return 'attention';
+  return 'success';
 }
 
 function QueueEntry({
@@ -58,7 +65,7 @@ function QueueEntry({
   const { plant, due } = entry;
   const photo = plant.primaryPhoto;
   return (
-    <li className={styles.entry}>
+    <li className={styles.entry} data-selected={selected ? 'true' : undefined}>
       <label className={styles.checkbox}>
         <input
           type="checkbox"
@@ -84,7 +91,9 @@ function QueueEntry({
           <Link href={`/plants/${plant.id}`} className={styles.name}>
             {plant.name || 'Unnamed Plant'}
           </Link>
-          <span className={styles.badge}>{plantStatusLabels[plant.status]}</span>
+          <StatusBadge variant={plantStatusVariant(plant.status)}>
+            {plantStatusLabels[plant.status]}
+          </StatusBadge>
         </div>
         <p className={styles.meta}>
           {plant.reference} · {plant.location?.name || 'No location'}
@@ -172,31 +181,52 @@ export function WateringQueuePage({
         <p className={styles.total}>
           <strong>{queue.counts.totalEligible}</strong> active-care Plants in queue
         </p>
-        <dl>
-          {categories.map(([status, label]) => (
-            <div key={status}>
-              <dt>{label}</dt>
-              <dd>{queue.counts[countKeys[status]]}</dd>
-            </div>
-          ))}
+        <dl className={styles.summaryPrimary}>
+          {categories.map(([status, label]) =>
+            ['OVERDUE', 'DUE_TODAY', 'NEEDS_FIRST_WATERING'].includes(status) ? (
+              <div key={status} data-status={status}>
+                <dt>{label}</dt>
+                <dd>{queue.counts[countKeys[status]]}</dd>
+              </div>
+            ) : null,
+          )}
+        </dl>
+        <dl className={styles.summarySecondary}>
+          {categories.map(([status, label]) =>
+            !['OVERDUE', 'DUE_TODAY', 'NEEDS_FIRST_WATERING'].includes(status) ? (
+              <div key={status}>
+                <dt>{label}</dt>
+                <dd>{queue.counts[countKeys[status]]}</dd>
+              </div>
+            ) : null,
+          )}
         </dl>
       </section>
       {queue.entries.length > 0 ? (
-        <form action={formAction} className={styles.batchPanel}>
+        <form
+          action={formAction}
+          className={`${styles.batchPanel} ${effectiveSelected.length ? styles.batchPanelActive : ''}`}
+        >
           {effectiveSelected.map((id) => (
             <input key={id} type="hidden" name="plantIds" value={id} />
           ))}
           <div className={styles.batchToolbar}>
-            <strong>{effectiveSelected.length} plants selected</strong>
-            <button type="button" onClick={clear} disabled={!effectiveSelected.length}>
+            <strong>{effectiveSelected.length} Plants selected</strong>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={clear}
+              disabled={!effectiveSelected.length}
+            >
               Clear selection
             </button>
             <button
               type="button"
+              className={styles.primaryButton}
               onClick={() => setConfirming(true)}
               disabled={!effectiveSelected.length || effectiveSelected.length > 100 || pending}
             >
-              Record selected as watered
+              Water selected
             </button>
           </div>
           {effectiveSelected.length === 100 ? (
@@ -213,11 +243,12 @@ export function WateringQueuePage({
           ) : null}
           {effectiveConfirming ? (
             <section className={styles.confirmation} aria-labelledby="batch-confirm-heading">
-              <h2 id="batch-confirm-heading">Confirm batch watering</h2>
+              <h2 id="batch-confirm-heading">
+                Water {effectiveSelected.length} selected Plants now?
+              </h2>
               <p>
-                Record watering for {effectiveSelected.length} selected plants now? They will all
-                use the same watered-now timestamp. If any selected plant can no longer be watered,
-                nothing will be recorded.
+                All selected Plants will be recorded together using one timestamp. If one cannot be
+                watered, none will be changed.
               </p>
               <label htmlFor="batch-notes">Shared note (applied to every record, optional)</label>
               <textarea id="batch-notes" name="notes" defaultValue={state.notes} rows={2} />
@@ -225,7 +256,7 @@ export function WateringQueuePage({
                 <button type="button" onClick={() => setConfirming(false)} disabled={pending}>
                   Cancel
                 </button>
-                <button type="submit" disabled={pending}>
+                <button type="submit" className={styles.primaryButton} disabled={pending}>
                   {pending ? 'Recording…' : 'Confirm watering'}
                 </button>
               </div>
@@ -234,11 +265,11 @@ export function WateringQueuePage({
         </form>
       ) : null}
       {queue.entries.length === 0 ? (
-        <section className={styles.empty}>
-          <h2>No active Plants currently need watering tracking.</h2>
-          <p>Add or restore a Plant to begin.</p>
-          <Link href="/plants">View Plants</Link>
-        </section>
+        <EmptyState
+          title="No active Plants currently need watering tracking."
+          description="Add or restore a Plant to begin."
+          action={<Link href="/plants">View Plants</Link>}
+        />
       ) : (
         <>
           {urgent === 0 ? (
@@ -251,6 +282,7 @@ export function WateringQueuePage({
             return entries.length ? (
               <section
                 className={styles.category}
+                data-status={status}
                 key={status}
                 aria-labelledby={`watering-${status.toLowerCase()}`}
               >
