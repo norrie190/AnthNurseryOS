@@ -38,7 +38,7 @@ export default async function EditEquipmentPage({
       <header className={styles.heading}>
         <p className={styles.eyebrow}>Equipment inventory</p>
         <h1>Editing {equipment.reference}</h1>
-        <p>Update the details below. This item keeps its permanent reference.</p>
+        <p>Update the asset identity and context below. Its permanent reference stays the same.</p>
       </header>
       <EquipmentForm
         key={equipment.id}

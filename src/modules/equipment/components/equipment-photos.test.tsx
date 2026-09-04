@@ -93,8 +93,9 @@ test.each([false, true])(
       'src',
       `/equipment/equipment-id/photos/${deletePhotos[1].id}/display`,
     );
-    expect(screen.getByRole('status')).toHaveTextContent('Photo permanently deleted');
-    expect(screen.getByRole('status')).toHaveFocus();
+    const deleteNotice = screen.getByText('Photo permanently deleted.').parentElement!;
+    expect(deleteNotice).toHaveAttribute('role', 'status');
+    expect(deleteNotice).toHaveFocus();
   },
 );
 
@@ -277,7 +278,7 @@ test('upload sends one file and approved metadata, then clears the form and refr
   expect(options.body.get('takenAt')).toBe(new Date('2026-08-30T13:45').toISOString());
   expect(options.body.get('expectedUpdatedAt')).toBe(props.expectedUpdatedAt);
   expect(options.body.get('image').name).toBe('leaf.jpg');
-  expect(screen.getByRole('status')).toHaveTextContent('Photo uploaded.');
+  expect(screen.getByText('Photo uploaded.').parentElement).toHaveAttribute('role', 'status');
   expect(screen.getByLabelText(/Caption/)).toHaveValue('');
   expect((screen.getByLabelText('Image') as HTMLInputElement).files).toHaveLength(0);
 });

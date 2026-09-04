@@ -137,12 +137,16 @@ export function EquipmentForm({
           </ul>
         </InlineNotice>
       )}
-      <FormSection title="Equipment details" className={styles.card} disabled={pending}>
+      <FormSection title="Equipment identity" className={styles.card} disabled={pending}>
         <p className={styles.sectionIntro}>
-          Name and a Yes/No power choice are required. Record one physical item at a time.
+          Start with the name that will identify this physical asset. Its EQP reference is assigned
+          when you save.
         </p>
         <div className={styles.grid}>
           {textField('name')}
+          <div className={`${styles.formGroupLabel} ${styles.fullWidth}`}>
+            Category and manufacturer
+          </div>
           <div className={styles.field}>
             <label htmlFor="equipment-category">Category</label>
             <input
@@ -162,8 +166,11 @@ export function EquipmentForm({
             {error('category')}
           </div>
           {(['brand', 'model', 'serialNumber'] as const).map((field) => textField(field))}
+          <div className={`${styles.formGroupLabel} ${styles.fullWidth}`}>
+            Location and tracking
+          </div>
           <div className={styles.field}>
-            <label htmlFor="equipment-usesPower">Uses power</label>
+            <label htmlFor="equipment-usesPower">Track electricity use for this equipment</label>
             <select {...control('usesPower', 'power-help')} required>
               <option value="">Choose Yes or No</option>
               <option value="true">Yes</option>
@@ -192,6 +199,7 @@ export function EquipmentForm({
             )}
             {error('locationId')}
           </div>
+          <div className={`${styles.formGroupLabel} ${styles.fullWidth}`}>Notes</div>
           <div className={`${styles.field} ${styles.fullWidth}`}>
             <label htmlFor="equipment-notes">Notes</label>
             <textarea {...control('notes')} rows={4} maxLength={10000} />
@@ -286,7 +294,7 @@ export function EquipmentForm({
             Cancel
           </Link>
           <button className={styles.primaryButton} type="submit" disabled={pending}>
-            {pending ? 'Saving Equipment…' : opened.edit ? 'Save Changes' : 'Save Equipment'}
+            {pending ? 'Saving Equipment…' : opened.edit ? 'Save Changes' : 'Create Equipment'}
           </button>
         </ActionBar>
       </div>

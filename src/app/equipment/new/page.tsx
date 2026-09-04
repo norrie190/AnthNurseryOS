@@ -19,7 +19,9 @@ export default async function AddEquipmentPage() {
       <header className={styles.heading}>
         <p className={styles.eyebrow}>Equipment inventory</p>
         <h1>Add Equipment</h1>
-        <p>Record one physical item. Its permanent EQP reference is assigned when you save.</p>
+        <p>
+          Start with the asset identity, then add location, energy tracking, purchase, and notes.
+        </p>
       </header>
       <EquipmentForm locations={locations} currencies={currencies} />
     </div>

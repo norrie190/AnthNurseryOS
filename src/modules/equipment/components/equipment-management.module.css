@@ -29,6 +29,31 @@
   justify-content: space-between;
   align-items: center;
 }
+.identityPhoto {
+  flex: 0 0 7rem;
+  width: 7rem;
+  height: 7rem;
+  overflow: hidden;
+  border-radius: var(--radius-medium);
+  background: var(--surface-muted);
+}
+.identityPhoto :global(img),
+.identityPhoto :global(span) {
+  width: 100%;
+  height: 100%;
+}
+.referenceLine {
+  margin: 0.35rem 0 0;
+  color: var(--accent-strong) !important;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+.archiveLine {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -62,6 +87,12 @@
   margin: 0 0 1rem;
   font-size: 1.15rem;
 }
+.card > .eyebrow {
+  margin: 0 0 0.25rem;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
 .grid,
 .detailsGrid {
   display: grid;
@@ -70,6 +101,14 @@
 }
 .fullWidth {
   grid-column: 1 / -1;
+}
+.formGroupLabel {
+  margin-top: 0.35rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  font-weight: 650;
 }
 .field {
   display: grid;
@@ -126,6 +165,10 @@
 }
 .purchaseFields {
   margin-top: 1.5rem;
+}
+.form > fieldset:nth-of-type(2) {
+  border-color: var(--border-subtle);
+  background: var(--surface-subtle);
 }
 .primaryButton,
 .secondaryButton {
@@ -222,9 +265,7 @@
 }
 .collection {
   min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-medium);
-  background: var(--surface);
+  border-top: 1px solid var(--border-subtle);
 }
 .columns,
 .row {
@@ -237,10 +278,10 @@
   padding: 1.25rem;
 }
 .columns {
-  background: var(--surface-muted);
+  background: transparent;
   font-size: 0.8rem;
   color: var(--text-muted);
-  border-radius: var(--radius-medium) var(--radius-medium) 0 0;
+  border-bottom: 1px solid var(--border-subtle);
 }
 .list {
   list-style: none;
@@ -255,6 +296,7 @@
   text-decoration: none;
   line-height: 1.6;
   font-size: 0.9rem;
+  min-height: 5.5rem;
 }
 .row:hover,
 .row:focus-visible {
@@ -277,9 +319,9 @@
   gap: 0.75rem;
 }
 .listPhoto {
-  flex: 0 0 4rem;
-  width: 4rem;
-  height: 4rem;
+  flex: 0 0 3.5rem;
+  width: 3.5rem;
+  height: 3.5rem;
   overflow: hidden;
   border-radius: var(--radius-small);
   background: var(--surface-muted);
@@ -300,13 +342,24 @@
     gap: 1rem;
   }
   .list li {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-medium);
-    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  .list li:first-child {
+    border-top: 0;
   }
   .row {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.5rem;
+  }
+  .row .name {
+    order: 1;
+  }
+  .row .reference {
+    order: 2;
+  }
+  .row > span:not(.name),
+  .row > strong {
+    order: 3;
   }
   .mobileLabel {
     display: inline;
@@ -319,6 +372,14 @@
   }
   .card {
     padding: 1.1rem;
+  }
+  .identityPhoto {
+    flex-basis: 5.5rem;
+    width: 5.5rem;
+    height: 5.5rem;
+  }
+  .header {
+    align-items: flex-start;
   }
   .formFooter {
     align-items: stretch;

@@ -6,6 +6,8 @@ import { loadEquipmentEnergyView } from '@/modules/energy/energy-page-data';
 import { EquipmentEnergy } from '@/modules/energy/components/equipment-energy';
 import { getEquipmentPhotoGallery } from '@/modules/equipment/equipment-photo-queries';
 import { EquipmentPhotos } from '@/modules/equipment/components/equipment-photos';
+import { equipmentPhotoImagePath } from '@/modules/equipment/equipment-photo-browser';
+import { EquipmentPhotoImage } from '@/modules/equipment/components/equipment-photo-image';
 
 export default async function EquipmentDetailPage({
   params,
@@ -26,9 +28,25 @@ export default async function EquipmentDetailPage({
     createdAt: photo.createdAt.toISOString(),
     updatedAt: photo.updatedAt.toISOString(),
   }));
+  const primaryPhoto = photoRecords.find((photo) => photo.isPrimary) ?? photoRecords[0];
   return (
     <EquipmentDetail
       equipment={equipment}
+      identityPhoto={
+        <EquipmentPhotoImage
+          src={
+            primaryPhoto
+              ? equipmentPhotoImagePath(
+                  equipment.id,
+                  primaryPhoto.id,
+                  'thumbnail',
+                  primaryPhoto.derivativeRevision,
+                )
+              : undefined
+          }
+          alt={`${equipment.reference} primary photo`}
+        />
+      }
       photos={
         <EquipmentPhotos
           equipmentId={equipment.id}

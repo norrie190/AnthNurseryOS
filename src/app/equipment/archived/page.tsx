@@ -13,7 +13,7 @@ export default async function ArchivedEquipmentPage() {
         <div className={styles.heading}>
           <p className={styles.eyebrow}>Your inventory</p>
           <h1>Archived Equipment</h1>
-          <p>Preserved Equipment records. Open an item to view its details or restore it.</p>
+          <p>Retained equipment records. Open an item to view its details or restore it.</p>
         </div>
         <Link className={styles.secondaryLink} href="/equipment">
           Back to active Equipment

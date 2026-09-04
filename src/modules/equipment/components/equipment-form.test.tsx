@@ -28,7 +28,7 @@ beforeEach(() => {
 });
 test('new form has an unselected power choice, category suggestions and no identity inputs', () => {
   const { container } = render(<EquipmentForm {...props} />);
-  expect(screen.getByLabelText('Uses power')).toHaveValue('');
+  expect(screen.getByLabelText('Track electricity use for this equipment')).toHaveValue('');
   expect(screen.getByLabelText('Category')).toHaveValue('Other');
   expect(container.querySelector('datalist option[value="Grow Light"]')).toBeInTheDocument();
   expect(screen.getByText(/No usable Locations/)).toBeInTheDocument();
@@ -42,9 +42,12 @@ test.each(['true', 'false'])(
     const user = userEvent.setup();
     render(<EquipmentForm {...props} locations={[{ id: 'location', label: 'Tent / Shelf' }]} />);
     await user.type(screen.getByLabelText('Name'), 'My fan');
-    await user.selectOptions(screen.getByLabelText('Uses power'), usesPower);
+    await user.selectOptions(
+      screen.getByLabelText('Track electricity use for this equipment'),
+      usesPower,
+    );
     await user.selectOptions(screen.getByLabelText('Location'), 'location');
-    await user.click(screen.getByRole('button', { name: 'Save Equipment' }));
+    await user.click(screen.getByRole('button', { name: 'Create Equipment' }));
     await waitFor(() => expect(createEquipmentAction).toHaveBeenCalledOnce());
     const data = vi.mocked(createEquipmentAction).mock.calls[0][1];
     expect(data.get('name')).toBe('My fan');
@@ -60,8 +63,8 @@ test.each(['Grow Light', 'Propagation Tools'])(
     render(<EquipmentForm {...props} />);
     await user.clear(screen.getByLabelText('Category'));
     await user.type(screen.getByLabelText('Category'), category);
-    expect(screen.getByLabelText('Uses power')).toHaveValue('');
-    await user.click(screen.getByRole('button', { name: 'Save Equipment' }));
+    expect(screen.getByLabelText('Track electricity use for this equipment')).toHaveValue('');
+    await user.click(screen.getByRole('button', { name: 'Create Equipment' }));
     await waitFor(() => expect(createEquipmentAction).toHaveBeenCalledOnce());
     expect(vi.mocked(createEquipmentAction).mock.calls[0][1].get('category')).toBe(category);
   },
@@ -79,7 +82,7 @@ test('shows optional purchase, allocated shipping guidance and retains all entri
   await user.type(screen.getByLabelText('Equipment price (£)'), '125.555');
   await user.type(screen.getByLabelText('Allocated shipping cost (£)'), '0');
   expect(screen.getByText(/not necessarily the full shipping cost/)).toBeInTheDocument();
-  await user.click(screen.getByRole('button', { name: 'Save Equipment' }));
+  await user.click(screen.getByRole('button', { name: 'Create Equipment' }));
   await waitFor(() => expect(screen.getByRole('alert')).toHaveFocus());
   expect(screen.getByLabelText('Name')).toHaveValue('My light');
   expect(screen.getByLabelText('Seller')).toHaveValue('Shop');
@@ -100,14 +103,14 @@ test('pending form blocks duplicate submissions and disables controls', async ()
       }),
   );
   render(<EquipmentForm {...props} />);
-  const form = screen.getByRole('button', { name: 'Save Equipment' }).closest('form')!;
+  const form = screen.getByRole('button', { name: 'Create Equipment' }).closest('form')!;
   fireEvent.submit(form);
   fireEvent.submit(form);
   expect(screen.getByRole('button', { name: 'Saving Equipment…' })).toBeDisabled();
   expect(screen.getByLabelText('Name')).toBeDisabled();
   expect(createEquipmentAction).toHaveBeenCalledOnce();
   await act(async () => finish({ message: 'Try again.', fieldErrors: {} }));
-  expect(screen.getByRole('button', { name: 'Save Equipment' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Create Equipment' })).toBeEnabled();
 });
 test('edit retains initial token across rerenders and keeps stale inputs visible', async () => {
   vi.mocked(updateEquipmentAction).mockResolvedValue({

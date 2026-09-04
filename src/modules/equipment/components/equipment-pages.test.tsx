@@ -84,7 +84,7 @@ test.each([false, true])('empty state archived=%s provides a useful next action'
   render(<EquipmentList equipment={[]} archived={archived} />);
   expect(
     screen.getByRole('heading', {
-      name: archived ? 'No archived Equipment' : 'No active Equipment',
+      name: archived ? 'No archived equipment.' : 'No equipment recorded yet.',
     }),
   ).toBeInTheDocument();
   expect(screen.getByRole('link')).toHaveAttribute(
@@ -108,8 +108,8 @@ test('list shows reference, manufacturer, power, Location fallback and determini
     '/equipment/other',
     `/equipment/${item.id}`,
   ]);
-  expect(links[0]).toHaveTextContent('Uses power: No');
-  expect(links[1]).toHaveTextContent('Uses power: Yes');
+  expect(links[0]).toHaveTextContent('Energy tracking: Not enabled');
+  expect(links[1]).toHaveTextContent('Energy tracking: Supported');
   expect(links[1]).toHaveTextContent('Spider Farmer · SF1000D model');
   expect(links[1]).toHaveTextContent('No location');
   expect(links[1]).toHaveTextContent('30 Aug 2026');
@@ -149,7 +149,7 @@ test('archived list shows archive date and a clear path to restore', () => {
 });
 test('detail displays immutable reference and optional fallbacks', () => {
   render(<EquipmentDetail equipment={item} />);
-  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('EQP-0001');
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(item.name);
   expect(screen.getByText('serial')).toBeInTheDocument();
   expect(screen.getByText('Nursery light')).toBeInTheDocument();
   expect(screen.getByText('No purchase information recorded.')).toBeInTheDocument();
@@ -220,7 +220,7 @@ test('add route loads usable Location options and form', async () => {
 test('detail route uses UUID lookup', async () => {
   render(await DetailPage({ params: Promise.resolve({ equipmentId: item.id }) }));
   expect(getEquipmentById).toHaveBeenCalledWith(item.id);
-  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(item.reference);
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(item.name);
 });
 test('detail route loads the ordered Equipment gallery without exposing storage metadata', async () => {
   vi.mocked(getEquipmentPhotoGallery).mockResolvedValue([

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { EmptyState } from '../../../components/ui/empty-state';
 import type { EquipmentListItem } from '../equipment-queries';
 import { equipmentPhotoImagePath } from '../equipment-photo-browser';
 import { EquipmentPhotoImage } from './equipment-photo-image';
@@ -21,19 +22,19 @@ export function EquipmentList({
 }) {
   if (!equipment.length)
     return (
-      <section className={styles.card} aria-labelledby="empty-equipment-heading">
-        <h2 id="empty-equipment-heading">
-          {archived ? 'No archived Equipment' : 'No active Equipment'}
-        </h2>
-        <p className={styles.sectionIntro}>
-          {archived
-            ? 'Equipment you archive will appear here. Its details remain available.'
-            : 'Add your first item to start building your Equipment inventory, or restore an archived item.'}
-        </p>
-        <Link className={styles.primaryButton} href={archived ? '/equipment' : '/equipment/new'}>
-          {archived ? 'Back to active Equipment' : 'Add Equipment'}
-        </Link>
-      </section>
+      <EmptyState
+        title={archived ? 'No archived equipment.' : 'No equipment recorded yet.'}
+        description={
+          archived
+            ? 'Archived equipment remains available with its details and history.'
+            : 'Add your first item to start building your equipment inventory.'
+        }
+        action={
+          <Link className={styles.primaryButton} href={archived ? '/equipment' : '/equipment/new'}>
+            {archived ? 'Back to active Equipment' : 'Add Equipment'}
+          </Link>
+        }
+      />
     );
   const dateLabel = archived ? 'Archived' : 'Added';
   return (
@@ -42,7 +43,7 @@ export function EquipmentList({
         <span>Reference</span>
         <span>Equipment</span>
         <span>Category</span>
-        <span>Uses power</span>
+        <span>Energy tracking</span>
         <span>Location</span>
         <span>{dateLabel}</span>
       </div>
@@ -83,8 +84,8 @@ export function EquipmentList({
                   {item.category}
                 </span>
                 <span>
-                  <span className={styles.mobileLabel}>Uses power: </span>
-                  {item.usesPower ? 'Yes' : 'No'}
+                  <span className={styles.mobileLabel}>Energy tracking: </span>
+                  {item.usesPower ? 'Supported' : 'Not enabled'}
                 </span>
                 <span>
                   <span className={styles.mobileLabel}>Location: </span>

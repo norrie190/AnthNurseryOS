@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { LocalSectionNav } from '../../../components/ui/local-section-nav';
 import { formatPurchaseMoney } from '../../../lib/purchase-money';
 import type { EquipmentDetailRecord } from '../equipment-queries';
 import { EquipmentArchiveControls } from './equipment-archive-controls';
@@ -15,11 +16,13 @@ export function EquipmentDetail({
   equipment,
   photos,
   energy,
+  identityPhoto,
   hasOngoingPowerPeriod = false,
 }: {
   equipment: EquipmentDetailRecord;
   photos?: ReactNode;
   energy?: ReactNode;
+  identityPhoto?: ReactNode;
   hasOngoingPowerPeriod?: boolean;
 }) {
   const purchase = equipment.purchase;
@@ -28,7 +31,7 @@ export function EquipmentDetail({
     ['Brand', equipment.brand ?? 'Not recorded'],
     ['Model', equipment.model ?? 'Not recorded'],
     ['Serial number', equipment.serialNumber ?? 'Not recorded'],
-    ['Uses power', equipment.usesPower ? 'Yes' : 'No'],
+    ['Energy tracking', equipment.usesPower ? 'Supported' : 'Not enabled'],
     [
       'Location',
       equipment.location
@@ -45,13 +48,19 @@ export function EquipmentDetail({
         ← {equipment.archivedAt ? 'Archived Equipment' : 'Equipment'}
       </Link>
       <header className={styles.header}>
+        {identityPhoto && <div className={styles.identityPhoto}>{identityPhoto}</div>}
         <div className={styles.heading}>
           <p className={styles.eyebrow}>Equipment inventory</p>
-          <h1>{equipment.reference}</h1>
-          <p>{equipment.name}</p>
+          <h1>{equipment.name}</h1>
+          <p className={styles.referenceLine}>{equipment.reference}</p>
+          <p>
+            {equipment.category}
+            {(equipment.brand || equipment.model) &&
+              ` · ${[equipment.brand, equipment.model].filter(Boolean).join(' · ')}`}
+          </p>
           {equipment.archivedAt && (
-            <p>
-              <span className={styles.badge}>Archived</span>{' '}
+            <p className={styles.archiveLine}>
+              <span className={styles.badge}>Archived equipment</span>{' '}
               <time dateTime={equipment.archivedAt.toISOString()}>
                 {timestamp.format(equipment.archivedAt)}
               </time>
@@ -62,8 +71,19 @@ export function EquipmentDetail({
           Edit Equipment
         </Link>
       </header>
-      <section className={styles.card} aria-labelledby="equipment-details-heading">
-        <h2 id="equipment-details-heading">Equipment details</h2>
+      <LocalSectionNav
+        ariaLabel="Equipment detail sections"
+        items={[
+          { href: '#overview', label: 'Overview' },
+          { href: '#purchase', label: 'Purchase' },
+          { href: '#energy', label: 'Energy' },
+          { href: '#photos', label: 'Photos' },
+          { href: '#history', label: 'History' },
+        ]}
+      />
+      <section id="overview" className={styles.card} aria-labelledby="equipment-details-heading">
+        <p className={styles.eyebrow}>Current asset context</p>
+        <h2 id="equipment-details-heading">Overview</h2>
         <dl className={styles.detailsGrid}>
           {details.map(([label, value]) => (
             <div key={label}>
@@ -87,11 +107,11 @@ export function EquipmentDetail({
           ))}
         </dl>
         <p className={styles.hint}>
-          Uses power describes capability for electrical consumption tracking, not whether the item
-          is currently switched on.
+          Energy tracking describes whether this equipment supports electricity history and
+          estimates. It does not indicate whether the item is currently switched on.
         </p>
       </section>
-      <section className={styles.card} aria-labelledby="equipment-purchase-heading">
+      <section id="purchase" className={styles.card} aria-labelledby="equipment-purchase-heading">
         <h2 id="equipment-purchase-heading">Purchase information</h2>
         {purchase ? (
           <>
@@ -130,15 +150,17 @@ export function EquipmentDetail({
           <p className={styles.sectionIntro}>No purchase information recorded.</p>
         )}
       </section>
-      {photos}
-      {energy}
-      <EquipmentArchiveControls
-        equipmentId={equipment.id}
-        reference={equipment.reference}
-        archived={equipment.archivedAt !== null}
-        expectedUpdatedAt={equipment.updatedAt.toISOString()}
-        hasOngoingPowerPeriod={hasOngoingPowerPeriod}
-      />
+      {energy && <div id="energy">{energy}</div>}
+      {photos && <div id="photos">{photos}</div>}
+      <div id="history">
+        <EquipmentArchiveControls
+          equipmentId={equipment.id}
+          reference={equipment.reference}
+          archived={equipment.archivedAt !== null}
+          expectedUpdatedAt={equipment.updatedAt.toISOString()}
+          hasOngoingPowerPeriod={hasOngoingPowerPeriod}
+        />
+      </div>
     </div>
   );
 }

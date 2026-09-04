@@ -13,7 +13,7 @@ export default async function EquipmentPage() {
         <div className={styles.heading}>
           <p className={styles.eyebrow}>Your inventory</p>
           <h1>Equipment</h1>
-          <p>Manage and view your nursery equipment</p>
+          <p>Active equipment and its current location, category, and energy-tracking context.</p>
         </div>
         <div className={styles.actions}>
           <Link className={styles.secondaryButton} href="/energy/tariffs">
