@@ -1,19 +1,47 @@
+.headingRow {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.headingRow h2 {
+  margin: 0;
+}
+.photoCount {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
 .main {
-  margin: 0 0 1.5rem;
+  margin: 0 0 1.75rem;
 }
 .mainImage {
-  height: clamp(15rem, 45vw, 32rem);
+  height: clamp(16rem, 38vw, 30rem);
   background: var(--surface-muted);
   border-radius: var(--radius-small);
   overflow: hidden;
 }
-.main figcaption {
-  margin-top: 1rem;
+.primaryCaption {
+  margin-top: 0.75rem;
+}
+.primaryLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+.primaryLabel::before {
+  content: '';
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--accent);
 }
 .gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+  gap: 1.25rem;
   margin: 0 0 1.5rem;
   padding: 0;
   list-style: none;
@@ -21,25 +49,90 @@
 .photo {
   margin: 0;
   height: 100%;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-small);
-  overflow: hidden;
 }
 .thumbnail {
   aspect-ratio: 1;
   background: var(--surface-muted);
+  border-radius: var(--radius-small);
+  overflow: hidden;
 }
-.photo figcaption {
-  padding: 0.85rem;
+.photoCaption {
+  display: grid;
+  gap: 0.65rem;
+  padding-top: 0.7rem;
+}
+.photoActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.photoActions button {
+  min-height: 2.25rem;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.82rem;
 }
 .caption {
-  margin: 0.6rem 0 0;
+  margin: 0;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 1.5;
 }
 .upload {
-  margin-top: 1.5rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+.uploadSecondary {
+  margin-top: 2.25rem;
+}
+.maintenancePanel {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-small);
+  background: var(--surface-muted);
+}
+.maintenancePanel h3 {
+  margin-top: 0;
+}
+.maintenancePanel button {
+  margin-top: 0.75rem;
+}
+.maintenancePanel button + button {
+  margin-left: 0.5rem;
+}
+.upload:has(.uploadFields) {
+  max-width: 48rem;
+}
+.uploadFields > .grid {
+  gap: 1rem;
+}
+.uploadFields > .grid > div:first-child {
+  grid-column: 1 / -1;
+}
+@media (min-width: 52rem) {
+  .mainImage {
+    max-width: 48rem;
+  }
+}
+@media (max-width: 30rem) {
+  .headingRow {
+    align-items: start;
+  }
+  .mainImage {
+    height: min(72vw, 22rem);
+  }
+  .gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 0.75rem;
+  }
+  .photoActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .photoActions button {
+    width: 100%;
+  }
 }
 .uploadFields {
   margin: 0;

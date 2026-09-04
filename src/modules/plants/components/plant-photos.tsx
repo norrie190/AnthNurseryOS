@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useTransition, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { EmptyState } from '../../../components/ui/empty-state';
+import { InlineNotice } from '../../../components/ui/inline-notice';
 import {
   photoImagePath,
   photoResponseSchema,
@@ -308,7 +310,13 @@ export function PlantPhotos({
 
   return (
     <section className={shared.card} aria-labelledby="photos-heading">
-      <h2 id="photos-heading">Photos</h2>
+      <div className={styles.headingRow}>
+        <div>
+          <p className={shared.eyebrow}>Plant identity</p>
+          <h2 id="photos-heading">Photos</h2>
+        </div>
+        <span className={styles.photoCount}>{visiblePhotos.length} photos</span>
+      </div>
       {archived && (
         <p className={shared.sectionIntro}>
           This Plant is archived. Adding or deleting photos, adjusting crops or changing its primary
@@ -325,8 +333,8 @@ export function PlantPhotos({
               prominent
             />
           </div>
-          <figcaption>
-            <span className={shared.badge}>Primary photo</span>
+          <figcaption className={styles.primaryCaption}>
+            <span className={styles.primaryLabel}>Primary photo</span>
             {details(primary)}
           </figcaption>
         </figure>
@@ -347,45 +355,47 @@ export function PlantPhotos({
                     alt={photo.caption || `${reference} photo ${index + 1}`}
                   />
                 </div>
-                <figcaption>
-                  {isPrimary(photo) ? (
-                    <span className={shared.badge}>Primary</span>
-                  ) : (
+                <figcaption className={styles.photoCaption}>
+                  <div className={styles.photoActions} aria-label={`Maintain photo ${index + 1}`}>
+                    {isPrimary(photo) ? (
+                      <span className={styles.primaryLabel}>Primary</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className={shared.secondaryButton}
+                        disabled={controlsDisabled}
+                        aria-label={`Set photo ${index + 1} as Primary`}
+                        onClick={() => selectPrimary(photo.id)}
+                      >
+                        {operation === photo.id ? 'Saving…' : 'Set as Primary'}
+                      </button>
+                    )}
                     <button
                       type="button"
                       className={shared.secondaryButton}
                       disabled={controlsDisabled}
-                      aria-label={`Set photo ${index + 1} as Primary`}
-                      onClick={() => selectPrimary(photo.id)}
+                      aria-label={`Adjust Crop for photo ${index + 1}`}
+                      onClick={() => void prepareCrop(photo.id)}
                     >
-                      {operation === photo.id ? 'Saving…' : 'Set as Primary'}
+                      Adjust crop
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    className={shared.secondaryButton}
-                    disabled={controlsDisabled}
-                    aria-label={`Adjust Crop for photo ${index + 1}`}
-                    onClick={() => void prepareCrop(photo.id)}
-                  >
-                    Adjust Crop
-                  </button>
-                  <button
-                    type="button"
-                    className={shared.secondaryButton}
-                    disabled={controlsDisabled}
-                    aria-label={`Delete photo ${index + 1}`}
-                    onClick={(event) => {
-                      deleteButton.current = event.currentTarget;
-                      setDeleteConfirmation({
-                        photoId: photo.id,
-                        label: `photo ${index + 1}${photo.caption ? `: ${photo.caption}` : ''}`,
-                        token,
-                      });
-                    }}
-                  >
-                    Delete
-                  </button>
+                    <button
+                      type="button"
+                      className={shared.secondaryButton}
+                      disabled={controlsDisabled}
+                      aria-label={`Delete photo ${index + 1}`}
+                      onClick={(event) => {
+                        deleteButton.current = event.currentTarget;
+                        setDeleteConfirmation({
+                          photoId: photo.id,
+                          label: `photo ${index + 1}${photo.caption ? `: ${photo.caption}` : ''}`,
+                          token,
+                        });
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
                   {details(photo)}
                 </figcaption>
               </figure>
@@ -393,15 +403,15 @@ export function PlantPhotos({
           ))}
         </ul>
       ) : (
-        <p className={shared.sectionIntro}>
-          No photos yet. Add a photo to start this Plant’s gallery. The first photo becomes its
-          primary image.
-        </p>
+        <EmptyState
+          title="No photos yet."
+          description="Add a photo to give this Plant a visual identity. The first photo becomes the primary photo."
+        />
       )}
 
       {deleteConfirmation && (
         <section
-          className={shared.errorSummary}
+          className={styles.maintenancePanel}
           aria-labelledby="delete-photo-heading"
           aria-describedby="delete-photo-warning"
           aria-busy={busy}
@@ -435,7 +445,7 @@ export function PlantPhotos({
       )}
 
       {editCrop && (
-        <section aria-label="Adjust thumbnail crop" className={styles.upload}>
+        <section aria-label="Adjust thumbnail crop" className={styles.maintenancePanel}>
           <h3>Adjust Crop</h3>
           <PlantPhotoCropSelector
             key={editCrop.photoId}
@@ -466,15 +476,11 @@ export function PlantPhotos({
       )}
 
       {feedback && (
-        <div
+        <InlineNotice
           ref={feedbackElement}
           tabIndex={-1}
           role={feedback.success && !feedback.cleanupPending ? 'status' : 'alert'}
-          className={
-            feedback.success && !feedback.cleanupPending
-              ? shared.archiveFeedback
-              : shared.errorSummary
-          }
+          variant={feedback.success && !feedback.cleanupPending ? 'success' : 'error'}
         >
           <p>{feedback.message}</p>
           {!feedback.success && issues.length > 0 && (
@@ -508,7 +514,7 @@ export function PlantPhotos({
               been kept.
             </p>
           )}
-        </div>
+        </InlineNotice>
       )}
 
       <form
@@ -516,7 +522,7 @@ export function PlantPhotos({
         method="post"
         action={`/plants/${plantId}/photos`}
         encType="multipart/form-data"
-        className={styles.upload}
+        className={`${styles.upload} ${visiblePhotos.length ? styles.uploadSecondary : ''}`}
         aria-label="Upload Plant photo"
         aria-busy={busy}
         noValidate
