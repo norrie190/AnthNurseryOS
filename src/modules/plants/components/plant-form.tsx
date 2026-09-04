@@ -19,6 +19,7 @@ export type PlantFormOptions = {
   parents: readonly PlantSelectOption[];
   locations: readonly PlantSelectOption[];
   currencies: readonly string[];
+  parentageLocked?: boolean;
 };
 
 type PlantFormProps = PlantFormOptions & {
@@ -31,6 +32,7 @@ export function PlantForm({
   parents,
   locations,
   currencies,
+  parentageLocked = false,
   action,
   initialValues = initialPlantFormValues,
   edit,
@@ -194,35 +196,44 @@ export function PlantForm({
 
       <fieldset className={styles.card} disabled={pending}>
         <legend>Parentage</legend>
-        <p className={styles.sectionIntro}>
-          Link a Plant in your collection, record an external name, or leave a parent unknown.
-        </p>
-        <div className={styles.grid}>
-          <ParentSelector
-            role="seed"
-            emptyMessage={
-              edit
-                ? 'No other Plants are available as parents. Choose Unknown or enter an external name.'
-                : undefined
-            }
-            values={values}
-            onChange={change}
-            errors={state.fieldErrors}
-            options={parents}
-          />
-          <ParentSelector
-            role="pollen"
-            emptyMessage={
-              edit
-                ? 'No other Plants are available as parents. Choose Unknown or enter an external name.'
-                : undefined
-            }
-            values={values}
-            onChange={change}
-            errors={state.fieldErrors}
-            options={parents}
-          />
-        </div>
+        {parentageLocked ? (
+          <p className={styles.hint}>
+            Parentage is derived from this Plant’s recorded breeding provenance and cannot be edited
+            here.
+          </p>
+        ) : (
+          <>
+            <p className={styles.sectionIntro}>
+              Link a Plant in your collection, record an external name, or leave a parent unknown.
+            </p>
+            <div className={styles.grid}>
+              <ParentSelector
+                role="seed"
+                emptyMessage={
+                  edit
+                    ? 'No other Plants are available as parents. Choose Unknown or enter an external name.'
+                    : undefined
+                }
+                values={values}
+                onChange={change}
+                errors={state.fieldErrors}
+                options={parents}
+              />
+              <ParentSelector
+                role="pollen"
+                emptyMessage={
+                  edit
+                    ? 'No other Plants are available as parents. Choose Unknown or enter an external name.'
+                    : undefined
+                }
+                values={values}
+                onChange={change}
+                errors={state.fieldErrors}
+                options={parents}
+              />
+            </div>
+          </>
+        )}
       </fieldset>
 
       <fieldset className={styles.card} disabled={pending}>

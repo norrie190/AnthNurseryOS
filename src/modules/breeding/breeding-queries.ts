@@ -2,7 +2,9 @@ import 'server-only';
 import { z } from 'zod';
 import { Prisma } from '../../generated/prisma/client';
 import { getPrisma } from '../../lib/prisma';
+import { getUsableLocationOptions } from '../plants/plant-queries';
 import { BreedingError } from './breeding-errors';
+import { promotionEligibility } from './promotion-queries';
 
 const id = z.string().uuid();
 const pollenParent = { select: { id: true, reference: true, name: true } } as const;
@@ -37,6 +39,17 @@ const attemptSelect = {
       correctionReason: true,
       createdAt: true,
       updatedAt: true,
+      promotedPlants: {
+        orderBy: [{ reference: 'asc' }, { id: 'asc' }],
+        select: {
+          id: true,
+          reference: true,
+          name: true,
+          status: true,
+          archivedAt: true,
+          location: { select: { name: true } },
+        },
+      },
     },
   },
 } satisfies Prisma.PollinationAttemptSelect;
@@ -53,7 +66,48 @@ const seedBatchSelect = {
   correctionReason: true,
   createdAt: true,
   updatedAt: true,
-} as const;
+  promotedPlants: {
+    orderBy: [{ reference: 'asc' }, { id: 'asc' }],
+    select: {
+      id: true,
+      reference: true,
+      name: true,
+      status: true,
+      archivedAt: true,
+      location: { select: { name: true } },
+    },
+  },
+} satisfies Prisma.SeedBatchSelect;
+
+function promotionSummary<
+  T extends {
+    promotedPlants: readonly {
+      id: string;
+      reference: string;
+      name: string | null;
+      status: string;
+      archivedAt: Date | null;
+      location: { name: string } | null;
+    }[];
+    germinatedCount: number | null;
+    status: string;
+    voidedAt: Date | null;
+  },
+>(batch: T) {
+  const promotedCount = batch.promotedPlants.length;
+  return {
+    ...batch,
+    promotion: {
+      promotedCount,
+      remainingCapacity:
+        batch.germinatedCount === null ? null : Math.max(batch.germinatedCount - promotedCount, 0),
+      eligibility: batch.voidedAt
+        ? ('VOIDED' as const)
+        : promotionEligibility(batch.status, batch.germinatedCount, promotedCount),
+      promotedPlants: batch.promotedPlants,
+    },
+  };
+}
 
 export async function getPlantInflorescenceHistory(plantId: string) {
   const parsed = id.safeParse(plantId);
@@ -74,7 +128,7 @@ export type PlantInflorescenceHistory = Awaited<ReturnType<typeof getPlantInflor
 export async function getPlantBreedingDetail(plantId: string) {
   const parsed = id.safeParse(plantId);
   if (!parsed.success) return null;
-  const [plant, inflorescences, pollenPlants] = await Promise.all([
+  const [plant, inflorescences, pollenPlants, locations] = await Promise.all([
     getPrisma().plant.findUnique({ where: { id: parsed.data }, select: { id: true } }),
     getPrisma().inflorescence.findMany({
       where: { plantId: parsed.data },
@@ -90,9 +144,20 @@ export async function getPlantBreedingDetail(plantId: string) {
       select: { id: true, reference: true, name: true, status: true, archivedAt: true },
       orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
     }),
+    getUsableLocationOptions(),
   ]);
   if (!plant) return null;
-  return { inflorescences, pollenPlants };
+  return {
+    inflorescences: inflorescences.map((inflorescence) => ({
+      ...inflorescence,
+      pollinationAttempts: inflorescence.pollinationAttempts.map((attempt) => ({
+        ...attempt,
+        seedBatches: attempt.seedBatches.map(promotionSummary),
+      })),
+    })),
+    pollenPlants,
+    locations,
+  };
 }
 export type PlantBreedingDetail = NonNullable<Awaited<ReturnType<typeof getPlantBreedingDetail>>>;
 

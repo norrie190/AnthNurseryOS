@@ -50,6 +50,7 @@ export default async function EditPlantPage({ params }: { params: Promise<{ plan
         parents={parents.filter((parent) => parent.id !== plant.id)}
         locations={locations}
         currencies={currencies}
+        parentageLocked={plant.originSeedBatchId !== null}
       />
     </div>
   );

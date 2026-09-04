@@ -18,6 +18,7 @@ const plant: PlantDetailRecord = {
   notes: null,
   locationId: null,
   originSeedBatchId: null,
+  originSeedBatch: null,
   createdAt: timestamp,
   updatedAt: timestamp,
   archivedAt: null,
@@ -34,6 +35,34 @@ test('displays the assigned reference and meaningful empty values', () => {
   expect(screen.getByText('No purchase recorded.')).toBeInTheDocument();
   expect(screen.getAllByText('Unknown')).toHaveLength(2);
   expect(screen.queryByText('£0.00')).not.toBeInTheDocument();
+});
+
+test('displays origin SeedBatch provenance and cross', () => {
+  render(
+    <PlantDetail
+      plant={{
+        ...plant,
+        originSeedBatch: {
+          id: 'batch-1',
+          harvestedOn: timestamp,
+          status: 'GERMINATING',
+          pollinationAttempt: {
+            pollenSourceMode: 'INTERNAL',
+            pollenParentName: null,
+            pollenBreeder: null,
+            pollenCultivar: null,
+            pollenParent: { id: 'pollen', reference: 'ANT-0002', name: null },
+            inflorescence: {
+              plant: { id: plant.id, reference: plant.reference, name: plant.name },
+            },
+          },
+        },
+      }}
+    />,
+  );
+  expect(screen.getByRole('heading', { name: 'Breeding origin' })).toBeInTheDocument();
+  expect(screen.getByText('ANT-0042 × ANT-0002')).toBeInTheDocument();
+  expect(screen.getByText('SeedBatch status: Germinating')).toBeInTheDocument();
 });
 
 test('renders saved parent links, external names and distinct monetary values', () => {

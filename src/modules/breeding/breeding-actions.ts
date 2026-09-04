@@ -22,6 +22,7 @@ import {
   voidSeedBatch,
 } from './seed-batch-service';
 import { BreedingError } from './breeding-errors';
+import { promoteSeedBatchPlants } from './promotion-service';
 
 export type BreedingActionState = {
   success: boolean;
@@ -338,5 +339,25 @@ export async function voidSeedBatchAction(
         expectedUpdatedAt: value(formData, 'expectedUpdatedAt'),
       }),
     'SeedBatch voided. It remains in history.',
+  );
+}
+
+export async function promoteSeedBatchPlantsAction(
+  plantId: string,
+  batchId: string,
+  _previous: BreedingActionState,
+  formData: FormData,
+) {
+  return run(
+    plantId,
+    () =>
+      promoteSeedBatchPlants(batchId, {
+        quantity: optionalNumber(value(formData, 'quantity')) ?? 0,
+        status: value(formData, 'status') as never,
+        locationId: optional(value(formData, 'locationId')),
+        notes: optional(value(formData, 'notes')),
+        expectedUpdatedAt: value(formData, 'expectedUpdatedAt'),
+      }),
+    'Plant promotion completed. New Plants now appear in this SeedBatch history.',
   );
 }

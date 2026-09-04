@@ -27,6 +27,7 @@ function record(): PlantDetailRecord {
     locationId: 'shelf',
     notes: 'Notes',
     originSeedBatchId: null,
+    originSeedBatch: null,
     createdAt: date,
     updatedAt: date,
     archivedAt: null,

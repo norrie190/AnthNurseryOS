@@ -59,6 +59,25 @@ export async function getPlantById(plantId: string) {
           pollenParent: { select: { id: true, reference: true, name: true } },
         },
       },
+      originSeedBatch: {
+        select: {
+          id: true,
+          harvestedOn: true,
+          status: true,
+          pollinationAttempt: {
+            select: {
+              pollenSourceMode: true,
+              pollenParentName: true,
+              pollenBreeder: true,
+              pollenCultivar: true,
+              pollenParent: { select: { id: true, reference: true, name: true } },
+              inflorescence: {
+                select: { plant: { select: { id: true, reference: true, name: true } } },
+              },
+            },
+          },
+        },
+      },
     },
   });
 }

@@ -5,8 +5,17 @@ import { formatPlantMoney } from '../plant-money';
 import { plantStatusLabels } from '../plant-form-state';
 import { PlantArchiveControls } from './plant-archive-controls';
 import { PlantPhotos } from './plant-photos';
+import { formatBreedingCross } from '../../breeding/breeding-provenance';
 import type { PlantGalleryPhoto } from '../plant-photo-browser';
 import styles from './plant-management.module.css';
+
+const seedBatchStatusLabels: Record<string, string> = {
+  HARVESTED: 'Harvested',
+  AWAITING_GERMINATION: 'Awaiting germination',
+  GERMINATING: 'Germinating',
+  EXHAUSTED: 'Exhausted',
+  FAILED: 'Failed',
+};
 
 function ParentValue({
   linked,
@@ -119,6 +128,39 @@ export function PlantDetail({
             </dd>
           </div>
         </dl>
+        {plant.originSeedBatch && (
+          <div className={styles.origin}>
+            <h3>Breeding origin</h3>
+            <p>
+              This Plant was promoted from a SeedBatch harvested on{' '}
+              <time dateTime={plant.originSeedBatch.harvestedOn.toISOString().slice(0, 10)}>
+                {new Intl.DateTimeFormat('en-GB', { dateStyle: 'long', timeZone: 'UTC' }).format(
+                  plant.originSeedBatch.harvestedOn,
+                )}
+              </time>
+              .
+            </p>
+            <p>
+              <strong>Cross:</strong>{' '}
+              {formatBreedingCross(plant.originSeedBatch.pollinationAttempt.inflorescence.plant, {
+                pollenSourceMode: plant.originSeedBatch.pollinationAttempt.pollenSourceMode,
+                pollenParent: plant.originSeedBatch.pollinationAttempt.pollenParent,
+                pollenParentName: plant.originSeedBatch.pollinationAttempt.pollenParentName,
+              })}
+            </p>
+            {plant.originSeedBatch.pollinationAttempt.pollenBreeder && (
+              <p>Breeder/source: {plant.originSeedBatch.pollinationAttempt.pollenBreeder}</p>
+            )}
+            {plant.originSeedBatch.pollinationAttempt.pollenCultivar && (
+              <p>Cultivar/clone: {plant.originSeedBatch.pollinationAttempt.pollenCultivar}</p>
+            )}
+            {plant.originSeedBatch.pollinationAttempt.pollenSourceMode === 'UNKNOWN' && (
+              <p>Unknown pollen parent</p>
+            )}
+            <p>SeedBatch status: {seedBatchStatusLabels[plant.originSeedBatch.status]}</p>
+            <Link href={`/plants/${plant.id}#breeding-heading`}>View breeding history</Link>
+          </div>
+        )}
       </section>
       <section className={styles.card} aria-labelledby="purchase-heading">
         <h2 id="purchase-heading">Purchase information</h2>

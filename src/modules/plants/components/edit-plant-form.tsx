@@ -10,6 +10,7 @@ type EditPlantFormProps = PlantFormOptions & {
   reference: string;
   expectedUpdatedAt: string;
   initialValues: PlantFormValues;
+  parentageLocked?: boolean;
 };
 
 export function EditPlantForm({
@@ -17,6 +18,7 @@ export function EditPlantForm({
   reference,
   expectedUpdatedAt,
   initialValues,
+  parentageLocked,
   ...options
 }: EditPlantFormProps) {
   // Keep the concurrency token paired with the values originally opened. A server
@@ -29,6 +31,7 @@ export function EditPlantForm({
       action={action}
       initialValues={opened.initialValues}
       edit={{ plantId, reference, hasPurchase: opened.initialValues.recordPurchase === 'on' }}
+      parentageLocked={parentageLocked}
     />
   );
 }

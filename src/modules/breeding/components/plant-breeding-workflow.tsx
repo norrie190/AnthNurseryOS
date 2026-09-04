@@ -16,6 +16,7 @@ import {
   recordSeedBatchGerminationAction,
   recordSeedBatchHarvestAction,
   recordSeedBatchSowingAction,
+  promoteSeedBatchPlantsAction,
   voidInflorescenceAction,
   voidPollinationAttemptAction,
   voidSeedBatchAction,
@@ -573,7 +574,7 @@ function SeedBatchControls({
           </MutationForm>
         </>
       )}
-      {!batch.voidedAt && (
+      {!batch.voidedAt && batch.promotion.promotedCount === 0 ? (
         <MutationForm
           action={voidSeedBatchAction.bind(null, plantId, batch.id)}
           className={styles.actions}
@@ -589,7 +590,12 @@ function SeedBatchControls({
             Void SeedBatch
           </button>
         </MutationForm>
-      )}
+      ) : !batch.voidedAt ? (
+        <p className={styles.hint}>
+          This SeedBatch has promoted Plant descendants and cannot be voided; provenance must be
+          retained.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -719,12 +725,14 @@ function Attempt({
   plantId,
   owner,
   attempt,
+  locations,
 }: {
   plantId: string;
   owner: { reference: string };
   attempt: NonNullable<
     PlantBreedingDetail['inflorescences'][number]['pollinationAttempts'][number]
   >;
+  locations: PlantBreedingDetail['locations'];
 }) {
   return (
     <div className={styles.subrecord}>
@@ -779,7 +787,7 @@ function Attempt({
         <div className={styles.history}>
           <h4>Seed batches</h4>
           {attempt.seedBatches.map((batch) => (
-            <SeedBatch key={batch.id} plantId={plantId} batch={batch} />
+            <SeedBatch key={batch.id} plantId={plantId} batch={batch} locations={locations} />
           ))}
         </div>
       ) : (
@@ -788,14 +796,80 @@ function Attempt({
     </div>
   );
 }
-function SeedBatch({
+function PromotionForm({
   plantId,
   batch,
+  locations,
 }: {
   plantId: string;
   batch: NonNullable<
     PlantBreedingDetail['inflorescences'][number]['pollinationAttempts'][number]
   >['seedBatches'][number];
+  locations: PlantBreedingDetail['locations'];
+}) {
+  if (batch.promotion.eligibility !== 'ELIGIBLE') return null;
+  return (
+    <MutationForm action={promoteSeedBatchPlantsAction.bind(null, plantId, batch.id)}>
+      <h4>Promote seedlings to Plants</h4>
+      <p className={styles.hint}>
+        {batch.promotion.remainingCapacity} seedlings remain available. Each Plant receives its own
+        ANT reference and derived Parentage. This atomic operation does not mark the batch
+        exhausted.
+      </p>
+      <div className={styles.grid}>
+        <Field id={`promotion-quantity-${batch.id}`} label="Quantity">
+          <input
+            id={`promotion-quantity-${batch.id}`}
+            name="quantity"
+            type="number"
+            min="1"
+            max={batch.promotion.remainingCapacity ?? undefined}
+            step="1"
+            required
+          />
+        </Field>
+        <Field id={`promotion-status-${batch.id}`} label="Initial status">
+          <select id={`promotion-status-${batch.id}`} name="status" defaultValue="GROWING">
+            <option value="GROWING">Growing</option>
+            <option value="QUARANTINE">Quarantine</option>
+          </select>
+        </Field>
+        <Field id={`promotion-location-${batch.id}`} label="Location (optional)">
+          <select id={`promotion-location-${batch.id}`} name="locationId" defaultValue="">
+            <option value="">No Location</option>
+            {locations.map((location) => (
+              <option key={location.id} value={location.id}>
+                {location.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field id={`promotion-notes-${batch.id}`} label="Notes (optional)">
+          <textarea id={`promotion-notes-${batch.id}`} name="notes" rows={2} />
+        </Field>
+      </div>
+      <Hidden name="expectedUpdatedAt" value={batch.updatedAt.toISOString()} />
+      <p className={styles.hint}>
+        Create Plants from this SeedBatch? Parentage is derived automatically from the recorded
+        cross.
+      </p>
+      <button className={styles.primary} type="submit">
+        Promote seedlings
+      </button>
+    </MutationForm>
+  );
+}
+
+function SeedBatch({
+  plantId,
+  batch,
+  locations,
+}: {
+  plantId: string;
+  batch: NonNullable<
+    PlantBreedingDetail['inflorescences'][number]['pollinationAttempts'][number]
+  >['seedBatches'][number];
+  locations: PlantBreedingDetail['locations'];
 }) {
   return (
     <div className={`${styles.subrecord} ${batch.voidedAt ? styles.voided : ''}`}>
@@ -804,6 +878,52 @@ function SeedBatch({
         <span className={styles.badge}>
           {batch.voidedAt ? 'Voided' : batchLabels[batch.status]}
         </span>
+      </div>
+      <div className={styles.promotion}>
+        <strong>Promotion</strong>
+        {batch.germinatedCount === null ? (
+          <p className={styles.hint}>Record germination before promoting seedlings.</p>
+        ) : (
+          <p className={styles.hint}>
+            {batch.promotion.promotedCount} of {batch.germinatedCount} seedlings promoted ·{' '}
+            {batch.promotion.remainingCapacity} remaining
+          </p>
+        )}
+        {batch.promotion.promotedPlants.length > 0 && (
+          <ul className={styles.promotedList}>
+            {batch.promotion.promotedPlants.map((plant) => (
+              <li key={plant.id}>
+                <a href={`/plants/${plant.id}`}>{plant.reference}</a> —{' '}
+                {plant.name || 'Unnamed Plant'} ·{' '}
+                {plant.status === 'QUARANTINE'
+                  ? 'Quarantine'
+                  : plant.status === 'GROWING'
+                    ? 'Growing'
+                    : plant.status}
+                {plant.archivedAt ? ' · Archived' : ''}
+                {plant.location?.name ? ` · ${plant.location.name}` : ''}
+              </li>
+            ))}
+          </ul>
+        )}
+        {batch.promotion.eligibility === 'CAPACITY' && (
+          <p className={styles.hint}>
+            All recorded germinated seedlings have already been promoted.
+          </p>
+        )}
+        {batch.promotion.eligibility === 'GERMINATION_UNKNOWN' && (
+          <p className={styles.hint}>Record germination before promoting seedlings.</p>
+        )}
+        {batch.promotion.eligibility === 'NO_GERMINATION' && (
+          <p className={styles.hint}>No seedlings have been recorded as germinated.</p>
+        )}
+        {batch.promotion.eligibility === 'STATUS' && (
+          <p className={styles.hint}>This SeedBatch cannot be promoted in its current state.</p>
+        )}
+        {batch.promotion.eligibility === 'VOIDED' && (
+          <p className={styles.hint}>Voided SeedBatches cannot produce new Plants.</p>
+        )}
+        <PromotionForm plantId={plantId} batch={batch} locations={locations} />
       </div>
       <dl className={styles.details}>
         <div>
@@ -946,6 +1066,7 @@ export function PlantBreedingWorkflow({
                         plantId={plant.id}
                         owner={plant}
                         attempt={attempt}
+                        locations={detail.locations}
                       />
                     ))}
                   </div>
