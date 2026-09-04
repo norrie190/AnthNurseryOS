@@ -51,6 +51,7 @@ test('loads the saved UUID and renders its generated reference', async () => {
     archivedAt: null,
     locationId: null,
     notes: null,
+    originSeedBatchId: null,
   } satisfies PlantDetailRecord);
   render(await PlantPage({ params: Promise.resolve({ plantId: 'saved-id' }) }));
   expect(getPlantById).toHaveBeenCalledWith('saved-id');

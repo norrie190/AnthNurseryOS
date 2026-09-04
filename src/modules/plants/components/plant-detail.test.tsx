@@ -17,6 +17,7 @@ const plant: PlantDetailRecord = {
   status: 'GROWING',
   notes: null,
   locationId: null,
+  originSeedBatchId: null,
   createdAt: timestamp,
   updatedAt: timestamp,
   archivedAt: null,

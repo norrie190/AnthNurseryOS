@@ -45,15 +45,16 @@ enum SeedBatchStatus {
 }
 
 model Plant {
-  id         String      @id @default(uuid()) @db.Uuid
-  reference  String      @unique
-  name       String?
-  status     PlantStatus @default(GROWING)
-  locationId String?     @db.Uuid
-  notes      String?
-  createdAt  DateTime    @default(now()) @db.Timestamptz(3)
-  updatedAt  DateTime    @updatedAt @db.Timestamptz(3)
-  archivedAt DateTime?   @db.Timestamptz(3)
+  id                String      @id @default(uuid()) @db.Uuid
+  reference         String      @unique
+  name              String?
+  status            PlantStatus @default(GROWING)
+  locationId        String?     @db.Uuid
+  notes             String?
+  originSeedBatchId String?     @db.Uuid
+  createdAt         DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime    @updatedAt @db.Timestamptz(3)
+  archivedAt        DateTime?   @db.Timestamptz(3)
 
   location                Location?                @relation(fields: [locationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   parentage               PlantParentage?          @relation("PlantParentage")
@@ -65,8 +66,10 @@ model Plant {
   pollenSourceAttempts    PollinationAttempt[]     @relation("PollinationPollenParent")
   offspringAsSeedParent   PlantParentage[]         @relation("SeedParent")
   offspringAsPollenParent PlantParentage[]         @relation("PollenParent")
+  originSeedBatch         SeedBatch?               @relation("SeedBatchOrigin", fields: [originSeedBatchId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([locationId])
+  @@index([originSeedBatchId])
 }
 
 model Inflorescence {
@@ -127,6 +130,7 @@ model SeedBatch {
   updatedAt            DateTime        @updatedAt @db.Timestamptz(3)
 
   pollinationAttempt PollinationAttempt @relation(fields: [pollinationAttemptId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  promotedPlants     Plant[]            @relation("SeedBatchOrigin")
 
   @@index([pollinationAttemptId, harvestedOn])
 }
