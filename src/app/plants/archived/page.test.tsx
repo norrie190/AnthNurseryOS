@@ -16,10 +16,7 @@ test('loads archived Plants at request time with a useful empty state and return
   render(await ArchivedPlantsPage());
   expect(screen.getByRole('heading', { level: 1, name: 'Archived Plants' })).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'No archived Plants' })).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: 'View active Plants' })).toHaveAttribute(
-    'href',
-    '/plants',
-  );
+  expect(screen.getByRole('link', { name: 'Active Plants' })).toHaveAttribute('href', '/plants');
 });
 
 test('reads again on a later request and links archived records to their existing details', async () => {

@@ -18,7 +18,7 @@ export default async function PlantsPage() {
         </div>
         <div className={styles.actions}>
           <Link href="/plants/archived" className={styles.secondaryLink}>
-            View Archived
+            Archived Plants
           </Link>
           <Link href="/plants/new" className={styles.primaryButton}>
             Add Plant

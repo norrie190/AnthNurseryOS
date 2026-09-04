@@ -7,29 +7,21 @@
 }
 
 .collection {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-medium);
-  background: var(--surface);
-  box-shadow: var(--shadow-soft);
   min-width: 0;
 }
 
 .columns,
 .row {
   display: grid;
-  grid-template-columns: minmax(7rem, 1fr) minmax(0, 2fr) minmax(7rem, 1fr) minmax(0, 1.3fr) minmax(
-      7rem,
-      1fr
-    );
+  grid-template-columns: minmax(15rem, 2fr) minmax(8rem, 1fr) minmax(0, 1.25fr) minmax(7rem, 1fr);
   align-items: center;
   gap: 1rem;
   padding: 1.25rem;
 }
 
 .columns {
-  border-bottom: 1px solid var(--border);
-  border-radius: var(--radius-medium) var(--radius-medium) 0 0;
-  background: var(--surface-muted);
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--border-strong);
   color: var(--text-muted);
   font-size: 0.8rem;
   font-weight: 600;
@@ -51,6 +43,7 @@
   line-height: 1.6;
   text-decoration: none;
   border-radius: var(--radius-small);
+  transition: background-color 120ms ease;
 }
 
 .row:hover,
@@ -65,9 +58,47 @@
 
 .reference {
   color: var(--accent-strong);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-  overflow-wrap: anywhere;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.identityText {
+  display: grid;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.archiveContext {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.status {
+  display: grid;
+  justify-items: start;
+  gap: 0.1rem;
+}
+
+.location,
+.added {
+  color: var(--text-muted);
 }
 
 .name,
@@ -76,35 +107,39 @@
   overflow-wrap: anywhere;
 }
 
-.location,
-.added {
-  color: var(--text-muted);
-}
-
 .name {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 650;
 }
 
 .photo {
-  flex: 0 0 4rem;
-  width: 4rem;
-  height: 4rem;
+  flex: 0 0 4.5rem;
+  width: 4.5rem;
+  height: 4.5rem;
   overflow: hidden;
   border-radius: var(--radius-small);
   background: var(--surface-muted);
+}
+
+/* Keep the existing safe placeholder legible without letting its label set row width. */
+.photo :global(.placeholder) {
+  font-size: 0.65rem;
 }
 
 .mobileLabel {
   display: none;
 }
 
+/* Reference remains a readable identity cue, not a spreadsheet column. */
+.reference {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 64rem) {
   .collection {
-    border: 0;
-    background: transparent;
-    box-shadow: none;
+    border-top: 1px solid var(--border-strong);
   }
 
   .columns {
@@ -118,10 +153,10 @@
 
   .list li,
   .list li + li {
-    border: 1px solid var(--border);
+    border: 0;
+    border-bottom: 1px solid var(--border);
     border-radius: var(--radius-medium);
-    background: var(--surface);
-    box-shadow: var(--shadow-soft);
+    background: var(--surface-primary);
   }
 
   .row {
@@ -131,26 +166,38 @@
     border-radius: var(--radius-medium);
   }
 
-  .reference {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .name {
+  .identity {
     grid-column: 1 / -1;
-    grid-row: 2;
-    margin-bottom: 0.35rem;
+    grid-row: 1;
   }
 
   .status {
     grid-column: 2;
-    grid-row: 1;
+    grid-row: 2;
+    align-self: start;
   }
 
   .location,
   .added {
     grid-column: 1 / -1;
     font-size: 0.85rem;
+  }
+
+  .location {
+    grid-row: 3;
+  }
+  .added {
+    grid-row: 4;
+  }
+
+  .photo {
+    flex-basis: 3.75rem;
+    width: 3.75rem;
+    height: 3.75rem;
+  }
+
+  .name {
+    white-space: normal;
   }
 
   .mobileLabel {

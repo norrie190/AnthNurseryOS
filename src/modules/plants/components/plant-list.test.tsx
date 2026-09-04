@@ -137,6 +137,7 @@ test('reuses responsive rows for archived Plants, with archive dates and preserv
   expect(links[0]).toHaveTextContent('ANT-0001');
   expect(links[0]).toHaveTextContent('Unnamed Plant');
   expect(links[0]).toHaveTextContent('Growing');
+  expect(links[0]).toHaveTextContent('Archived record');
   expect(links[0]).toHaveTextContent('No location');
   expect(links[0]).toHaveTextContent('31 Aug 2026');
   expect(links[1]).toHaveTextContent('Deceased');

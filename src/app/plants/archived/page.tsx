@@ -17,7 +17,7 @@ export default async function ArchivedPlantsPage() {
           <p>Preserved Plant records. Open a Plant to view its details or restore it.</p>
         </div>
         <Link href="/plants" className={styles.secondaryLink}>
-          View active Plants
+          Active Plants
         </Link>
       </header>
       <PlantList plants={plants} archived />

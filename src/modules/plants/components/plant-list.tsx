@@ -46,7 +46,6 @@ export function PlantList(props: PlantListProps) {
   return (
     <div className={styles.collection}>
       <div className={styles.columns} aria-hidden="true">
-        <span>Reference</span>
         <span>Plant</span>
         <span>Status</span>
         <span>Location</span>
@@ -56,8 +55,7 @@ export function PlantList(props: PlantListProps) {
         {rows.map((plant) => (
           <li key={plant.id}>
             <Link className={styles.row} href={`/plants/${plant.id}`}>
-              <strong className={styles.reference}>{plant.reference}</strong>
-              <span className={styles.name}>
+              <span className={styles.identity}>
                 <span className={styles.photo}>
                   <PlantPhotoImage
                     src={
@@ -73,12 +71,16 @@ export function PlantList(props: PlantListProps) {
                     alt={`${plant.reference} primary photo`}
                   />
                 </span>
-                <span>{plant.name || 'Unnamed Plant'}</span>
+                <span className={styles.identityText}>
+                  <strong className={styles.name}>{plant.name || 'Unnamed Plant'}</strong>
+                  <span className={styles.reference}>{plant.reference}</span>
+                </span>
               </span>
               <span className={styles.status}>
                 <StatusBadge variant={plantStatusVariant(plant.status)}>
                   {plantStatusLabels[plant.status]}
                 </StatusBadge>
+                {archived ? <span className={styles.archiveContext}>Archived record</span> : null}
               </span>
               <span className={styles.location}>
                 <span className={styles.mobileLabel}>Location: </span>
