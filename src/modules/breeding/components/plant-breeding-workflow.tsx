@@ -25,6 +25,7 @@ import {
 import type { PlantBreedingDetail } from '../breeding-queries';
 import styles from './plant-breeding.module.css';
 import { InlineNotice, STALE_CONFLICT_MESSAGE } from '../../../components/ui/inline-notice';
+import { StatusBadge, type StatusBadgeVariant } from '../../../components/ui/status-badge';
 
 const inflorescenceLabels = {
   OBSERVED: 'Observed',
@@ -50,6 +51,12 @@ const dateValue = (date: Date | null) => date?.toISOString().slice(0, 10) ?? '';
 const dateLabel = (date: Date | null) => (date ? calendar.format(date) : 'Not recorded');
 const activePlant = (plant: { status: string; archivedAt: Date | null }) =>
   plant.archivedAt === null && (plant.status === 'GROWING' || plant.status === 'QUARANTINE');
+
+function statusVariant(status: string): StatusBadgeVariant {
+  if (status === 'FAILED' || status === 'ABORTED' || status === 'Voided') return 'danger';
+  if (status === 'PENDING' || status === 'OPEN' || status === 'HARVESTED') return 'attention';
+  return 'info';
+}
 
 type Action = (previous: BreedingActionState, formData: FormData) => Promise<BreedingActionState>;
 function Feedback({ state }: { state: BreedingActionState }) {
@@ -742,9 +749,9 @@ function Attempt({
     <div className={styles.subrecord}>
       <div className={styles.recordHeader}>
         <strong>Pollination</strong>
-        <span className={styles.badge}>
+        <StatusBadge variant={statusVariant(attempt.status)}>
           {attempt.voidedAt ? 'Voided' : attemptLabels[attempt.status]}
-        </span>
+        </StatusBadge>
       </div>
       <dl className={styles.details}>
         <div>
@@ -879,9 +886,9 @@ function SeedBatch({
     <div className={`${styles.subrecord} ${batch.voidedAt ? styles.voided : ''}`}>
       <div className={styles.recordHeader}>
         <strong>SeedBatch</strong>
-        <span className={styles.badge}>
+        <StatusBadge variant={statusVariant(batch.status)}>
           {batch.voidedAt ? 'Voided' : batchLabels[batch.status]}
-        </span>
+        </StatusBadge>
       </div>
       <div className={styles.promotion}>
         <strong>Promotion</strong>
@@ -1017,9 +1024,9 @@ export function PlantBreedingWorkflow({
               >
                 <div className={styles.recordHeader}>
                   <strong>Inflorescence</strong>
-                  <span className={styles.badge}>
+                  <StatusBadge variant={statusVariant(row.status)}>
                     {row.voidedAt ? 'Voided' : inflorescenceLabels[row.status]}
-                  </span>
+                  </StatusBadge>
                 </div>
                 <dl className={styles.details}>
                   <div>

@@ -36,10 +36,8 @@
 .form,
 .record {
   min-width: 0;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-small);
-  background: var(--surface-muted);
+  padding: 1rem 0;
+  border-top: 1px solid var(--border);
 }
 .form {
   display: grid;
@@ -141,7 +139,6 @@
 .record {
   display: grid;
   gap: 0.9rem;
-  background: var(--surface);
 }
 .recordHeader {
   display: flex;
@@ -151,16 +148,6 @@
 }
 .recordHeader strong {
   overflow-wrap: anywhere;
-}
-.badge {
-  display: inline-block;
-  padding: 0.25rem 0.55rem;
-  border-radius: 0.35rem;
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-  font-size: 0.78rem;
-  font-weight: 650;
-  white-space: nowrap;
 }
 .voided {
   border-color: var(--border-strong);
@@ -185,7 +172,7 @@
   display: grid;
   gap: 0.8rem;
   padding-left: 1rem;
-  border-left: 3px solid var(--accent-soft);
+  border-left: 2px solid var(--border-strong);
 }
 .nested h4 {
   font-size: 0.95rem;
@@ -193,15 +180,13 @@
 .subrecord {
   display: grid;
   gap: 0.75rem;
-  padding: 0.85rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-small);
-  background: var(--surface-muted);
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--border-subtle);
 }
 .promotion {
   display: grid;
   gap: 0.55rem;
-  padding-top: 0.75rem;
+  padding-top: 0.65rem;
   border-top: 1px solid var(--border);
 }
 .promotedList {
@@ -251,6 +236,6 @@
     flex-direction: column;
   }
   .nested {
-    padding-left: 0.65rem;
+    padding-left: 0.45rem;
   }
 }

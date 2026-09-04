@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import type { BreedingAttentionItem, BreedingOverview } from '../breeding-overview-queries';
 import styles from './breeding-overview-page.module.css';
+import { EmptyState } from '../../../components/ui/empty-state';
+import { StatusBadge, type StatusBadgeVariant } from '../../../components/ui/status-badge';
 
 const dateFormat = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
@@ -56,6 +58,12 @@ function typeLabel(item: BreedingAttentionItem) {
   return 'Seed batch';
 }
 
+function statusVariant(status: string): StatusBadgeVariant {
+  if (status === 'FAILED' || status === 'ABORTED') return 'danger';
+  if (status === 'PENDING' || status === 'OPEN' || status === 'HARVESTED') return 'attention';
+  return 'info';
+}
+
 function seedDescription(item: Extract<BreedingAttentionItem, { type: 'SEED_BATCH' }>) {
   const seeds = item.seedCount === null ? 'Seed count unknown' : `${item.seedCount} seeds`;
   const germination =
@@ -73,7 +81,9 @@ function AttentionItem({ item }: { item: BreedingAttentionItem }) {
           <strong>{item.plant.reference}</strong>
           <span className={styles.type}>{typeLabel(item)}</span>
         </span>
-        <span className={styles.itemTitle}>{workflowLabel(item)}</span>
+        <span className={styles.itemTitle}>
+          <StatusBadge variant={statusVariant(item.status)}>{workflowLabel(item)}</StatusBadge>
+        </span>
         <span className={styles.itemMeta}>
           {displayName(item)} · {formatDate(item.relevantDate)}
         </span>
@@ -100,7 +110,7 @@ function CountGroup({
   entries: readonly { label: string; value: number }[];
 }) {
   return (
-    <article className={styles.summaryCard}>
+    <div className={styles.summaryCard}>
       <h3>{title}</h3>
       <p className={styles.primaryCount}>
         <strong>{primary.value}</strong>
@@ -114,7 +124,7 @@ function CountGroup({
           </div>
         ))}
       </dl>
-    </article>
+    </div>
   );
 }
 
@@ -188,13 +198,11 @@ export function BreedingOverviewPage({ overview }: { overview: BreedingOverview 
           <span className={styles.bound}>Up to 10 items</span>
         </div>
         {!hasRecords(overview) ? (
-          <div className={styles.emptyState}>
-            <h3>No breeding records yet.</h3>
-            <p>Record breeding activity from an individual Plant.</p>
-            <Link href="/plants" className={styles.textLink}>
-              View Plants
-            </Link>
-          </div>
+          <EmptyState
+            title="No breeding records yet."
+            description="Record breeding activity from an individual Plant."
+            action={<Link href="/plants">View Plants</Link>}
+          />
         ) : overview.attention.length === 0 ? (
           <p className={styles.quiet} role="status">
             No active breeding tasks right now.
