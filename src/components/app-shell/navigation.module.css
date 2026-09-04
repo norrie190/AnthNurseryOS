@@ -3,9 +3,9 @@
   z-index: 30;
   inset: 0 auto 0 0;
   display: flex;
-  width: 15rem;
+  width: 16.25rem;
   flex-direction: column;
-  padding: 1.25rem 0.9rem 1rem;
+  padding: 1.5rem 1rem 1rem;
   border-right: 1px solid var(--border);
   background: var(--surface);
 }
@@ -13,7 +13,7 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.8rem;
   min-width: 0;
   padding: 0 0.35rem;
   color: var(--text);
@@ -27,7 +27,7 @@
   flex: 0 0 auto;
   place-items: center;
   border: 1px solid var(--border-strong);
-  border-radius: 0.8rem;
+  border-radius: var(--radius-medium);
   color: var(--accent-strong);
   background: var(--accent-soft);
 }
@@ -52,8 +52,22 @@
 
 .navigation {
   display: grid;
+  gap: 1.4rem;
+  margin-top: 2.5rem;
+}
+
+.navigationGroup {
+  display: grid;
   gap: 0.35rem;
-  margin-top: 2.2rem;
+}
+
+.groupLabel {
+  padding: 0 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .navigationLink {
@@ -63,8 +77,8 @@
   gap: 0.8rem;
   padding: 0.65rem 0.75rem;
   border: 1px solid transparent;
-  border-radius: var(--radius-small);
-  color: #4e584f;
+  border-radius: var(--radius-medium);
+  color: var(--text-secondary);
   font-size: 0.87rem;
   font-weight: 520;
   text-decoration: none;
@@ -76,21 +90,32 @@
 
 .navigationLink:hover {
   color: var(--text);
-  background: var(--surface-muted);
+  background: var(--state-hover);
 }
 
 .navigationLink:focus-visible,
 .brand:focus-visible,
 .menuButton:focus-visible {
-  outline: 3px solid rgb(49 93 58 / 25%);
+  outline: var(--focus-ring);
   outline-offset: 2px;
 }
 
 .navigationLink.activeLink {
-  border-color: #d6ded4;
+  position: relative;
+  border-color: var(--border-strong);
   color: var(--accent-strong);
   background: var(--accent-soft);
   font-weight: 650;
+}
+
+.navigationLink.activeLink::before {
+  position: absolute;
+  left: -1px;
+  width: 3px;
+  height: 1.35rem;
+  border-radius: 0 999px 999px 0;
+  background: var(--accent-strong);
+  content: '';
 }
 
 .profile {
