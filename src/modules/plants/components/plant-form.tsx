@@ -42,8 +42,31 @@ export function PlantForm({
 }: PlantFormProps) {
   const [values, setValues] = useState({ ...initialValues });
   const [state, formAction, pending] = useActionState(action, initialPlantFormState);
+  const [parentageOpen, setParentageOpen] = useState(
+    parentageLocked ||
+      initialValues.seedParentMode !== 'unknown' ||
+      initialValues.pollenParentMode !== 'unknown',
+  );
+  const [purchaseOpen, setPurchaseOpen] = useState(initialValues.recordPurchase === 'on');
   const submitting = useRef(false);
   const summary = useRef<HTMLDivElement>(null);
+
+  const parentageError = Object.keys(state.fieldErrors).some(
+    (field) => field.startsWith('seedParent') || field.startsWith('pollenParent'),
+  );
+  const purchaseError = Object.keys(state.fieldErrors).some(
+    (field) =>
+      field === 'recordPurchase' ||
+      field === 'seller' ||
+      field === 'orderReference' ||
+      field === 'purchaseDate' ||
+      field === 'plantPrice' ||
+      field === 'shippingCost' ||
+      field === 'otherCost' ||
+      field === 'currency',
+  );
+  const isParentageOpen = parentageOpen || parentageError;
+  const isPurchaseOpen = purchaseOpen || purchaseError;
 
   useEffect(() => {
     if (!pending) {
@@ -121,9 +144,22 @@ export function PlantForm({
                       href={`#plant-${field}`}
                       onClick={(event) => {
                         const input = document.getElementById(`plant-${field}`);
+                        const inParentage =
+                          field.startsWith('seedParent') || field.startsWith('pollenParent');
+                        const inPurchase =
+                          field === 'recordPurchase' ||
+                          field === 'seller' ||
+                          field === 'orderReference' ||
+                          field === 'purchaseDate' ||
+                          field === 'plantPrice' ||
+                          field === 'shippingCost' ||
+                          field === 'otherCost' ||
+                          field === 'currency';
+                        if (inParentage) setParentageOpen(true);
+                        if (inPurchase) setPurchaseOpen(true);
                         if (input) {
                           event.preventDefault();
-                          input.focus();
+                          window.setTimeout(() => input.focus(), 0);
                         }
                       }}
                     >
@@ -138,25 +174,35 @@ export function PlantForm({
       )}
 
       <FormSection
-        title="Plant details"
+        title="Plant identity"
         description={
-          <p className={styles.sectionIntro}>Start with what you know. A name is optional.</p>
+          <p className={styles.sectionIntro}>Start with the name you use for this Plant.</p>
         }
-        className={styles.card}
+        className={styles.formSectionCard}
+        disabled={pending}
+      >
+        <div className={styles.field}>
+          <label htmlFor="plant-name">
+            Name <span>(optional)</span>
+          </label>
+          <input
+            {...control('name')}
+            autoComplete="off"
+            placeholder="e.g. Anthurium crystallinum"
+          />
+          {error('name')}
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Location and lifecycle"
+        description={
+          <p className={styles.sectionIntro}>Set the Plant’s current place and status.</p>
+        }
+        className={styles.formSectionCard}
         disabled={pending}
       >
         <div className={styles.grid}>
-          <div className={styles.field}>
-            <label htmlFor="plant-name">
-              Name <span>(optional)</span>
-            </label>
-            <input
-              {...control('name')}
-              autoComplete="off"
-              placeholder="e.g. Anthurium crystallinum"
-            />
-            {error('name')}
-          </div>
           <div className={styles.field}>
             <label htmlFor="plant-status">Status</label>
             <select {...control('status')}>
@@ -194,148 +240,197 @@ export function PlantForm({
             )}
             {error('locationId')}
           </div>
-          <div className={`${styles.field} ${styles.fullWidth}`}>
-            <label htmlFor="plant-notes">
-              Notes <span>(optional)</span>
-            </label>
-            <textarea {...control('notes')} rows={4} />
-            {error('notes')}
-          </div>
         </div>
       </FormSection>
 
-      <FormSection title="Parentage" className={styles.card} disabled={pending}>
+      <FormSection title="Parentage" className={styles.formSectionCard} disabled={pending}>
         {parentageLocked ? (
-          <p className={styles.hint}>
-            Parentage is derived from this Plant’s recorded breeding provenance and cannot be edited
-            here.
-          </p>
-        ) : (
-          <>
-            <p className={styles.sectionIntro}>
-              Link a Plant in your collection, record an external name, or leave a parent unknown.
+          <InlineNotice variant="info" role="status" className={styles.lockNotice}>
+            <p>
+              Parentage is derived from this Plant’s recorded breeding provenance and cannot be
+              edited here.
             </p>
-            <div className={styles.grid}>
-              <ParentSelector
-                role="seed"
-                emptyMessage={
-                  edit
-                    ? 'No other Plants are available as parents. Choose Unknown or enter an external name.'
-                    : undefined
-                }
-                values={values}
-                onChange={change}
-                errors={state.fieldErrors}
-                options={parents}
-              />
-              <ParentSelector
-                role="pollen"
-                emptyMessage={
-                  edit
-                    ? 'No other Plants are available as parents. Choose Unknown or enter an external name.'
-                    : undefined
-                }
-                values={values}
-                onChange={change}
-                errors={state.fieldErrors}
-                options={parents}
-              />
+          </InlineNotice>
+        ) : (
+          <details
+            className={styles.disclosure}
+            open={isParentageOpen}
+            onToggle={(event) => setParentageOpen(event.currentTarget.open)}
+          >
+            <summary>
+              <span>Add known genetic parent information</span>
+              {parentageError && <span className={styles.disclosureState}>Needs attention</span>}
+            </summary>
+            <div className={styles.disclosureContent}>
+              <p className={styles.sectionIntro}>
+                Link a Plant in your collection, record an external name, or leave a parent unknown.
+              </p>
+              <div className={styles.grid}>
+                <ParentSelector
+                  role="seed"
+                  emptyMessage={
+                    edit
+                      ? 'No other Plants are available as parents. Choose Unknown or enter an external name.'
+                      : undefined
+                  }
+                  values={values}
+                  onChange={change}
+                  errors={state.fieldErrors}
+                  options={parents}
+                />
+                <ParentSelector
+                  role="pollen"
+                  emptyMessage={
+                    edit
+                      ? 'No other Plants are available as parents. Choose Unknown or enter an external name.'
+                      : undefined
+                  }
+                  values={values}
+                  onChange={change}
+                  errors={state.fieldErrors}
+                  options={parents}
+                />
+              </div>
             </div>
-          </>
+          </details>
         )}
       </FormSection>
 
-      <FormSection title="Purchase information" className={styles.card} disabled={pending}>
-        {edit?.hasPurchase ? (
-          <>
-            <input type="hidden" name="recordPurchase" value="on" />
-            <p className={styles.hint}>
-              A purchase is recorded for this Plant. Clear individual fields if their details are
-              unknown; the purchase record will be kept.
-            </p>
-          </>
-        ) : (
-          <>
-            <label className={styles.checkLabel} htmlFor="plant-recordPurchase">
-              <input
-                id="plant-recordPurchase"
-                name="recordPurchase"
-                type="checkbox"
-                checked={values.recordPurchase === 'on'}
-                onChange={(event) => change('recordPurchase', event.target.checked ? 'on' : '')}
-                aria-describedby={
-                  state.fieldErrors.recordPurchase ? 'plant-recordPurchase-error' : 'purchase-help'
-                }
-              />
-              Record purchase information
-            </label>
-            <p className={styles.hint} id="purchase-help">
-              Leave this off if you are not recording a purchase. You can record a purchase even if
-              its details are unknown.
-            </p>
-            {error('recordPurchase')}
-          </>
-        )}
-        {values.recordPurchase === 'on' && (
-          <div className={`${styles.grid} ${styles.purchaseFields}`}>
-            <div className={styles.field}>
-              <label htmlFor="plant-seller">Seller</label>
-              <input {...control('seller')} />
-              {error('seller')}
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="plant-orderReference">Order reference</label>
-              <input {...control('orderReference')} />
-              {error('orderReference')}
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="plant-purchaseDate">Purchase date</label>
-              <input {...control('purchaseDate')} type="date" />
-              {error('purchaseDate')}
-            </div>
-            <div className={styles.field}>
-              <label htmlFor="plant-currency">Currency</label>
-              <select {...control('currency')}>
-                {currencies.map((currency) => (
-                  <option key={currency} value={currency}>
-                    {currency === 'GBP' ? 'GBP — British pound' : currency}
-                  </option>
-                ))}
-              </select>
-              {edit && (
+      <FormSection
+        title="Purchase information"
+        className={styles.formSectionCard}
+        disabled={pending}
+      >
+        <details
+          className={styles.disclosure}
+          open={isPurchaseOpen}
+          onToggle={(event) => setPurchaseOpen(event.currentTarget.open)}
+        >
+          <summary>
+            <span>
+              {edit?.hasPurchase
+                ? 'Review purchase and cost details'
+                : 'Add purchase and cost details'}
+            </span>
+            {purchaseError && <span className={styles.disclosureState}>Needs attention</span>}
+          </summary>
+          <div className={styles.disclosureContent}>
+            {edit?.hasPurchase ? (
+              <>
+                <input type="hidden" name="recordPurchase" value="on" />
                 <p className={styles.hint}>
-                  Changing currency uses the amounts entered below. It does not convert their value.
+                  A purchase is recorded for this Plant. Clear individual fields if their details
+                  are unknown; the purchase record will be kept.
                 </p>
-              )}
-              {error('currency')}
-            </div>
-            {(['plantPrice', 'shippingCost', 'otherCost'] as const).map((field) => (
-              <div key={field} className={styles.field}>
-                <label htmlFor={`plant-${field}`}>
-                  {plantFieldLabels[field]} ({values.currency})
-                </label>
-                <div className={styles.moneyInput}>
-                  <span aria-hidden="true">
-                    {values.currency === 'GBP' ? '£' : values.currency}
-                  </span>
+              </>
+            ) : (
+              <>
+                <label className={styles.checkLabel} htmlFor="plant-recordPurchase">
                   <input
-                    {...control(field)}
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0.00"
-                    aria-describedby={[control(field)['aria-describedby'], 'cost-help']
-                      .filter(Boolean)
-                      .join(' ')}
+                    id="plant-recordPurchase"
+                    name="recordPurchase"
+                    type="checkbox"
+                    checked={values.recordPurchase === 'on'}
+                    onChange={(event) => {
+                      const checked = event.target.checked;
+                      change('recordPurchase', checked ? 'on' : '');
+                      if (checked) setPurchaseOpen(true);
+                    }}
+                    aria-describedby={
+                      state.fieldErrors.recordPurchase
+                        ? 'plant-recordPurchase-error'
+                        : 'purchase-help'
+                    }
                   />
+                  Record purchase information
+                </label>
+                <p className={styles.hint} id="purchase-help">
+                  Leave this off if you are not recording a purchase. You can record a purchase even
+                  if its details are unknown.
+                </p>
+                {error('recordPurchase')}
+              </>
+            )}
+            {values.recordPurchase === 'on' && (
+              <div className={`${styles.grid} ${styles.purchaseFields}`}>
+                <div className={styles.field}>
+                  <label htmlFor="plant-seller">Seller</label>
+                  <input {...control('seller')} />
+                  {error('seller')}
                 </div>
-                {error(field)}
+                <div className={styles.field}>
+                  <label htmlFor="plant-orderReference">Order reference</label>
+                  <input {...control('orderReference')} />
+                  {error('orderReference')}
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="plant-purchaseDate">Purchase date</label>
+                  <input {...control('purchaseDate')} type="date" />
+                  {error('purchaseDate')}
+                </div>
+                <div className={styles.field}>
+                  <label htmlFor="plant-currency">Currency</label>
+                  <select {...control('currency')}>
+                    {currencies.map((currency) => (
+                      <option key={currency} value={currency}>
+                        {currency === 'GBP' ? 'GBP — British pound' : currency}
+                      </option>
+                    ))}
+                  </select>
+                  {edit && (
+                    <p className={styles.hint}>
+                      Changing currency uses the amounts entered below. It does not convert their
+                      value.
+                    </p>
+                  )}
+                  {error('currency')}
+                </div>
+                {(['plantPrice', 'shippingCost', 'otherCost'] as const).map((field) => (
+                  <div key={field} className={styles.field}>
+                    <label htmlFor={`plant-${field}`}>
+                      {plantFieldLabels[field]} ({values.currency})
+                    </label>
+                    <div className={styles.moneyInput}>
+                      <span aria-hidden="true">
+                        {values.currency === 'GBP' ? '£' : values.currency}
+                      </span>
+                      <input
+                        {...control(field)}
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        aria-describedby={[control(field)['aria-describedby'], 'cost-help']
+                          .filter(Boolean)
+                          .join(' ')}
+                      />
+                    </div>
+                    {error(field)}
+                  </div>
+                ))}
+                <p id="cost-help" className={`${styles.hint} ${styles.fullWidth}`}>
+                  Leave an amount blank if it is unknown. Enter 0 if there was no cost.
+                </p>
               </div>
-            ))}
-            <p id="cost-help" className={`${styles.hint} ${styles.fullWidth}`}>
-              Leave an amount blank if it is unknown. Enter 0 if there was no cost.
-            </p>
+            )}
           </div>
-        )}
+        </details>
+      </FormSection>
+
+      <FormSection
+        title="Notes and additional information"
+        description={
+          <p className={styles.sectionIntro}>Keep useful context that does not fit elsewhere.</p>
+        }
+        className={styles.formSectionCard}
+        disabled={pending}
+      >
+        <div className={styles.field}>
+          <label htmlFor="plant-notes">
+            Notes <span>(optional)</span>
+          </label>
+          <textarea {...control('notes')} rows={5} />
+          {error('notes')}
+        </div>
       </FormSection>
 
       <div className={styles.formFooter}>
@@ -357,10 +452,10 @@ export function PlantForm({
             {pending
               ? edit
                 ? 'Saving Changes…'
-                : 'Saving Plant…'
+                : 'Creating Plant…'
               : edit
                 ? 'Save Changes'
-                : 'Save Plant'}
+                : 'Create Plant'}
           </button>
         </ActionBar>
       </div>

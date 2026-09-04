@@ -16,6 +16,7 @@ beforeEach(() => {
 test('works with no existing Plants or Locations and does not request identity fields', async () => {
   const user = userEvent.setup();
   render(<AddPlantForm {...props} />);
+  await user.click(screen.getByText('Add known genetic parent information'));
   expect(screen.getByText(/No Locations have been added/)).toBeInTheDocument();
   expect(
     screen
@@ -24,7 +25,7 @@ test('works with no existing Plants or Locations and does not request identity f
   ).toBe(true);
   expect(screen.getByRole('combobox', { name: 'Status' })).toHaveValue('GROWING');
   expect(screen.getByText(/ANT reference will be assigned/)).toBeInTheDocument();
-  await user.click(screen.getByRole('button', { name: 'Save Plant' }));
+  await user.click(screen.getByRole('button', { name: 'Create Plant' }));
   await waitFor(() => expect(createPlantAction).toHaveBeenCalledOnce());
   const data = vi.mocked(createPlantAction).mock.calls[0][1];
   expect(data.get('name')).toBe('');
@@ -41,9 +42,10 @@ test('preserves entered values and focuses accessible errors after validation fa
   const user = userEvent.setup();
   render(<AddPlantForm {...props} />);
   await user.type(screen.getByRole('textbox', { name: /^Name/ }), 'My real Plant');
+  await user.click(screen.getByText('Add purchase and cost details'));
   await user.click(screen.getByRole('checkbox', { name: 'Record purchase information' }));
   await user.type(screen.getByRole('textbox', { name: 'Plant price (GBP)' }), '125.555');
-  await user.click(screen.getByRole('button', { name: 'Save Plant' }));
+  await user.click(screen.getByRole('button', { name: 'Create Plant' }));
   await waitFor(() => expect(screen.getByRole('alert')).toHaveFocus());
   expect(screen.getByRole('textbox', { name: /^Name/ })).toHaveValue('My real Plant');
   expect(screen.getByRole('checkbox', { name: 'Record purchase information' })).toBeChecked();
@@ -68,6 +70,7 @@ test('keeps inactive parent text locally but submits only the active mode', asyn
       parents={[{ id: 'parent-id', label: 'ANT-0004 — HURC (Archived)' }]}
     />,
   );
+  await user.click(screen.getByText('Add known genetic parent information'));
   const seed = within(screen.getByRole('group', { name: 'Seed parent' }));
   await user.click(seed.getByRole('radio', { name: 'External name' }));
   await user.type(seed.getByRole('textbox', { name: 'External seed parent name' }), 'External');
@@ -76,7 +79,7 @@ test('keeps inactive parent text locally but submits only the active mode', asyn
     seed.getByRole('combobox', { name: 'Existing seed parent' }),
     'parent-id',
   );
-  await user.click(screen.getByRole('button', { name: 'Save Plant' }));
+  await user.click(screen.getByRole('button', { name: 'Create Plant' }));
   await waitFor(() => expect(createPlantAction).toHaveBeenCalledOnce());
   const data = vi.mocked(createPlantAction).mock.calls[0][1];
   expect(data.get('seedParentPlantId')).toBe('parent-id');
@@ -89,10 +92,11 @@ test('keeps inactive parent text locally but submits only the active mode', asyn
 test('preserves purchase details when toggled off but omits them from submission', async () => {
   const user = userEvent.setup();
   render(<AddPlantForm {...props} />);
+  await user.click(screen.getByText('Add purchase and cost details'));
   await user.click(screen.getByRole('checkbox', { name: 'Record purchase information' }));
   await user.type(screen.getByRole('textbox', { name: 'Seller' }), 'Nursery');
   await user.click(screen.getByRole('checkbox', { name: 'Record purchase information' }));
-  await user.click(screen.getByRole('button', { name: 'Save Plant' }));
+  await user.click(screen.getByRole('button', { name: 'Create Plant' }));
   await waitFor(() => expect(createPlantAction).toHaveBeenCalledOnce());
   expect(vi.mocked(createPlantAction).mock.calls[0][1].has('seller')).toBe(false);
   await user.click(screen.getByRole('checkbox', { name: 'Record purchase information' }));
@@ -110,10 +114,12 @@ test('shows pending feedback and blocks ordinary repeated submissions', async ()
   const form = container.querySelector('form')!;
   fireEvent.submit(form);
   fireEvent.submit(form);
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Saving Plant…' })).toBeDisabled());
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Creating Plant…' })).toBeDisabled(),
+  );
   expect(createPlantAction).toHaveBeenCalledOnce();
   expect(screen.getByRole('textbox', { name: /^Name/ })).toBeDisabled();
   await act(async () => complete({ message: 'A safe server error.', fieldErrors: {} }));
-  expect(screen.getByRole('button', { name: 'Save Plant' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Create Plant' })).toBeEnabled();
   expect(screen.getByRole('alert')).toHaveTextContent('A safe server error.');
 });

@@ -133,6 +133,23 @@
 .form {
   display: grid;
   gap: 1.5rem;
+  max-width: 58rem;
+}
+.formSectionCard {
+  min-width: 0;
+  margin: 0;
+  padding: 1.4rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.formSectionCard > legend {
+  padding: 0;
+  color: var(--text-primary);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.formSectionCard .sectionIntro {
+  margin-top: 0.45rem;
 }
 .card {
   margin: 0;
@@ -217,6 +234,7 @@
   padding: 1rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-small);
+  background: var(--surface-subtle);
 }
 .parentGroup legend {
   padding: 0 0.35rem;
@@ -254,6 +272,40 @@
 }
 .purchaseFields {
   margin-top: 1.5rem;
+}
+.disclosure {
+  min-width: 0;
+}
+.disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.35rem 0;
+  color: var(--accent-strong);
+  font-weight: 650;
+  cursor: pointer;
+}
+.disclosure summary::marker {
+  color: var(--accent);
+}
+.disclosure summary:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 0.25rem;
+}
+.disclosureState {
+  color: var(--danger-strong, #84231b);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+.disclosureContent {
+  min-width: 0;
+  padding-top: 1rem;
+}
+.lockNotice {
+  max-width: 48rem;
 }
 .moneyInput {
   display: flex;
@@ -296,6 +348,7 @@
   align-items: center;
   justify-content: center;
   min-height: 2.85rem;
+  min-width: 9.5rem;
   padding: 0.75rem 1.25rem;
   border: 1px solid var(--accent);
   border-radius: var(--radius-small);
@@ -443,8 +496,15 @@
   .detailsGrid {
     grid-template-columns: minmax(0, 1fr);
   }
-  .card {
+  .card,
+  .formSectionCard {
     padding: 1.1rem;
+  }
+  .formSectionCard {
+    padding: 1.1rem 0 0;
+  }
+  .disclosure summary {
+    width: 100%;
   }
   .formFooter {
     flex-direction: column;

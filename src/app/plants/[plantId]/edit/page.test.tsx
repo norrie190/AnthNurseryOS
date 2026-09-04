@@ -102,6 +102,7 @@ test('works with optional fields and groups absent', async () => {
   });
   render(await EditPlantPage({ params: Promise.resolve({ plantId: 'target' }) }));
   expect(screen.getByRole('textbox', { name: /^Name/ })).toHaveValue('');
+  screen.getByText('Add purchase and cost details').click();
   expect(screen.getByRole('checkbox', { name: 'Record purchase information' })).not.toBeChecked();
   expect(screen.getByRole('combobox', { name: /Location/ })).toHaveValue('');
 });

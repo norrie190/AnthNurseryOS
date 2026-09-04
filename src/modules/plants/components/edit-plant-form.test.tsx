@@ -60,11 +60,24 @@ test('prefills the fields, keeps identity immutable and does not offer purchase 
   expect(screen.getByRole('link', { name: 'Cancel' })).toHaveAttribute('href', '/plants/plant-id');
   expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
 });
+test('keeps provenance-derived Parentage locked while leaving ordinary fields editable', () => {
+  render(<EditPlantForm {...props} parentageLocked />);
+  expect(
+    screen.getByText(
+      'Parentage is derived from this Plant’s recorded breeding provenance and cannot be edited here.',
+    ),
+  ).toBeInTheDocument();
+  expect(screen.queryByRole('group', { name: 'Seed parent' })).not.toBeInTheDocument();
+  expect(screen.getByRole('textbox', { name: /^Name/ })).toHaveValue('Original');
+  expect(screen.getByRole('button', { name: 'Save Changes' })).toBeEnabled();
+});
 test('can record a purchase when none exists and works without parent/Location options', async () => {
   const user = userEvent.setup();
   render(
     <EditPlantForm {...props} parents={[]} locations={[]} initialValues={initialPlantFormValues} />,
   );
+  await user.click(screen.getByText('Add known genetic parent information'));
+  await user.click(screen.getByText('Add purchase and cost details'));
   expect(screen.getByText(/No Locations have been added/)).toBeInTheDocument();
   expect(
     screen
