@@ -29,12 +29,25 @@ const plant: PlantDetailRecord = {
 
 test('displays the assigned reference and meaningful empty values', () => {
   render(<PlantDetail plant={plant} />);
-  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('ANT-0042');
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Unnamed Plant');
+  expect(screen.getByText('ANT-0042')).toBeInTheDocument();
   expect(screen.getByText('Unnamed Plant')).toBeInTheDocument();
   expect(screen.getByText('Growing')).toBeInTheDocument();
   expect(screen.getByText('No purchase recorded.')).toBeInTheDocument();
   expect(screen.getAllByText('Unknown')).toHaveLength(2);
   expect(screen.queryByText('£0.00')).not.toBeInTheDocument();
+});
+
+test('provides accessible deep links for each Plant detail section', () => {
+  render(<PlantDetail plant={plant} />);
+  const navigation = screen.getByRole('navigation', { name: 'Plant detail sections' });
+  for (const section of ['overview', 'care', 'breeding', 'photos', 'history']) {
+    expect(
+      screen.getByRole('link', { name: section[0].toUpperCase() + section.slice(1) }),
+    ).toHaveAttribute('href', `#${section}`);
+    expect(document.getElementById(section)).toBeInTheDocument();
+  }
+  expect(navigation).toBeInTheDocument();
 });
 
 test('displays origin SeedBatch provenance and cross', () => {
@@ -128,7 +141,8 @@ test('archived detail retains information and status, shows archive date and off
       }}
     />,
   );
-  expect(screen.getByRole('heading', { name: 'ANT-0042' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Archived specimen' })).toBeInTheDocument();
+  expect(screen.getByText('ANT-0042')).toBeInTheDocument();
   expect(screen.getByText('Deceased')).toBeInTheDocument();
   expect(screen.getByText('Historical notes')).toBeInTheDocument();
   expect(screen.getByText('31 August 2026')).toBeInTheDocument();

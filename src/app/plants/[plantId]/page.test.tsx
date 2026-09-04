@@ -62,7 +62,9 @@ test('loads the saved UUID and renders its generated reference', async () => {
   expect(screen.getByRole('heading', { name: 'Photos' })).toBeInTheDocument();
   expect(screen.getByRole('region', { name: 'Watering' })).toBeInTheDocument();
   expect(screen.getByRole('region', { name: 'Breeding' })).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: 'ANT-0001' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Breeding records' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Unnamed Plant' })).toBeInTheDocument();
+  expect(screen.getByText('ANT-0001')).toBeInTheDocument();
 });
 test('uses the not found page for a missing Plant', async () => {
   const signal = new Error('not found');

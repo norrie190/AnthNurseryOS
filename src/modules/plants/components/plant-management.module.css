@@ -1,7 +1,112 @@
 .page {
   display: grid;
   gap: 1.5rem;
-  max-width: 68rem;
+  max-width: 82rem;
+}
+.identityHeader {
+  display: grid;
+  grid-template-columns: minmax(7rem, 9rem) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+  padding: 0 0 1.75rem;
+  border-bottom: 1px solid var(--border-default);
+}
+.identityPhoto {
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-medium);
+  background: var(--surface-subtle);
+}
+.identityContent {
+  min-width: 0;
+}
+.identityContent h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
+}
+.identityContent .reference {
+  margin: 0.4rem 0 0;
+  color: var(--accent-strong);
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+.identityMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2.5rem;
+  margin: 1rem 0 0;
+}
+.identityMeta dt {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.identityMeta dd {
+  margin: 0.2rem 0 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.identityActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+.pageSection {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  scroll-margin-top: 8rem;
+}
+.sectionHeading {
+  display: grid;
+  gap: 0.25rem;
+  padding-top: 0.5rem;
+}
+.sectionHeading h2 {
+  margin: 0;
+  font-size: var(--text-size-section);
+  letter-spacing: -0.02em;
+}
+.overviewGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 2rem;
+}
+.subsection {
+  min-width: 0;
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.overviewGrid > .subsection:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.subsection h3,
+.subsection h4 {
+  margin: 0 0 1rem;
+  font-size: var(--text-size-subsection);
+}
+.purchaseSection {
+  grid-column: 1 / -1;
+}
+.origin {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+.origin p {
+  margin: 0.6rem 0 0;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.origin a {
+  display: inline-block;
+  margin-top: 0.75rem;
 }
 .heading h1 {
   margin: 0;
@@ -317,6 +422,23 @@
   white-space: pre-wrap;
 }
 @media (max-width: 44rem) {
+  .identityHeader {
+    grid-template-columns: 5rem minmax(0, 1fr);
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+  }
+  .identityMeta {
+    gap: 0.75rem 1.5rem;
+  }
+  .pageSection {
+    scroll-margin-top: 8rem;
+  }
+  .overviewGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .purchaseSection {
+    grid-column: auto;
+  }
   .grid,
   .detailsGrid {
     grid-template-columns: minmax(0, 1fr);
