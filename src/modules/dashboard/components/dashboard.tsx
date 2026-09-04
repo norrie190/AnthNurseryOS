@@ -71,11 +71,14 @@ function Watering({ summary }: { summary: DashboardSummary }) {
   if (!watering) return null;
   const urgent = watering.overdue + watering.dueToday + watering.needsFirstWatering;
   return (
-    <section className={styles.section} aria-labelledby="watering-heading">
+    <section
+      className={`${styles.section} ${styles.attentionSection}`}
+      aria-labelledby="attention-heading"
+    >
       <div className={styles.sectionHeading}>
         <div>
-          <p className={styles.eyebrow}>Daily care</p>
-          <h2 id="watering-heading">Watering overview</h2>
+          <p className={styles.eyebrow}>Today</p>
+          <h2 id="attention-heading">Needs attention</h2>
         </div>
         <Droplets aria-hidden="true" size={22} />
       </div>
@@ -90,23 +93,23 @@ function Watering({ summary }: { summary: DashboardSummary }) {
       ) : (
         <>
           <dl className={styles.wateringMetrics}>
-            <div>
+            <div className={styles.urgentMetric}>
               <dt>Overdue</dt>
               <dd>{watering.overdue}</dd>
             </div>
-            <div>
+            <div className={styles.urgentMetric}>
               <dt>Due today</dt>
               <dd>{watering.dueToday}</dd>
             </div>
-            <div>
+            <div className={styles.urgentMetric}>
               <dt>Needs first watering</dt>
               <dd>{watering.needsFirstWatering}</dd>
             </div>
-            <div>
+            <div className={styles.contextMetric}>
               <dt>Due soon</dt>
               <dd>{watering.dueSoon}</dd>
             </div>
-            <div>
+            <div className={styles.contextMetric}>
               <dt>Not configured</dt>
               <dd>{watering.notConfigured}</dd>
             </div>
@@ -172,8 +175,8 @@ function Overview({ summary }: { summary: DashboardSummary }) {
     <section className={styles.section} aria-labelledby="overview-heading">
       <div className={styles.sectionHeading}>
         <div>
-          <p className={styles.eyebrow}>At a glance</p>
-          <h2 id="overview-heading">Nursery overview</h2>
+          <p className={styles.eyebrow}>Collection</p>
+          <h2 id="overview-heading">Nursery snapshot</h2>
         </div>
       </div>
 
@@ -554,11 +557,11 @@ export function Dashboard({ summary }: { summary: DashboardSummary }) {
     <div className={styles.page}>
       <header className={styles.pageHeader}>
         <p className={styles.eyebrow}>Anth Nursery OS</p>
-        <h1>Nursery dashboard</h1>
-        <p>A current view of your collection, equipment, investment and energy estimates.</p>
+        <h1>Dashboard</h1>
+        <p>Nursery overview and today’s priorities.</p>
       </header>
-      <Overview summary={summary} />
       <Watering summary={summary} />
+      <Overview summary={summary} />
       <Investment summary={summary} />
       <Energy summary={summary} />
       <RecentlyAdded summary={summary} />

@@ -129,7 +129,7 @@ describe('Dashboard', () => {
         })}
       />,
     );
-    const section = screen.getByRole('heading', { name: 'Watering overview' }).closest('section')!;
+    const section = screen.getByRole('heading', { name: 'Needs attention' }).closest('section')!;
     expect(section).toHaveTextContent('Overdue1');
     expect(section).toHaveTextContent('Due today1');
     expect(section).toHaveTextContent('1 due soon');
@@ -171,7 +171,7 @@ describe('Dashboard', () => {
       />,
     );
 
-    const overview = screen.getByRole('heading', { name: 'Nursery overview' }).closest('section')!;
+    const overview = screen.getByRole('heading', { name: 'Nursery snapshot' }).closest('section')!;
     const plants = within(overview)
       .getByRole('heading', { name: 'Plants', level: 3 })
       .closest('article')!;

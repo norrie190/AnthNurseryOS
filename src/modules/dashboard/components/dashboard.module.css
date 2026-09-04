@@ -31,6 +31,12 @@
   display: grid;
   gap: 1rem;
   min-width: 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-subtle);
+}
+.attentionSection {
+  padding-top: 0;
+  border-top: 0;
 }
 .sectionHeading {
   display: flex;
@@ -52,6 +58,12 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+}
+.overviewGrid {
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-medium);
+  background: var(--surface-subtle);
 }
 .overviewCard,
 .energyCard,
@@ -77,6 +89,20 @@
 }
 .wateringMetrics div + div {
   border-left: 1px solid var(--border);
+}
+.wateringMetrics .urgentMetric {
+  background: color-mix(in srgb, var(--color-attention) 7%, var(--surface));
+}
+.wateringMetrics .urgentMetric:nth-child(1) {
+  border-top: 3px solid var(--color-danger);
+}
+.wateringMetrics .urgentMetric:nth-child(2),
+.wateringMetrics .urgentMetric:nth-child(3) {
+  border-top: 3px solid var(--color-attention);
+}
+.wateringMetrics .contextMetric {
+  color: var(--text-muted);
+  background: var(--surface-subtle);
 }
 .wateringMetrics dt {
   color: var(--text-muted);
@@ -123,6 +149,15 @@
   align-content: start;
   gap: 1.15rem;
   padding: clamp(1.15rem, 2vw, 1.55rem);
+}
+.overviewCard {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.overviewCard + .overviewCard {
+  border-left: 1px solid var(--border-default);
 }
 .cardTitle {
   display: flex;
@@ -302,6 +337,10 @@
 .tariffCard {
   padding: clamp(1.15rem, 2vw, 1.5rem);
 }
+.energyCard,
+.tariffCard {
+  box-shadow: none;
+}
 .energyCard {
   display: grid;
   align-content: start;
@@ -362,6 +401,23 @@
   background: var(--accent-strong);
   color: #fff;
 }
+.tariffCard {
+  background: var(--surface-subtle);
+  color: var(--text);
+}
+.tariffCard .tariffRate span,
+.tariffCard .tariffDate,
+.tariffCard .tariffEmpty p {
+  color: var(--text-muted);
+}
+.tariffCard .secondaryButton {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.tariffCard .secondaryButton:hover {
+  border-color: var(--color-primary);
+  background: var(--surface-primary);
+}
 .tariffRate {
   display: flex;
   align-items: baseline;
@@ -376,7 +432,7 @@
 .tariffRate span,
 .tariffCard .tariffDate,
 .tariffCard .tariffEmpty p {
-  color: rgb(255 255 255 / 74%);
+  color: var(--text-muted);
 }
 .tariffEmpty {
   display: grid;
@@ -403,6 +459,7 @@
 }
 .recentGroup {
   padding: 1.1rem;
+  box-shadow: none;
 }
 .recentTitle {
   display: flex;
@@ -493,6 +550,10 @@
   .energyMetrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .overviewCard + .overviewCard {
+    border-top: 1px solid var(--border-default);
+    border-left: 0;
+  }
   .energyMetrics div:nth-child(3),
   .energyMetrics div:nth-child(5) {
     border-left: 0;
@@ -510,6 +571,9 @@
   }
   .currencyRow {
     grid-template-columns: 1fr;
+  }
+  .overviewGrid {
+    padding: 0.75rem;
   }
   .currencyRow header {
     grid-template-columns: auto 1fr;
