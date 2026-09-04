@@ -79,6 +79,12 @@ async function updatePlantInTransaction(
 
   let parentage = await tx.plantParentage.findUnique({ where: { plantId } });
   if (input.parentage !== undefined) {
+    if (current.originSeedBatchId !== null) {
+      throw new PlantError(
+        'ORIGIN_PARENTAGE_LOCKED',
+        'Parentage derived from SeedBatch provenance cannot be edited directly.',
+      );
+    }
     const parents = {
       seedParentPlantId: parentage?.seedParentPlantId ?? null,
       seedParentName: parentage?.seedParentName ?? null,

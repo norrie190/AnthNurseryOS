@@ -22,7 +22,9 @@ export type BreedingErrorCode =
   | 'SEED_BATCH_ALREADY_SOWN'
   | 'SEED_BATCH_INVALID_TRANSITION'
   | 'GERMINATION_REGRESSION'
-  | 'PROVENANCE_LOCKED';
+  | 'PROVENANCE_LOCKED'
+  | 'PROMOTION_NOT_ELIGIBLE'
+  | 'PROMOTION_CAPACITY_EXCEEDED';
 
 export type BreedingFieldIssue = { field: string; message: string };
 

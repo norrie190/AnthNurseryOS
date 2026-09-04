@@ -5,7 +5,8 @@ export type PlantErrorCode =
   | 'CONFLICT'
   | 'NOT_FOUND'
   | 'ANCESTRY_CYCLE'
-  | 'STALE_UPDATE';
+  | 'STALE_UPDATE'
+  | 'ORIGIN_PARENTAGE_LOCKED';
 
 export type PlantFieldIssue = { field: string; message: string };
 

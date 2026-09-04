@@ -169,3 +169,13 @@ export type RecordSeedBatchGerminationInput = z.input<typeof recordSeedBatchGerm
 export type CloseSeedBatchInput = z.input<typeof closeSeedBatchSchema>;
 export type CorrectSeedBatchInput = z.input<typeof correctSeedBatchSchema>;
 export type VoidSeedBatchInput = z.input<typeof voidSeedBatchSchema>;
+
+export const promoteSeedBatchPlantsSchema = z.strictObject({
+  quantity: z.number().int().positive(),
+  status: z.enum(['GROWING', 'QUARANTINE']).default('GROWING'),
+  locationId: plantIdSchema.nullish().transform((value) => value ?? null),
+  notes: optionalText,
+  expectedUpdatedAt: token,
+});
+
+export type PromoteSeedBatchPlantsInput = z.input<typeof promoteSeedBatchPlantsSchema>;

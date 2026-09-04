@@ -38,9 +38,10 @@ export async function createPlant(input: CreatePlantInput): Promise<CreatedPlant
   }
 }
 
-async function createPlantInTransaction(
+export async function createPlantInTransaction(
   transaction: Prisma.TransactionClient,
   input: ParsedCreatePlantInput,
+  options: { originSeedBatchId?: string } = {},
 ): Promise<CreatedPlant> {
   let location: Location | null = null;
   if (input.locationId) {
@@ -90,6 +91,7 @@ async function createPlantInTransaction(
       status: input.status,
       locationId: input.locationId,
       notes: input.notes,
+      originSeedBatchId: options.originSeedBatchId,
     },
   });
 

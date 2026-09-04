@@ -261,6 +261,19 @@ export async function correctSeedBatch(
       const germinatedCount =
         parsed.germinatedCount === undefined ? current.germinatedCount : parsed.germinatedCount;
       const status = parsed.status ?? current.status;
+      const promotedCount = await tx.plant.count({ where: { originSeedBatchId: id } });
+      if (promotedCount > 0) {
+        if (germinatedCount === null || germinatedCount < promotedCount)
+          throw new BreedingError(
+            'PROVENANCE_LOCKED',
+            'Germinated count cannot be unknown or below promoted Plants.',
+          );
+        if (seedCount !== null && seedCount < promotedCount)
+          throw new BreedingError(
+            'PROVENANCE_LOCKED',
+            'Seed count cannot be below the number of promoted Plants.',
+          );
+      }
       ensureCoherent(status, harvestedOn, sownOn, seedCount, germinatedCount, current.databaseNow);
       return tx.seedBatch.update({
         where: { id },
@@ -293,6 +306,12 @@ export async function voidSeedBatch(
       ensureToken(current, parsed.expectedUpdatedAt, 'SeedBatch');
       if (current.voidedAt)
         throw new BreedingError('SEED_BATCH_VOIDED', 'This SeedBatch is already voided.');
+      const promotedCount = await tx.plant.count({ where: { originSeedBatchId: id } });
+      if (promotedCount > 0)
+        throw new BreedingError(
+          'PROVENANCE_LOCKED',
+          'A SeedBatch with promoted Plants cannot be voided.',
+        );
       return tx.seedBatch.update({
         where: { id },
         data: {
