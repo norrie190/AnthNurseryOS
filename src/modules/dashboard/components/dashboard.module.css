@@ -1,618 +1,960 @@
 .page {
   display: grid;
-  gap: 2.25rem;
+  gap: 1rem;
   width: 100%;
-  max-width: 78rem;
+  max-width: 80rem;
 }
+
 .pageHeader {
-  padding: 0.35rem 0 0.2rem;
+  padding: 0.15rem 0 0.1rem;
 }
+
 .pageHeader h1 {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 3.15rem);
+  font-size: var(--text-size-page);
   letter-spacing: -0.045em;
 }
+
 .pageHeader > p:last-child {
   max-width: 45rem;
-  margin: 0.75rem 0 0;
+  margin: 0.65rem 0 0;
   color: var(--text-muted);
   font-size: 1rem;
   line-height: 1.6;
 }
+
 .eyebrow {
-  margin: 0 0 0.45rem;
+  margin: 0 0 0.4rem;
   color: var(--accent);
-  font-size: 0.76rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 750;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.section {
-  display: grid;
-  gap: 1rem;
-  min-width: 0;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--border-subtle);
-}
-.attentionSection {
-  padding-top: 0;
-  border-top: 0;
-}
-.sectionHeading {
-  display: flex;
-  min-width: 0;
-  align-items: end;
-  justify-content: space-between;
-  gap: 1rem;
-  color: var(--text-muted);
-}
-.sectionHeading h2 {
-  margin: 0;
-  color: var(--text);
-  font-size: clamp(1.35rem, 2.2vw, 1.7rem);
-  letter-spacing: -0.025em;
-}
-.overviewGrid,
-.energyLayout,
-.recentColumns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-}
-.overviewGrid {
-  padding: 1.1rem 1.25rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-medium);
-  background: var(--surface-subtle);
-}
-.overviewCard,
-.energyCard,
-.tariffCard,
-.recentGroup,
-.currencyRow {
+
+.snapshot,
+.panel {
   min-width: 0;
   border: 1px solid var(--border);
-  border-radius: var(--radius-medium);
+  border-radius: var(--radius-large);
   background: var(--surface);
   box-shadow: var(--shadow-soft);
 }
-.wateringMetrics {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  margin: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-medium);
-  background: var(--surface);
-}
-.wateringMetrics div {
-  padding: 0.9rem 1rem;
-}
-.wateringMetrics div + div {
-  border-left: 1px solid var(--border);
-}
-.wateringMetrics .urgentMetric {
-  background: color-mix(in srgb, var(--color-attention) 7%, var(--surface));
-}
-.wateringMetrics .urgentMetric:nth-child(1) {
-  border-top: 3px solid var(--color-danger);
-}
-.wateringMetrics .urgentMetric:nth-child(2),
-.wateringMetrics .urgentMetric:nth-child(3) {
-  border-top: 3px solid var(--color-attention);
-}
-.wateringMetrics .contextMetric {
-  color: var(--text-muted);
-  background: var(--surface-subtle);
-}
-.wateringMetrics dt {
-  color: var(--text-muted);
-  font-size: 0.78rem;
-}
-.wateringMetrics dd {
-  margin: 0.25rem 0 0;
-  font-size: 1.35rem;
-  font-weight: 700;
-}
-.wateringAttention {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-  margin: 0;
+
+.snapshot {
   padding: 0;
-  list-style: none;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-medium);
-  background: var(--surface);
 }
-.wateringAttention li + li {
-  border-left: 1px solid var(--border);
-}
-.wateringAttention li:nth-child(3) {
-  border-top: 1px solid var(--border);
-}
-.wateringAttention a {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  text-decoration: none;
-}
-.wateringQuiet {
-  margin: 0;
-  padding: 0.75rem 0.9rem;
-  color: var(--text-muted);
-  background: var(--surface-muted);
-}
-.overviewCard {
+
+.panel {
   display: grid;
   align-content: start;
-  gap: 1.15rem;
-  padding: clamp(1.15rem, 2vw, 1.55rem);
+  gap: 0.85rem;
+  padding: clamp(1.1rem, 2vw, 1.4rem);
 }
-.overviewCard {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-.overviewCard + .overviewCard {
-  border-left: 1px solid var(--border-default);
-}
-.cardTitle {
+
+.sectionHeading {
   display: flex;
-  align-items: center;
-  gap: 0.7rem;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--text-muted);
 }
-.cardTitle h3,
-.tariffCard h3,
-.recentTitle h3,
-.emptyState h3 {
+
+.sectionHeading > svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: var(--accent);
+}
+
+.sectionHeading > div {
+  min-width: 0;
+}
+
+.sectionHeading h2 {
   margin: 0;
-  font-size: 1rem;
+  color: var(--text);
+  font-size: var(--text-size-section);
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
 }
-.icon {
+
+.snapshotGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.snapshotMetric {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.8rem;
+  min-width: 0;
+  padding: 0.7rem 0.9rem 0.8rem;
+}
+
+.snapshotMetric + .snapshotMetric {
+  border-left: 1px solid var(--border);
+}
+
+.metricIcon,
+.actionIcon {
   display: inline-grid;
-  width: 2.2rem;
-  height: 2.2rem;
+  flex: 0 0 auto;
   place-items: center;
-  border-radius: 50%;
   color: var(--accent);
   background: var(--accent-soft);
 }
-.primaryMetric {
-  display: flex;
-  align-items: baseline;
-  gap: 0.55rem;
-  margin: 0;
+
+.metricIcon {
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 0.65rem;
 }
-.primaryMetric strong {
-  font-size: clamp(2.2rem, 4vw, 3rem);
-  font-weight: 680;
-  letter-spacing: -0.05em;
-  line-height: 1;
-}
-.primaryMetric span {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-.countGrid,
-.investmentMetrics,
-.energyMetrics {
+
+.metricCopy {
   display: grid;
-  margin: 0;
-}
-.countGrid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.65rem;
-}
-.countGrid div {
-  display: flex;
   min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.4rem;
-  padding: 0.65rem 0.7rem;
-  border-radius: var(--radius-small);
-  background: var(--surface-muted);
+  align-content: start;
+  gap: 0.18rem;
 }
-.countGrid dt {
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.25;
-}
-.countGrid dd {
+
+.metricCopy h3,
+.tariffSummary h3,
+.emptyState h3 {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 0.92rem;
+  line-height: 1.3;
 }
-.cardNote,
+
+.metricValue,
+.metricDetail {
+  margin: 0;
+}
+
+.metricValue {
+  color: var(--text);
+  font-size: clamp(1.35rem, 2.2vw, 1.85rem);
+  font-weight: 720;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.metricDetail,
 .projectionNote,
 .warningText,
 .tariffDate,
 .tariffEmpty p,
 .emptyState p,
-.coverageNotes p {
+.coverageNotes p,
+.recentDetails span,
+.recentDetails time,
+.actionCopy span {
   color: var(--text-muted);
-  font-size: 0.84rem;
-  line-height: 1.55;
+  font-size: var(--text-size-meta);
+  line-height: 1.45;
 }
-.cardNote,
-.projectionNote,
-.warningText,
-.tariffDate,
-.tariffEmpty p,
-.emptyState p {
+
+.inlineMetricList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.55rem;
+}
+
+.inlineMetricList span + span {
+  position: relative;
+  padding-left: 0.55rem;
+}
+
+.inlineMetricList span + span::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 0.2rem;
+  height: 0.2rem;
+  border-radius: 50%;
+  background: var(--text-muted);
+  content: '';
+  transform: translateY(-50%);
+}
+
+.mainGrid,
+.secondaryGrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+  min-width: 0;
+  align-items: start;
+}
+
+.wateringPanel {
+  grid-column: 1 / span 7;
+}
+
+.sideStack {
+  display: grid;
+  grid-column: 8 / span 5;
+  gap: 1rem;
+  min-width: 0;
+  align-content: start;
+}
+
+.energyPanel {
+  grid-column: 1 / span 7;
+}
+
+.investmentPanel {
+  grid-column: 8 / span 5;
+}
+
+.recentEquipmentPanel {
+  grid-column: 1 / -1;
+}
+
+.wateringPrimaryMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-medium);
+}
+
+.wateringPrimaryMetrics div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.85rem 0.9rem;
+  border-top: 3px solid var(--color-attention);
+  background: color-mix(in srgb, var(--color-attention) 6%, var(--surface));
+}
+
+.wateringPrimaryMetrics div + div {
+  border-left: 1px solid var(--border);
+}
+
+.wateringPrimaryMetrics div:first-child {
+  border-top-color: var(--color-danger);
+}
+
+.wateringPrimaryMetrics dt,
+.wateringSecondaryMetrics dt,
+.investmentMetrics dt,
+.energyMetrics dt {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.wateringPrimaryMetrics dd,
+.wateringSecondaryMetrics dd,
+.investmentMetrics dd,
+.energyMetrics dd {
+  margin: 0;
+  color: var(--text);
+  font-weight: 720;
+}
+
+.wateringPrimaryMetrics dd {
+  font-size: 1.45rem;
+  letter-spacing: -0.035em;
+}
+
+.wateringSecondaryMetrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.15rem;
   margin: 0;
 }
-.textLink,
-.recentTitle a {
+
+.wateringSecondaryMetrics div {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.wateringSecondaryMetrics dd {
+  font-size: 0.88rem;
+}
+
+.wateringQuiet {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--radius-small);
+  color: var(--text-muted);
+  background: var(--surface-muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.wateringAttention,
+.recentList {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wateringAttention {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--border);
+}
+
+.wateringAttention li {
+  min-width: 0;
+}
+
+.wateringAttention li:nth-child(even) {
+  border-left: 1px solid var(--border);
+}
+
+.wateringAttention li:nth-child(n + 3) {
+  border-top: 1px solid var(--border);
+}
+
+.attentionLink,
+.recentLink {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 0.2rem;
+  border-radius: var(--radius-small);
+  text-decoration: none;
+}
+
+.attentionLink:hover,
+.recentLink:hover {
+  background: var(--surface-muted);
+}
+
+.thumbnail,
+.recentPlantThumbnail {
+  display: block;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface-muted);
+}
+
+.thumbnail {
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 0.65rem;
+}
+
+.recentPlantThumbnail {
+  width: 4.4rem;
+  height: 4.4rem;
+  border-radius: var(--radius-medium);
+}
+
+.recentEquipmentPanel .recentList {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.recentEquipmentPanel .recentList li:nth-child(2) {
+  border-top: 0;
+}
+
+.recentEquipmentPanel .recentList li:nth-child(even) {
+  padding-left: 0.85rem;
+  border-left: 1px solid var(--border);
+}
+
+.attentionDetails,
+.recentDetails,
+.actionCopy {
+  display: grid;
+  min-width: 0;
+  align-content: center;
+  gap: 0.16rem;
+}
+
+.attentionDetails strong,
+.recentDetails strong,
+.actionCopy strong {
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.attentionDetails span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.attentionDetails span:last-child {
+  color: var(--accent-strong);
+  font-weight: 650;
+}
+
+.recentDetails span,
+.recentDetails time {
+  overflow-wrap: anywhere;
+}
+
+.recentList li + li {
+  border-top: 1px solid var(--border);
+}
+
+.recentLink {
+  padding: 0.8rem 0.2rem;
+}
+
+.rowArrow {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--text-muted);
+}
+
+.headingLink,
+.textLink {
   display: inline-flex;
   width: fit-content;
   align-items: center;
   gap: 0.35rem;
   color: var(--accent-strong);
-  font-size: 0.86rem;
-  font-weight: 650;
+  font-size: 0.82rem;
+  font-weight: 680;
   text-underline-offset: 0.2em;
 }
-.currencyList {
-  display: grid;
-  gap: 0.75rem;
+
+.headingLink {
+  flex-shrink: 0;
+  align-self: center;
 }
-.currencyRow {
-  display: grid;
-  grid-template-columns: minmax(7.5rem, 0.35fr) minmax(0, 1.65fr);
-  align-items: stretch;
-  overflow: hidden;
-}
-.currencyRow header {
-  display: grid;
-  align-content: center;
-  gap: 0.25rem;
-  padding: 1.15rem 1.25rem;
-  border-right: 1px solid var(--border);
-  background: var(--surface-muted);
-}
-.currencyRow h3 {
-  margin: 0;
-  font-size: 1.15rem;
-}
-.currencyRow header span {
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
-.investmentMetrics {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.investmentMetrics div,
-.energyMetrics div {
-  display: grid;
-  align-content: center;
-  gap: 0.35rem;
-  min-width: 0;
-  padding: 1rem 1.15rem;
-}
-.investmentMetrics div + div {
-  border-left: 1px solid var(--border);
-}
-.investmentMetrics dt,
-.energyMetrics dt {
-  color: var(--text-muted);
-  font-size: 0.77rem;
-  line-height: 1.35;
-}
-.investmentMetrics dd,
-.energyMetrics dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-size: 1.05rem;
-  font-weight: 680;
-}
-.combinedSpend {
-  color: var(--accent-strong);
-  background: color-mix(in srgb, var(--accent-soft) 65%, white);
-}
-.coverageNotes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 1.25rem;
-}
-.coverageNotes p {
-  margin: 0;
-}
+
 .emptyState {
   display: grid;
   gap: 0.45rem;
-  padding: 1.2rem;
+  padding: 1rem;
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius-small);
   background: var(--surface-muted);
 }
+
+.emptyState p,
+.projectionNote,
+.warningText {
+  margin: 0;
+}
+
 .energyLayout {
-  grid-template-columns: minmax(0, 1.7fr) minmax(15rem, 0.7fr);
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(12rem, 0.75fr);
+  gap: 0;
+  min-width: 0;
+  border-top: 1px solid var(--border-subtle);
 }
-.energyCard,
-.tariffCard {
-  padding: clamp(1.15rem, 2vw, 1.5rem);
-}
-.energyCard,
-.tariffCard {
-  box-shadow: none;
-}
-.energyCard {
+
+.energySummary,
+.tariffSummary {
   display: grid;
   align-content: start;
-  gap: 1rem;
+  gap: 0.85rem;
+  min-width: 0;
+  padding-top: 1rem;
 }
+
+.tariffSummary {
+  padding-left: 1.15rem;
+  border-left: 1px solid var(--border);
+}
+
 .energyCoverage {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
+
 .energyCoverage p {
+  min-width: 0;
   margin: 0;
+  font-size: 0.86rem;
   line-height: 1.5;
 }
+
+.energySetupState {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.8rem 0;
+}
+
+.energySetupState h3,
+.energySetupState p {
+  margin: 0;
+}
+
+.energySetupState h3 {
+  color: var(--text);
+  font-size: 1.05rem;
+}
+
+.energySetupState p {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
 .attention {
   flex-shrink: 0;
-  padding: 0.35rem 0.55rem;
+  padding: 0.28rem 0.45rem;
+  border: 1px solid #ead9a9;
   border-radius: 999px;
   color: #6b4300;
-  background: #fff2cf;
-  font-size: 0.73rem;
-  font-weight: 650;
+  background: #fff8e6;
+  font-size: 0.7rem;
+  font-weight: 680;
+  line-height: 1.3;
 }
+
 .energyMetrics {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
   border-block: 1px solid var(--border);
 }
+
+.energyMetrics div {
+  display: grid;
+  align-content: center;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.7rem 0.75rem;
+}
+
 .energyMetrics div + div {
   border-left: 1px solid var(--border);
 }
+
+.energyMetrics div:nth-child(4) {
+  border-top: 1px solid var(--border);
+  border-left: 0;
+}
+
+.energyMetrics div:nth-child(n + 4) {
+  padding-top: 0.75rem;
+}
+
+.energyMetrics dd {
+  overflow-wrap: anywhere;
+  font-size: 0.98rem;
+}
+
+.projectionNote {
+  font-size: 0.78rem;
+}
+
+.warningText {
+  color: #7a4c00;
+}
+
 .archiveNotice {
   display: flex;
   align-items: flex-start;
-  gap: 0.65rem;
-  padding: 0.8rem 0.9rem;
+  gap: 0.6rem;
+  padding: 0.75rem 0.8rem;
   border: 1px solid #ead9a9;
   border-radius: var(--radius-small);
   color: #62420a;
   background: #fffaf0;
 }
+
 .archiveNotice svg {
   flex-shrink: 0;
   margin-top: 0.1rem;
 }
+
 .archiveNotice p {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   line-height: 1.5;
 }
-.warningText {
-  color: #7a4c00;
+
+.tariffSummary h3 {
+  font-size: 1rem;
 }
-.tariffCard {
-  display: grid;
-  align-content: start;
-  gap: 1rem;
-  background: var(--accent-strong);
-  color: #fff;
-}
-.tariffCard {
-  background: var(--surface-subtle);
-  color: var(--text);
-}
-.tariffCard .tariffRate span,
-.tariffCard .tariffDate,
-.tariffCard .tariffEmpty p {
-  color: var(--text-muted);
-}
-.tariffCard .secondaryButton {
-  border-color: var(--border-strong);
-  color: var(--text);
-}
-.tariffCard .secondaryButton:hover {
-  border-color: var(--color-primary);
-  background: var(--surface-primary);
-}
+
 .tariffRate {
   display: flex;
   align-items: baseline;
-  gap: 0.45rem;
-  margin: 0.5rem 0 0;
+  gap: 0.4rem;
+  margin: 0.35rem 0 0;
 }
+
 .tariffRate strong {
-  font-size: clamp(2.15rem, 4vw, 3rem);
+  font-size: clamp(1.9rem, 3vw, 2.6rem);
   letter-spacing: -0.045em;
   line-height: 1;
 }
+
 .tariffRate span,
-.tariffCard .tariffDate,
-.tariffCard .tariffEmpty p {
+.tariffDate,
+.tariffEmpty p {
   color: var(--text-muted);
 }
+
 .tariffEmpty {
   display: grid;
-  gap: 0.45rem;
-  margin: 0.5rem 0;
+  gap: 0.4rem;
+  margin: 0.35rem 0;
 }
+
 .secondaryButton {
   display: inline-flex;
   width: fit-content;
-  min-height: 2.6rem;
+  min-height: 2.45rem;
   align-items: center;
   justify-content: center;
-  padding: 0.65rem 0.9rem;
-  border: 1px solid rgb(255 255 255 / 45%);
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-small);
-  color: #fff;
-  font-size: 0.84rem;
-  font-weight: 650;
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 680;
   text-decoration: none;
 }
+
 .secondaryButton:hover {
-  border-color: #fff;
-  background: rgb(255 255 255 / 9%);
+  border-color: var(--color-primary);
+  background: var(--surface-muted);
 }
-.recentGroup {
-  padding: 1.1rem;
-  box-shadow: none;
-}
-.recentTitle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.15rem 0.15rem 0.85rem;
-}
-.recentList {
+
+.quickActionList {
   display: grid;
-  gap: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
 }
-.recentList li + li {
+
+.quickAction:last-child {
+  grid-column: 1 / -1;
+}
+
+.quickAction {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-small);
+  background: var(--surface-muted);
+  text-decoration: none;
+}
+
+.quickAction:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-primary);
+}
+
+.actionIcon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+}
+
+.actionCopy {
+  gap: 0.1rem;
+}
+
+.actionCopy strong {
+  font-size: 0.82rem;
+}
+
+.actionCopy span {
+  font-size: 0.72rem;
+}
+
+.currencyList {
+  display: grid;
   border-top: 1px solid var(--border);
 }
-.recentList a {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.85rem;
-  padding: 0.75rem 0.15rem;
-  border-radius: var(--radius-small);
-  text-decoration: none;
-}
-.recentList a:hover {
-  background: var(--surface-muted);
-}
-.thumbnail {
-  display: block;
-  width: 3.4rem;
-  height: 3.4rem;
-  flex: 0 0 3.4rem;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 0.7rem;
-  background: var(--surface-muted);
-}
-.recentDetails {
+
+.currencyRow {
   display: grid;
+  grid-template-columns: minmax(7rem, 0.35fr) minmax(0, 1.65fr);
+  align-items: stretch;
   min-width: 0;
-  gap: 0.18rem;
+  border-bottom: 1px solid var(--border);
 }
-.recentDetails strong,
-.recentDetails span,
-.recentDetails time {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+
+.currencyRow header {
+  display: grid;
+  align-content: center;
+  gap: 0.2rem;
+  padding: 0.95rem 1rem 0.95rem 0;
 }
-.recentDetails strong {
-  font-size: 0.92rem;
-}
-.recentDetails span,
-.recentDetails time,
-.recentEmpty {
-  color: var(--text-muted);
-  font-size: 0.78rem;
-}
-.recentEmpty {
+
+.currencyRow h3 {
   margin: 0;
-  padding: 1.25rem 0.15rem;
+  font-size: 1rem;
 }
+
+.currencyRow header span {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.investmentMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+}
+
+.investmentMetrics div {
+  display: grid;
+  align-content: center;
+  gap: 0.25rem;
+  min-width: 0;
+  padding: 0.8rem 0.85rem;
+}
+
+.investmentMetrics div + div {
+  border-left: 1px solid var(--border);
+}
+
+.investmentMetrics dd {
+  overflow-wrap: anywhere;
+  font-size: 0.95rem;
+}
+
+.combinedSpend {
+  color: var(--accent-strong);
+  background: color-mix(in srgb, var(--accent-soft) 65%, white);
+}
+
+.coverageNotes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 1.15rem;
+}
+
+.coverageNotes p {
+  margin: 0;
+}
+
 .page :is(a, button, [tabindex]):focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 3px;
 }
-.tariffCard a:focus-visible {
-  outline-color: #fff;
-}
 
 @media (max-width: 70rem) {
-  .energyMetrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .energyMetrics div:nth-child(4) {
-    border-left: 0;
-  }
-}
-@media (max-width: 52rem) {
-  .overviewGrid,
-  .energyLayout,
-  .recentColumns {
+  .secondaryGrid {
     grid-template-columns: 1fr;
   }
+
+  .secondaryGrid > .energyPanel,
+  .secondaryGrid > .investmentPanel {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 52rem) {
+  .snapshotGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .snapshotMetric {
+    border-top: 1px solid var(--border);
+  }
+
+  .snapshotMetric:nth-child(-n + 2) {
+    border-top: 0;
+  }
+
+  .snapshotMetric:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .snapshotMetric:nth-child(even) {
+    border-left: 1px solid var(--border);
+  }
+
+  .mainGrid,
+  .secondaryGrid,
+  .sideStack {
+    grid-template-columns: 1fr;
+  }
+
+  .wateringPanel,
+  .sideStack,
+  .energyPanel,
+  .investmentPanel,
+  .recentEquipmentPanel {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .recentEquipmentPanel .recentList {
+    grid-template-columns: 1fr;
+  }
+
+  .recentEquipmentPanel .recentList li:nth-child(2) {
+    border-top: 1px solid var(--border);
+  }
+
+  .recentEquipmentPanel .recentList li:nth-child(even) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .energyLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .tariffSummary {
+    padding-top: 1rem;
+    padding-left: 0;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
   .energyMetrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .overviewCard + .overviewCard {
-    border-top: 1px solid var(--border-default);
+
+  .energyMetrics div:nth-child(3) {
+    border-top: 1px solid var(--border);
     border-left: 0;
   }
-  .energyMetrics div:nth-child(3),
-  .energyMetrics div:nth-child(5) {
-    border-left: 0;
-  }
+
   .energyMetrics div:nth-child(4) {
     border-left: 1px solid var(--border);
   }
+
+  .energyMetrics div:nth-child(5) {
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
 }
+
 @media (max-width: 38rem) {
   .page {
-    gap: 1.75rem;
+    gap: 0.85rem;
   }
-  .countGrid {
+
+  .snapshot {
+    padding: 0;
+  }
+
+  .snapshotMetric {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+    padding: 0.8rem 0.7rem 0.9rem;
+  }
+
+  .metricIcon {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .metricValue {
+    font-size: 1.25rem;
+  }
+
+  .panel {
+    padding: 1rem;
+  }
+
+  .sectionHeading {
+    gap: 0.65rem;
+  }
+
+  .sectionHeading h2 {
+    font-size: 1.22rem;
+  }
+
+  .headingLink {
+    max-width: 45%;
+    text-align: right;
+  }
+
+  .wateringPrimaryMetrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .wateringPrimaryMetrics div + div {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .wateringPrimaryMetrics div:nth-child(2) {
+    border-left: 1px solid var(--border);
+  }
+
+  .wateringPrimaryMetrics div:nth-child(3) {
+    grid-column: 1 / -1;
+    border-left: 0;
+  }
+
+  .wateringAttention {
+    grid-template-columns: 1fr;
+  }
+
+  .wateringAttention li:nth-child(even) {
+    border-left: 0;
+  }
+
+  .wateringAttention li:nth-child(n + 2) {
+    border-top: 1px solid var(--border);
+  }
+
+  .energyCoverage {
+    flex-direction: column;
+  }
+
+  .energyMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .energyMetrics div,
+  .energyMetrics div:nth-child(3),
+  .energyMetrics div:nth-child(4),
+  .energyMetrics div:nth-child(5) {
+    border-top: 0;
+    border-left: 0;
+  }
+
+  .energyMetrics div + div {
+    border-top: 1px solid var(--border);
+  }
+
   .currencyRow {
     grid-template-columns: 1fr;
   }
-  .overviewGrid {
-    padding: 0.75rem;
-  }
+
   .currencyRow header {
     grid-template-columns: auto 1fr;
     align-items: center;
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
+    gap: 0.65rem;
+    padding: 0.8rem 0;
   }
+
   .investmentMetrics {
     grid-template-columns: 1fr;
   }
+
   .investmentMetrics div + div {
     border-top: 1px solid var(--border);
     border-left: 0;
   }
-  .energyCoverage {
+
+  .quickActionList {
+    grid-template-columns: 1fr;
+  }
+
+  .quickAction {
     align-items: flex-start;
-    flex-direction: column;
+    padding: 0.7rem 0.6rem;
   }
-  .energyMetrics {
-    grid-template-columns: 1fr;
-  }
-  .wateringMetrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .wateringMetrics div + div {
-    border-left: 0;
-    border-top: 1px solid var(--border);
-  }
-  .wateringAttention {
-    grid-template-columns: 1fr;
-  }
-  .wateringAttention li + li,
-  .wateringAttention li:nth-child(3) {
-    border-top: 1px solid var(--border);
-    border-left: 0;
-  }
-  .energyMetrics div + div,
-  .energyMetrics div:nth-child(4) {
-    border-top: 1px solid var(--border);
-    border-left: 0;
+
+  .quickAction .rowArrow {
+    display: none;
   }
 }

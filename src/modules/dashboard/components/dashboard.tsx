@@ -3,11 +3,13 @@ import {
   AlertTriangle,
   ArrowRight,
   Droplets,
+  GitBranch,
   Leaf,
   PlugZap,
   ReceiptText,
   Wrench,
 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { formatPurchaseMoney } from '../../../lib/purchase-money';
 import { EquipmentPhotoImage } from '../../equipment/components/equipment-photo-image';
 import { equipmentPhotoImagePath } from '../../equipment/equipment-photo-browser';
@@ -54,25 +56,111 @@ function coverageSentence(label: string, summary: InvestmentDomainSummary) {
   return `${summary.completeCostRecordCount} of ${summary.relevantRecordCount} ${label} records have complete cost information.`;
 }
 
-function wateringState(
-  item: DashboardSummary['watering'] extends infer W
-    ? W extends { attention: (infer A)[] }
-      ? A
-      : never
-    : never,
-) {
+type DashboardWateringAttention = NonNullable<DashboardSummary['watering']>['attention'][number];
+
+function wateringState(item: DashboardWateringAttention) {
   if (item.status === 'OVERDUE') return Math.abs(item.daysUntilDue ?? 0) + ' days overdue';
   if (item.status === 'DUE_TODAY') return 'Due today';
   return 'First watering not recorded';
+}
+
+function SnapshotMetric({
+  icon,
+  label,
+  value,
+  detail,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: ReactNode;
+  detail: ReactNode;
+}) {
+  return (
+    <article className={styles.snapshotMetric}>
+      <span className={styles.metricIcon} aria-hidden="true">
+        {icon}
+      </span>
+      <div className={styles.metricCopy}>
+        <h3>{label}</h3>
+        <p className={styles.metricValue}>{value}</p>
+        <p className={styles.metricDetail}>{detail}</p>
+      </div>
+    </article>
+  );
+}
+
+function Snapshot({ summary }: { summary: DashboardSummary }) {
+  const watering = summary.watering;
+  const energy = summary.energy;
+  const energyCost = energy.knownEstimatedVariableCostPence?.daily ?? null;
+  const energyValue =
+    energy.activePoweredEquipmentCount === 0
+      ? 'Not configured'
+      : energyCost === null
+        ? 'Estimate unavailable'
+        : formatEnergyCost(energyCost);
+  const energyDetail =
+    energy.activePoweredEquipmentCount === 0
+      ? 'No active power-tracking Equipment'
+      : !energy.configurationCoverage.complete
+        ? `Setup incomplete · ${energy.activePoweredEquipmentConfiguredTodayCount} of ${energy.activePoweredEquipmentCount} configured`
+        : energy.currentTariff === null
+          ? 'Tariff not configured'
+          : 'Estimated daily cost';
+
+  return (
+    <section className={styles.snapshot} aria-label="Nursery snapshot">
+      <div className={styles.snapshotGrid}>
+        <SnapshotMetric
+          icon={<Leaf size={20} />}
+          label="Plants"
+          value={summary.plants.activeCount}
+          detail={`${summary.plants.archivedCount} archived`}
+        />
+        <SnapshotMetric
+          icon={<Wrench size={20} />}
+          label="Equipment"
+          value={summary.equipment.activeCount}
+          detail={`${summary.equipment.activeUsesPowerCount} power tracking capable`}
+        />
+        <SnapshotMetric
+          icon={<Droplets size={20} />}
+          label="Watering attention"
+          value={
+            watering ? (
+              <span className={styles.inlineMetricList}>
+                <span>{watering.overdue} overdue</span>
+                <span>{watering.dueToday} today</span>
+              </span>
+            ) : (
+              'Not available'
+            )
+          }
+          detail={
+            watering
+              ? `${watering.needsFirstWatering} need first watering${watering.notConfigured ? ` · ${watering.notConfigured} not configured` : ''}`
+              : 'Watering summary unavailable'
+          }
+        />
+        <SnapshotMetric
+          icon={<PlugZap size={20} />}
+          label="Energy estimate"
+          value={energyValue}
+          detail={energyDetail}
+        />
+      </div>
+    </section>
+  );
 }
 
 function Watering({ summary }: { summary: DashboardSummary }) {
   const watering = summary.watering;
   if (!watering) return null;
   const urgent = watering.overdue + watering.dueToday + watering.needsFirstWatering;
+
   return (
     <section
-      className={`${styles.section} ${styles.attentionSection}`}
+      className={`${styles.panel} ${styles.wateringPanel}`}
       aria-labelledby="attention-heading"
     >
       <div className={styles.sectionHeading}>
@@ -82,6 +170,7 @@ function Watering({ summary }: { summary: DashboardSummary }) {
         </div>
         <Droplets aria-hidden="true" size={22} />
       </div>
+
       {watering.totalEligible === 0 ? (
         <div className={styles.emptyState}>
           <h3>No active Plants need watering tracking</h3>
@@ -92,7 +181,7 @@ function Watering({ summary }: { summary: DashboardSummary }) {
         </div>
       ) : (
         <>
-          <dl className={styles.wateringMetrics}>
+          <dl className={styles.wateringPrimaryMetrics}>
             <div className={styles.urgentMetric}>
               <dt>Overdue</dt>
               <dd>{watering.overdue}</dd>
@@ -105,32 +194,28 @@ function Watering({ summary }: { summary: DashboardSummary }) {
               <dt>Needs first watering</dt>
               <dd>{watering.needsFirstWatering}</dd>
             </div>
-            <div className={styles.contextMetric}>
+          </dl>
+
+          <dl className={styles.wateringSecondaryMetrics}>
+            <div>
               <dt>Due soon</dt>
               <dd>{watering.dueSoon}</dd>
             </div>
-            <div className={styles.contextMetric}>
+            <div>
+              <dt>Upcoming</dt>
+              <dd>{watering.upcoming}</dd>
+            </div>
+            <div>
               <dt>Not configured</dt>
               <dd>{watering.notConfigured}</dd>
             </div>
           </dl>
-          {urgent === 0 ? (
-            <p className={styles.wateringQuiet} role="status">
-              No urgent watering tasks today.
-            </p>
-          ) : null}
-          {watering.dueSoon || watering.notConfigured ? (
-            <p className={styles.cardNote}>
-              {watering.dueSoon ? watering.dueSoon + ' due soon' : ''}
-              {watering.dueSoon && watering.notConfigured ? ' · ' : ''}
-              {watering.notConfigured ? watering.notConfigured + ' not configured' : ''}
-            </p>
-          ) : null}
+
           {watering.attention.length ? (
             <ul className={styles.wateringAttention} aria-label="Watering attention Plants">
               {watering.attention.map((item) => (
                 <li key={item.id}>
-                  <Link href={'/plants/' + item.id}>
+                  <Link className={styles.attentionLink} href={'/plants/' + item.id}>
                     <span className={styles.thumbnail}>
                       <PlantPhotoImage
                         src={
@@ -146,7 +231,7 @@ function Watering({ summary }: { summary: DashboardSummary }) {
                         alt={item.reference + ' primary photo'}
                       />
                     </span>
-                    <span className={styles.recentDetails}>
+                    <span className={styles.attentionDetails}>
                       <strong>{item.displayName}</strong>
                       <span>
                         {item.reference}
@@ -159,8 +244,13 @@ function Watering({ summary }: { summary: DashboardSummary }) {
               ))}
             </ul>
           ) : (
-            <p className={styles.wateringQuiet}>Nothing needs immediate watering attention.</p>
+            <p className={styles.wateringQuiet} role="status">
+              {urgent === 0
+                ? 'No urgent watering tasks today.'
+                : 'Nothing needs immediate watering attention.'}
+            </p>
           )}
+
           <Link className={styles.textLink} href="/watering">
             View watering queue <ArrowRight aria-hidden="true" size={15} />
           </Link>
@@ -170,85 +260,285 @@ function Watering({ summary }: { summary: DashboardSummary }) {
   );
 }
 
-function Overview({ summary }: { summary: DashboardSummary }) {
+function RecentPlants({ summary }: { summary: DashboardSummary }) {
+  const recentPlants = summary.recentlyAdded.plants.slice(0, 4);
+
   return (
-    <section className={styles.section} aria-labelledby="overview-heading">
+    <section
+      className={`${styles.panel} ${styles.recentPlantsPanel}`}
+      aria-labelledby="recent-plants-heading"
+    >
       <div className={styles.sectionHeading}>
         <div>
-          <p className={styles.eyebrow}>Collection</p>
-          <h2 id="overview-heading">Nursery snapshot</h2>
+          <p className={styles.eyebrow}>New to the nursery</p>
+          <h2 id="recent-plants-heading">Recent Plants</h2>
+        </div>
+        <Link className={styles.headingLink} href="/plants">
+          View all Plants <ArrowRight aria-hidden="true" size={15} />
+        </Link>
+      </div>
+
+      {recentPlants.length === 0 ? (
+        <div className={styles.emptyState}>
+          <h3>No active Plants have been added yet</h3>
+          <p>New Plant records will appear here with their primary photo or fallback.</p>
+        </div>
+      ) : (
+        <ul className={styles.recentList} aria-label="Recently added Plants">
+          {recentPlants.map((plant) => (
+            <li key={plant.id}>
+              <Link className={styles.recentLink} href={`/plants/${plant.id}`}>
+                <span className={styles.recentPlantThumbnail}>
+                  <PlantPhotoImage
+                    src={
+                      plant.primaryPhoto
+                        ? photoImagePath(
+                            plant.id,
+                            plant.primaryPhoto.id,
+                            'thumbnail',
+                            plant.primaryPhoto.derivativeRevision,
+                          )
+                        : undefined
+                    }
+                    alt={`${plant.reference} primary photo`}
+                  />
+                </span>
+                <span className={styles.recentDetails}>
+                  <strong>{plant.displayName}</strong>
+                  <span>{plant.reference}</span>
+                  <time dateTime={plant.createdAt.toISOString()}>
+                    Added {dateFormat.format(plant.createdAt)}
+                  </time>
+                </span>
+                <ArrowRight className={styles.rowArrow} aria-hidden="true" size={17} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function QuickActions() {
+  return (
+    <section
+      className={`${styles.panel} ${styles.quickActionsPanel}`}
+      aria-labelledby="quick-actions-heading"
+    >
+      <div className={styles.sectionHeading}>
+        <div>
+          <p className={styles.eyebrow}>Shortcuts</p>
+          <h2 id="quick-actions-heading">Quick actions</h2>
         </div>
       </div>
 
-      <div className={styles.overviewGrid}>
-        <article className={styles.overviewCard}>
-          <div className={styles.cardTitle}>
-            <span className={styles.icon} aria-hidden="true">
-              <Leaf size={19} />
-            </span>
-            <h3>Plants</h3>
-          </div>
-          <p className={styles.primaryMetric}>
-            <strong>{summary.plants.activeCount}</strong>
-            <span>active</span>
-          </p>
-          <dl className={styles.countGrid}>
-            <div>
-              <dt>Growing</dt>
-              <dd>{summary.plants.growingCount}</dd>
-            </div>
-            <div>
-              <dt>Quarantine</dt>
-              <dd>{summary.plants.quarantineCount}</dd>
-            </div>
-            <div>
-              <dt>Sold</dt>
-              <dd>{summary.plants.soldCount}</dd>
-            </div>
-            <div>
-              <dt>Deceased</dt>
-              <dd>{summary.plants.deceasedCount}</dd>
-            </div>
-            <div>
-              <dt>Archived</dt>
-              <dd>{summary.plants.archivedCount}</dd>
-            </div>
-          </dl>
-          <Link className={styles.textLink} href="/plants">
-            View Plants <ArrowRight aria-hidden="true" size={15} />
-          </Link>
-        </article>
+      <nav className={styles.quickActionList} aria-label="Dashboard quick actions">
+        <Link className={styles.quickAction} href="/plants/new">
+          <span className={styles.actionIcon} aria-hidden="true">
+            <Leaf size={19} />
+          </span>
+          <span className={styles.actionCopy}>
+            <strong>Add Plant</strong>
+            <span>Record a new Plant</span>
+          </span>
+          <ArrowRight className={styles.rowArrow} aria-hidden="true" size={16} />
+        </Link>
+        <Link className={styles.quickAction} href="/watering">
+          <span className={styles.actionIcon} aria-hidden="true">
+            <Droplets size={19} />
+          </span>
+          <span className={styles.actionCopy}>
+            <strong>Watering</strong>
+            <span>Open today’s queue</span>
+          </span>
+          <ArrowRight className={styles.rowArrow} aria-hidden="true" size={16} />
+        </Link>
+        <Link className={styles.quickAction} href="/equipment/new">
+          <span className={styles.actionIcon} aria-hidden="true">
+            <Wrench size={19} />
+          </span>
+          <span className={styles.actionCopy}>
+            <strong>Add Equipment</strong>
+            <span>Record a new asset</span>
+          </span>
+          <ArrowRight className={styles.rowArrow} aria-hidden="true" size={16} />
+        </Link>
+        <Link className={styles.quickAction} href="/breeding">
+          <span className={styles.actionIcon} aria-hidden="true">
+            <GitBranch size={19} />
+          </span>
+          <span className={styles.actionCopy}>
+            <strong>Breeding</strong>
+            <span>Review breeding work</span>
+          </span>
+          <ArrowRight className={styles.rowArrow} aria-hidden="true" size={16} />
+        </Link>
+        <Link className={styles.quickAction} href="/energy/tariffs">
+          <span className={styles.actionIcon} aria-hidden="true">
+            <PlugZap size={19} />
+          </span>
+          <span className={styles.actionCopy}>
+            <strong>Configure tariff</strong>
+            <span>Update Energy assumptions</span>
+          </span>
+          <ArrowRight className={styles.rowArrow} aria-hidden="true" size={16} />
+        </Link>
+      </nav>
+    </section>
+  );
+}
 
-        <article className={styles.overviewCard}>
-          <div className={styles.cardTitle}>
-            <span className={styles.icon} aria-hidden="true">
-              <Wrench size={19} />
-            </span>
-            <h3>Equipment</h3>
-          </div>
-          <p className={styles.primaryMetric}>
-            <strong>{summary.equipment.activeCount}</strong>
-            <span>active</span>
-          </p>
-          <dl className={styles.countGrid}>
-            <div>
-              <dt>Power tracking capable</dt>
-              <dd>{summary.equipment.activeUsesPowerCount}</dd>
+function Energy({ summary }: { summary: DashboardSummary }) {
+  const energy = summary.energy;
+  const hasPoweredEquipment = energy.activePoweredEquipmentCount > 0;
+  const hasKnownEnergyValues =
+    energy.configuredOperatingDrawWatts !== null ||
+    energy.estimatedKwh !== null ||
+    energy.knownEstimatedVariableCostPence !== null;
+
+  return (
+    <section className={`${styles.panel} ${styles.energyPanel}`} aria-labelledby="energy-heading">
+      <div className={styles.sectionHeading}>
+        <div>
+          <p className={styles.eyebrow}>Current settings</p>
+          <h2 id="energy-heading">Energy estimates</h2>
+        </div>
+        <PlugZap aria-hidden="true" size={22} />
+      </div>
+
+      <div className={styles.energyLayout}>
+        <div className={styles.energySummary}>
+          {!hasPoweredEquipment ? (
+            <div className={styles.emptyState}>
+              <h3>No active power-tracking Equipment</h3>
+              <p>
+                There is nothing to estimate until Equipment capable of power tracking is added.
+              </p>
             </div>
-            <div>
-              <dt>Does not use power</dt>
-              <dd>{summary.equipment.activeDoesNotUsePowerCount}</dd>
+          ) : (
+            <>
+              {hasKnownEnergyValues && (
+                <div className={styles.energyCoverage}>
+                  <p>
+                    <strong>{energy.activePoweredEquipmentConfiguredTodayCount}</strong> of{' '}
+                    <strong>{energy.activePoweredEquipmentCount} </strong>active power-tracking
+                    items are configured today.
+                  </p>
+                  {!energy.configurationCoverage.complete && (
+                    <span className={styles.attention}>Some current settings are missing</span>
+                  )}
+                </div>
+              )}
+              {hasKnownEnergyValues ? (
+                <>
+                  <dl className={styles.energyMetrics}>
+                    {energy.configuredOperatingDrawWatts !== null && (
+                      <div>
+                        <dt>Configured operating draw</dt>
+                        <dd>{`${compactDecimal(energy.configuredOperatingDrawWatts)} W`}</dd>
+                      </div>
+                    )}
+                    {energy.estimatedKwh !== null && (
+                      <div>
+                        <dt>Estimated energy / day</dt>
+                        <dd>{`${compactDecimal(energy.estimatedKwh.daily)} kWh`}</dd>
+                      </div>
+                    )}
+                    {energy.knownEstimatedVariableCostPence !== null && (
+                      <>
+                        <div>
+                          <dt>
+                            {energy.costCoverage.complete
+                              ? 'Estimated cost / day'
+                              : 'Known estimate / day'}
+                          </dt>
+                          <dd>{formatEnergyCost(energy.knownEstimatedVariableCostPence.daily)}</dd>
+                        </div>
+                        <div>
+                          <dt>
+                            {energy.costCoverage.complete
+                              ? '30-day projection'
+                              : 'Known 30-day projection'}
+                          </dt>
+                          <dd>{formatEnergyCost(energy.knownEstimatedVariableCostPence.days30)}</dd>
+                        </div>
+                        <div>
+                          <dt>
+                            {energy.costCoverage.complete
+                              ? '365-day projection'
+                              : 'Known 365-day projection'}
+                          </dt>
+                          <dd>
+                            {formatEnergyCost(energy.knownEstimatedVariableCostPence.days365)}
+                          </dd>
+                        </div>
+                      </>
+                    )}
+                  </dl>
+                  <p className={styles.projectionNote}>
+                    Projections use today’s configured settings and current tariff. They are not
+                    measured consumption or actual bills.
+                  </p>
+                  {energy.currentTariff === null &&
+                    energy.knownEstimatedVariableCostPence === null && (
+                      <p className={styles.warningText}>
+                        Cost estimates are unknown because no current tariff is configured.
+                      </p>
+                    )}
+                </>
+              ) : (
+                <div className={styles.energySetupState}>
+                  <h3>Setup incomplete</h3>
+                  <p>
+                    {energy.activePoweredEquipmentConfiguredTodayCount} of{' '}
+                    {energy.activePoweredEquipmentCount} power-tracking items configured today.
+                  </p>
+                  {energy.currentTariff === null && <p>No current tariff.</p>}
+                  <p>Estimates will appear when current configuration is available.</p>
+                </div>
+              )}
+            </>
+          )}
+
+          {energy.archivedEquipmentWithOngoingSettingsTodayCount > 0 && (
+            <aside className={styles.archiveNotice} aria-label="Archived Equipment attention">
+              <AlertTriangle aria-hidden="true" size={18} />
+              <p>
+                <strong>
+                  {energy.archivedEquipmentWithOngoingSettingsTodayCount} archived Equipment item
+                  {energy.archivedEquipmentWithOngoingSettingsTodayCount === 1 ? '' : 's'}
+                </strong>{' '}
+                {energy.archivedEquipmentWithOngoingSettingsTodayCount === 1 ? 'has' : 'have'}{' '}
+                ongoing power settings today. This is kept separate from active estimates.
+              </p>
+            </aside>
+          )}
+        </div>
+
+        <article className={styles.tariffSummary} aria-labelledby="tariff-heading">
+          <h3 id="tariff-heading">Current electricity tariff</h3>
+          {energy.currentTariff ? (
+            <>
+              <p className={styles.tariffRate}>
+                <strong>{compactDecimal(energy.currentTariff.unitRateMinorPerKwh)}</strong>
+                <span>p/kWh</span>
+              </p>
+              <p className={styles.tariffDate}>
+                Effective from{' '}
+                <time dateTime={energy.currentTariff.effectiveFrom}>
+                  {dateFormat.format(new Date(`${energy.currentTariff.effectiveFrom}T12:00:00Z`))}
+                </time>
+              </p>
+            </>
+          ) : (
+            <div className={styles.tariffEmpty}>
+              <strong>No current tariff</strong>
+              <p>Add a tariff to calculate variable electricity cost for positive known energy.</p>
             </div>
-            <div>
-              <dt>Archived</dt>
-              <dd>{summary.equipment.archivedCount}</dd>
-            </div>
-          </dl>
-          <p className={styles.cardNote}>
-            Power tracking capability does not mean an item is currently operating.
-          </p>
-          <Link className={styles.textLink} href="/equipment">
-            View Equipment <ArrowRight aria-hidden="true" size={15} />
+          )}
+          <Link className={styles.secondaryButton} href="/energy/tariffs">
+            {energy.currentTariff ? 'Manage tariffs' : 'Configure tariff'}
           </Link>
         </article>
       </div>
@@ -262,7 +552,10 @@ function Investment({ summary }: { summary: DashboardSummary }) {
   const equipmentComplete = summary.investment.equipment.coverageComplete;
 
   return (
-    <section className={styles.section} aria-labelledby="investment-heading">
+    <section
+      className={`${styles.panel} ${styles.investmentPanel}`}
+      aria-labelledby="investment-heading"
+    >
       <div className={styles.sectionHeading}>
         <div>
           <p className={styles.eyebrow}>Acquisition costs</p>
@@ -318,236 +611,62 @@ function Investment({ summary }: { summary: DashboardSummary }) {
   );
 }
 
-function Energy({ summary }: { summary: DashboardSummary }) {
-  const energy = summary.energy;
-  const hasPoweredEquipment = energy.activePoweredEquipmentCount > 0;
-
-  return (
-    <section className={styles.section} aria-labelledby="energy-heading">
-      <div className={styles.sectionHeading}>
-        <div>
-          <p className={styles.eyebrow}>Current settings</p>
-          <h2 id="energy-heading">Energy estimates</h2>
-        </div>
-        <PlugZap aria-hidden="true" size={22} />
-      </div>
-
-      <div className={styles.energyLayout}>
-        <article className={styles.energyCard}>
-          {!hasPoweredEquipment ? (
-            <div className={styles.emptyState}>
-              <h3>No active power-tracking Equipment</h3>
-              <p>
-                There is nothing to estimate until Equipment capable of power tracking is added.
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className={styles.energyCoverage}>
-                <p>
-                  <strong>{energy.activePoweredEquipmentConfiguredTodayCount}</strong> of{' '}
-                  <strong>{energy.activePoweredEquipmentCount}</strong> active power-tracking items
-                  are configured today.
-                </p>
-                {!energy.configurationCoverage.complete && (
-                  <span className={styles.attention}>Some current settings are missing</span>
-                )}
-              </div>
-              <dl className={styles.energyMetrics}>
-                <div>
-                  <dt>Configured operating draw</dt>
-                  <dd>
-                    {energy.configuredOperatingDrawWatts === null
-                      ? 'Unknown'
-                      : `${compactDecimal(energy.configuredOperatingDrawWatts)} W`}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Estimated energy / day</dt>
-                  <dd>
-                    {energy.estimatedKwh === null
-                      ? 'Unknown'
-                      : `${compactDecimal(energy.estimatedKwh.daily)} kWh`}
-                  </dd>
-                </div>
-                <div>
-                  <dt>
-                    {energy.costCoverage.complete ? 'Estimated cost / day' : 'Known estimate / day'}
-                  </dt>
-                  <dd>{formatEnergyCost(energy.knownEstimatedVariableCostPence?.daily ?? null)}</dd>
-                </div>
-                <div>
-                  <dt>
-                    {energy.costCoverage.complete ? '30-day projection' : 'Known 30-day projection'}
-                  </dt>
-                  <dd>
-                    {formatEnergyCost(energy.knownEstimatedVariableCostPence?.days30 ?? null)}
-                  </dd>
-                </div>
-                <div>
-                  <dt>
-                    {energy.costCoverage.complete
-                      ? '365-day projection'
-                      : 'Known 365-day projection'}
-                  </dt>
-                  <dd>
-                    {formatEnergyCost(energy.knownEstimatedVariableCostPence?.days365 ?? null)}
-                  </dd>
-                </div>
-              </dl>
-              <p className={styles.projectionNote}>
-                Projections use today’s configured settings and current tariff. They are not
-                measured consumption or actual bills.
-              </p>
-              {energy.currentTariff === null && energy.knownEstimatedVariableCostPence === null && (
-                <p className={styles.warningText}>
-                  Cost estimates are unknown because no current tariff is configured.
-                </p>
-              )}
-            </>
-          )}
-
-          {energy.archivedEquipmentWithOngoingSettingsTodayCount > 0 && (
-            <aside className={styles.archiveNotice} aria-label="Archived Equipment attention">
-              <AlertTriangle aria-hidden="true" size={18} />
-              <p>
-                <strong>
-                  {energy.archivedEquipmentWithOngoingSettingsTodayCount} archived Equipment item
-                  {energy.archivedEquipmentWithOngoingSettingsTodayCount === 1 ? '' : 's'}
-                </strong>{' '}
-                {energy.archivedEquipmentWithOngoingSettingsTodayCount === 1 ? 'has' : 'have'}{' '}
-                ongoing power settings today. This is kept separate from active estimates.
-              </p>
-            </aside>
-          )}
-        </article>
-
-        <article className={styles.tariffCard} aria-labelledby="tariff-heading">
-          <h3 id="tariff-heading">Current electricity tariff</h3>
-          {energy.currentTariff ? (
-            <>
-              <p className={styles.tariffRate}>
-                <strong>{compactDecimal(energy.currentTariff.unitRateMinorPerKwh)}</strong>
-                <span>p/kWh</span>
-              </p>
-              <p className={styles.tariffDate}>
-                Effective from{' '}
-                <time dateTime={energy.currentTariff.effectiveFrom}>
-                  {dateFormat.format(new Date(`${energy.currentTariff.effectiveFrom}T12:00:00Z`))}
-                </time>
-              </p>
-            </>
-          ) : (
-            <div className={styles.tariffEmpty}>
-              <strong>No current tariff</strong>
-              <p>Add a tariff to calculate variable electricity cost for positive known energy.</p>
-            </div>
-          )}
-          <Link className={styles.secondaryButton} href="/energy/tariffs">
-            {energy.currentTariff ? 'Manage tariffs' : 'Configure tariff'}
-          </Link>
-        </article>
-      </div>
-    </section>
-  );
-}
-
-function RecentlyAdded({ summary }: { summary: DashboardSummary }) {
-  const recentPlants = summary.recentlyAdded.plants.slice(0, 4);
+function RecentEquipment({ summary }: { summary: DashboardSummary }) {
   const recentEquipment = summary.recentlyAdded.equipment.slice(0, 4);
 
   return (
-    <section className={styles.section} aria-labelledby="recent-heading">
+    <section
+      className={`${styles.panel} ${styles.recentEquipmentPanel}`}
+      aria-labelledby="recent-equipment-heading"
+    >
       <div className={styles.sectionHeading}>
         <div>
-          <p className={styles.eyebrow}>New to the nursery</p>
-          <h2 id="recent-heading">Recently added</h2>
+          <p className={styles.eyebrow}>Inventory</p>
+          <h2 id="recent-equipment-heading">Recent Equipment</h2>
         </div>
+        <Link className={styles.headingLink} href="/equipment">
+          View all Equipment <ArrowRight aria-hidden="true" size={15} />
+        </Link>
       </div>
 
-      <div className={styles.recentColumns}>
-        <div className={styles.recentGroup}>
-          <div className={styles.recentTitle}>
-            <h3>Plants</h3>
-            <Link href="/plants">View all</Link>
-          </div>
-          {recentPlants.length === 0 ? (
-            <p className={styles.recentEmpty}>No active Plants have been added yet.</p>
-          ) : (
-            <ul className={styles.recentList} aria-label="Recently added Plants">
-              {recentPlants.map((plant) => (
-                <li key={plant.id}>
-                  <Link href={`/plants/${plant.id}`}>
-                    <span className={styles.thumbnail}>
-                      <PlantPhotoImage
-                        src={
-                          plant.primaryPhoto
-                            ? photoImagePath(
-                                plant.id,
-                                plant.primaryPhoto.id,
-                                'thumbnail',
-                                plant.primaryPhoto.derivativeRevision,
-                              )
-                            : undefined
-                        }
-                        alt={`${plant.reference} primary photo`}
-                      />
-                    </span>
-                    <span className={styles.recentDetails}>
-                      <strong>{plant.displayName}</strong>
-                      <span>{plant.reference}</span>
-                      <time dateTime={plant.createdAt.toISOString()}>
-                        Added {dateFormat.format(plant.createdAt)}
-                      </time>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+      {recentEquipment.length === 0 ? (
+        <div className={styles.emptyState}>
+          <h3>No active Equipment has been added yet</h3>
+          <p>New Equipment records will appear here with their primary photo or fallback.</p>
         </div>
-
-        <div className={styles.recentGroup}>
-          <div className={styles.recentTitle}>
-            <h3>Equipment</h3>
-            <Link href="/equipment">View all</Link>
-          </div>
-          {recentEquipment.length === 0 ? (
-            <p className={styles.recentEmpty}>No active Equipment has been added yet.</p>
-          ) : (
-            <ul className={styles.recentList} aria-label="Recently added Equipment">
-              {recentEquipment.map((item) => (
-                <li key={item.id}>
-                  <Link href={`/equipment/${item.id}`}>
-                    <span className={styles.thumbnail}>
-                      <EquipmentPhotoImage
-                        src={
-                          item.primaryPhoto
-                            ? equipmentPhotoImagePath(
-                                item.id,
-                                item.primaryPhoto.id,
-                                'thumbnail',
-                                item.primaryPhoto.derivativeRevision,
-                              )
-                            : undefined
-                        }
-                        alt={`${item.reference} primary photo`}
-                      />
-                    </span>
-                    <span className={styles.recentDetails}>
-                      <strong>{item.name}</strong>
-                      <span>{item.reference}</span>
-                      <time dateTime={item.createdAt.toISOString()}>
-                        Added {dateFormat.format(item.createdAt)}
-                      </time>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
+      ) : (
+        <ul className={styles.recentList} aria-label="Recently added Equipment">
+          {recentEquipment.map((item) => (
+            <li key={item.id}>
+              <Link className={styles.recentLink} href={`/equipment/${item.id}`}>
+                <span className={styles.thumbnail}>
+                  <EquipmentPhotoImage
+                    src={
+                      item.primaryPhoto
+                        ? equipmentPhotoImagePath(
+                            item.id,
+                            item.primaryPhoto.id,
+                            'thumbnail',
+                            item.primaryPhoto.derivativeRevision,
+                          )
+                        : undefined
+                    }
+                    alt={`${item.reference} primary photo`}
+                  />
+                </span>
+                <span className={styles.recentDetails}>
+                  <strong>{item.name}</strong>
+                  <span>{item.reference}</span>
+                  <time dateTime={item.createdAt.toISOString()}>
+                    Added {dateFormat.format(item.createdAt)}
+                  </time>
+                </span>
+                <ArrowRight className={styles.rowArrow} aria-hidden="true" size={17} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
@@ -556,15 +675,26 @@ export function Dashboard({ summary }: { summary: DashboardSummary }) {
   return (
     <div className={styles.page}>
       <header className={styles.pageHeader}>
-        <p className={styles.eyebrow}>Anth Nursery OS</p>
         <h1>Dashboard</h1>
         <p>Nursery overview and today’s priorities.</p>
       </header>
-      <Watering summary={summary} />
-      <Overview summary={summary} />
-      <Investment summary={summary} />
-      <Energy summary={summary} />
-      <RecentlyAdded summary={summary} />
+
+      <Snapshot summary={summary} />
+
+      <div className={styles.mainGrid}>
+        <Watering summary={summary} />
+        <div className={styles.sideStack}>
+          <RecentPlants summary={summary} />
+          <QuickActions />
+        </div>
+      </div>
+
+      <div className={styles.secondaryGrid}>
+        <Energy summary={summary} />
+        <Investment summary={summary} />
+      </div>
+
+      <RecentEquipment summary={summary} />
     </div>
   );
 }

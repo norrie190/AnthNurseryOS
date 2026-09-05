@@ -132,7 +132,8 @@ describe('Dashboard', () => {
     const section = screen.getByRole('heading', { name: 'Needs attention' }).closest('section')!;
     expect(section).toHaveTextContent('Overdue1');
     expect(section).toHaveTextContent('Due today1');
-    expect(section).toHaveTextContent('1 due soon');
+    expect(section).toHaveTextContent('Due soon1');
+    expect(section).toHaveTextContent('Upcoming0');
     expect(section).toHaveTextContent('4 days overdue');
     expect(section).toHaveTextContent('Due today');
     expect(section).toHaveTextContent('Shelf A');
@@ -149,50 +150,6 @@ describe('Dashboard', () => {
       '/plants/plant-1/photos/photo-1/thumbnail?v=rev-1',
     );
   });
-  it('renders Plant and Equipment overview counts with capability wording', () => {
-    render(
-      <Dashboard
-        summary={summary({
-          plants: {
-            activeCount: 9,
-            growingCount: 4,
-            quarantineCount: 2,
-            soldCount: 2,
-            deceasedCount: 1,
-            archivedCount: 3,
-          },
-          equipment: {
-            activeCount: 7,
-            activeUsesPowerCount: 5,
-            activeDoesNotUsePowerCount: 2,
-            archivedCount: 1,
-          },
-        })}
-      />,
-    );
-
-    const overview = screen.getByRole('heading', { name: 'Nursery snapshot' }).closest('section')!;
-    const plants = within(overview)
-      .getByRole('heading', { name: 'Plants', level: 3 })
-      .closest('article')!;
-    expect(plants).toHaveTextContent('9active');
-    expect(plants).toHaveTextContent('Growing4');
-    expect(plants).toHaveTextContent('Quarantine2');
-    expect(plants).toHaveTextContent('Sold2');
-    expect(plants).toHaveTextContent('Deceased1');
-    expect(plants).toHaveTextContent('Archived3');
-
-    const equipment = within(overview)
-      .getByRole('heading', { name: 'Equipment', level: 3 })
-      .closest('article')!;
-    expect(equipment).toHaveTextContent('7active');
-    expect(equipment).toHaveTextContent('Power tracking capable5');
-    expect(equipment).toHaveTextContent('Does not use power2');
-    expect(equipment).toHaveTextContent('Archived1');
-    expect(equipment).toHaveTextContent(/does not mean an item is currently operating/i);
-    expect(equipment).not.toHaveTextContent(/currently running/i);
-  });
-
   it('shows complete same-currency investment without a grand total', () => {
     const plants = currency('GBP', 1250);
     const equipment = currency('GBP', 2500);
@@ -384,7 +341,7 @@ describe('Dashboard', () => {
     expect(
       screen.getByText(/cost estimates are unknown because no current tariff/i),
     ).toBeInTheDocument();
-    expect(screen.getAllByText('Unknown').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Unknown')).not.toBeInTheDocument();
   });
 
   it('treats zero tariff and known zero consumption as valid zero values', () => {
@@ -420,7 +377,7 @@ describe('Dashboard', () => {
 
     expect(screen.getByText('0 W')).toBeInTheDocument();
     expect(screen.getByText('0 kWh')).toBeInTheDocument();
-    expect(screen.getAllByText('£0.00')).toHaveLength(3);
+    expect(screen.getAllByText('£0.00')).toHaveLength(4);
     const tariffCard = screen
       .getByRole('heading', { name: 'Current electricity tariff' })
       .closest('article')!;
@@ -484,5 +441,137 @@ describe('Dashboard', () => {
     expect(
       screen.getByRole('img', { name: 'Photo unavailable: ANT-0 primary photo' }),
     ).toBeInTheDocument();
+  });
+
+  it('renders the command-centre snapshot and route-backed quick actions', () => {
+    render(
+      <Dashboard
+        summary={summary({
+          plants: { ...summary().plants, activeCount: 12, archivedCount: 3 },
+          equipment: { ...summary().equipment, activeCount: 6, activeUsesPowerCount: 4 },
+          watering: {
+            totalEligible: 4,
+            overdue: 1,
+            dueToday: 1,
+            needsFirstWatering: 1,
+            dueSoon: 1,
+            upcoming: 0,
+            notConfigured: 0,
+            attention: [],
+          },
+          recentlyAdded: {
+            plants: [
+              {
+                id: 'plant-1',
+                reference: 'ANT-0001',
+                name: 'Aloe',
+                displayName: 'Aloe',
+                createdAt: new Date('2026-08-02T12:00:00.000Z'),
+                primaryPhoto: null,
+              },
+            ],
+            equipment: [],
+          },
+        })}
+      />,
+    );
+
+    expect(screen.getByRole('region', { name: 'Nursery snapshot' })).toBeInTheDocument();
+    expect(screen.getByText('Plants')).toBeInTheDocument();
+    expect(screen.getByText('Equipment')).toBeInTheDocument();
+    expect(screen.getByText('Watering attention')).toBeInTheDocument();
+    expect(screen.getByText('Energy estimate')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Recent Plants' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Quick actions' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Add Plant/ })).toHaveAttribute('href', '/plants/new');
+    expect(screen.getByRole('link', { name: /^Watering/ })).toHaveAttribute('href', '/watering');
+    expect(screen.getByRole('link', { name: /Add Equipment/ })).toHaveAttribute(
+      'href',
+      '/equipment/new',
+    );
+    expect(screen.getByRole('link', { name: /^Breeding/ })).toHaveAttribute('href', '/breeding');
+    expect(
+      within(screen.getByRole('navigation', { name: 'Dashboard quick actions' })).getByRole(
+        'link',
+        {
+          name: /Configure tariff/,
+        },
+      ),
+    ).toHaveAttribute('href', '/energy/tariffs');
+  });
+
+  it('explains an unavailable Energy estimate through existing setup coverage', () => {
+    render(
+      <Dashboard
+        summary={summary({
+          energy: energy({
+            activePoweredEquipmentCount: 5,
+            activePoweredEquipmentConfiguredTodayCount: 0,
+            configurationCoverage: {
+              relevantEquipmentCount: 5,
+              configuredEquipmentCount: 0,
+              complete: false,
+            },
+          }),
+        })}
+      />,
+    );
+
+    expect(screen.getByText('Estimate unavailable')).toBeInTheDocument();
+    expect(screen.getByText('Setup incomplete · 0 of 5 configured')).toBeInTheDocument();
+  });
+
+  it('shows one calm healthy Watering message', () => {
+    render(
+      <Dashboard
+        summary={summary({
+          watering: {
+            totalEligible: 1,
+            overdue: 0,
+            dueToday: 0,
+            needsFirstWatering: 0,
+            dueSoon: 1,
+            upcoming: 0,
+            notConfigured: 0,
+            attention: [],
+          },
+        })}
+      />,
+    );
+
+    const section = screen.getByRole('heading', { name: 'Needs attention' }).closest('section')!;
+    expect(within(section).getByRole('status')).toHaveTextContent(
+      'No urgent watering tasks today.',
+    );
+    expect(section).not.toHaveTextContent('Nothing needs immediate watering attention.');
+  });
+
+  it('shows a concise incomplete Energy state without unknown metric noise', () => {
+    render(
+      <Dashboard
+        summary={summary({
+          energy: energy({
+            activePoweredEquipmentCount: 5,
+            activePoweredEquipmentConfiguredTodayCount: 0,
+            configurationCoverage: {
+              relevantEquipmentCount: 5,
+              configuredEquipmentCount: 0,
+              complete: false,
+            },
+          }),
+        })}
+      />,
+    );
+
+    const section = screen.getByRole('heading', { name: 'Energy estimates' }).closest('section')!;
+    expect(within(section).getByRole('heading', { name: 'Setup incomplete' })).toBeInTheDocument();
+    expect(section).toHaveTextContent('0 of 5 power-tracking items configured today.');
+    expect(section).toHaveTextContent('No current tariff.');
+    expect(within(section).queryByText('Configured operating draw')).not.toBeInTheDocument();
+  });
+
+  it('does not render the removed Collection detail module', () => {
+    render(<Dashboard summary={summary()} />);
+    expect(screen.queryByRole('heading', { name: 'Collection detail' })).not.toBeInTheDocument();
   });
 });
