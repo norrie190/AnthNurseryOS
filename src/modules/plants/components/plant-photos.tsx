@@ -315,7 +315,9 @@ export function PlantPhotos({
           <p className={shared.eyebrow}>Plant identity</p>
           <h2 id="photos-heading">Photos</h2>
         </div>
-        <span className={styles.photoCount}>{visiblePhotos.length} photos</span>
+        <span className={styles.photoCount}>
+          {visiblePhotos.length} {visiblePhotos.length === 1 ? 'photo' : 'photos'}
+        </span>
       </div>
       {archived && (
         <p className={shared.sectionIntro}>
