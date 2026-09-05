@@ -15,29 +15,43 @@ export default async function ElectricityTariffsPage() {
   const current = rows.find((row) => !row.voidedAt && includesDate(row, today));
   return (
     <div className={styles.page}>
-      <Link href="/equipment">← Equipment</Link>
-      <header>
+      <div className={styles.breadcrumbs}>
+        <Link href="/equipment">← Equipment</Link>
+      </div>
+      <header className={styles.pageHeader}>
         <h1>Electricity tariffs</h1>
         <p>
-          Your shared electricity unit rate and its history. GBP only, flat rates; no standing
-          charges.
+          Track the electricity rate used for estimated running costs. Rates are recorded in pence
+          per kWh; standing charges are not included.
         </p>
       </header>
-      <section className={`${styles.card} ${styles.stack}`} aria-labelledby="current-tariff">
-        <h2 id="current-tariff">Current applicable tariff</h2>
+      <section
+        className={`${styles.currentSection} ${styles.stack}`}
+        aria-labelledby="current-tariff"
+      >
+        <p className={styles.eyebrow}>Current configuration</p>
+        <h2 id="current-tariff">Current electricity tariff</h2>
         {current ? (
-          <>
-            <strong>{compactDecimal(current.unitRateMinorPerKwh!)} p/kWh</strong>
-            <p>{humanRange(current.effectiveFrom, current.effectiveTo)}</p>
-          </>
+          <dl className={styles.currentDetails}>
+            <div>
+              <dt>Rate</dt>
+              <dd>{compactDecimal(current.unitRateMinorPerKwh!)} p/kWh</dd>
+            </div>
+            <div>
+              <dt>Effective</dt>
+              <dd>{humanRange(current.effectiveFrom, current.effectiveTo)}</dd>
+            </div>
+          </dl>
         ) : (
           <p>
-            No tariff applies today. Energy estimates remain available, but positive consumption
-            cannot be costed without a rate.
+            Electricity tariff not configured. Energy estimates cannot be costed without a rate.
           </p>
         )}
       </section>
-      <section className={`${styles.card} ${styles.stack}`} aria-label="Manage tariff history">
+      <section
+        className={`${styles.section} ${styles.stack}`}
+        aria-label="Tariff history and maintenance"
+      >
         <EnergyHistory kind="tariff" rows={rows} token={timelineToken} today={today} />
       </section>
     </div>

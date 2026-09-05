@@ -60,7 +60,10 @@ export function EnergyHistory({ kind, equipmentId, token, rows, today, canRecord
       <h3 ref={heading} tabIndex={-1}>
         {kind === 'power' ? 'Power history' : 'Tariff history'}
       </h3>
-      <p>Dates include both the first and last day shown. Gaps mean unknown data, not zero.</p>
+      <p>
+        Earlier, scheduled, corrected, and voided records are retained here. Gaps mean unknown data,
+        not zero.
+      </p>
       {message && (
         <InlineNotice variant="success" role="status">
           {message}

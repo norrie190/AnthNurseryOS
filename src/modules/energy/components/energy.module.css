@@ -8,6 +8,56 @@
 .page {
   max-width: 76rem;
 }
+.breadcrumbs {
+  min-height: 1.5rem;
+}
+.pageHeader {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 48rem;
+}
+.pageHeader h1,
+.pageHeader p {
+  margin: 0;
+}
+.pageHeader p {
+  color: var(--text-muted);
+}
+.eyebrow {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.currentSection {
+  padding: 1.5rem;
+  border-left: 4px solid var(--accent);
+  border-block: 1px solid var(--border);
+  background: var(--surface);
+}
+.currentSection h2 {
+  margin: 0;
+}
+.currentDetails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin: 0;
+}
+.currentDetails dt {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.currentDetails dd {
+  margin: 0.25rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+.section {
+  min-width: 0;
+}
 .card {
   padding: 1.5rem;
   border: 1px solid var(--border);
@@ -103,9 +153,14 @@
 .fields,
 .metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   min-width: 0;
+}
+.fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 .fields {
   border: 0;
@@ -167,6 +222,14 @@
   font-size: 1.1rem;
   font-weight: 600;
 }
+.configurationState {
+  display: grid;
+  gap: 0.4rem;
+  padding-block: 0.25rem 0.5rem;
+}
+.configurationState p {
+  margin: 0;
+}
 .srOnly {
   position: absolute;
   width: 1px;
@@ -183,6 +246,12 @@
   .fields,
   .metrics {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .currentSection {
+    padding: 1rem;
+  }
+  .currentDetails {
+    gap: 1rem;
   }
   .historyRow {
     flex-direction: column;

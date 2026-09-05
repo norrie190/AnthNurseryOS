@@ -19,10 +19,13 @@ export function EquipmentEnergy({ view }: { view: EquipmentEnergyView }) {
         </p>
       )}
       {view.usesPower && !current && (
-        <p>
-          No operating settings apply today. Record settings below, or review gaps and future dates
-          in the history.
-        </p>
+        <div className={styles.configurationState}>
+          <strong>Power configuration not recorded</strong>
+          <p>
+            No settings apply today. Record settings below, or review future dates and gaps in the
+            history.
+          </p>
+        </div>
       )}
       {current && (
         <>
@@ -31,6 +34,7 @@ export function EquipmentEnergy({ view }: { view: EquipmentEnergyView }) {
             assume these settings and today’s rate stay unchanged; future scheduled changes are not
             included in projections.
           </p>
+          <h3>Current configuration and estimates</h3>
           <dl className={styles.metrics}>
             {[
               ['Configured operating power', `${current.watts} W`],

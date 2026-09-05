@@ -251,7 +251,7 @@ test('tariff empty page links Equipment and describes exact pence entry, not pou
   });
   render(await TariffsPage());
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Electricity tariffs');
-  expect(screen.getByText(/No tariff applies today/)).toBeInTheDocument();
+  expect(screen.getByText(/Electricity tariff not configured/)).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Record tariff' }));
   expect(screen.getByText(/Enter the electricity unit rate in pence per kWh/)).toBeInTheDocument();
   expect(screen.queryByLabelText('Currency')).not.toBeInTheDocument();
