@@ -3,9 +3,9 @@ import {
   ArrowRight,
   CalendarClock,
   CheckCircle2,
-  CircleGauge,
   Gauge,
   Leaf,
+  PlugZap,
   PoundSterling,
   Settings2,
   Zap,
@@ -178,38 +178,40 @@ function EquipmentTable({ overview }: { overview: EnergyOverview }) {
                   alt={`${item.reference} primary photo`}
                 />
               </span>
-              <div className={styles.equipmentIdentity}>
-                <strong>{item.name}</strong>
-                <span>{item.reference}</span>
-              </div>
-              {item.current ? (
-                <>
-                  <div className={styles.equipmentValue}>
-                    <span>Settings</span>
-                    <strong>
-                      {compactDecimal(item.current.powerWatts)} W ·{' '}
-                      {compactDecimal(item.current.hoursPerDay)} h/day
-                    </strong>
-                  </div>
-                  <div className={styles.equipmentValue}>
-                    <span>Daily estimate</span>
-                    <strong>{compactDecimal(item.current.estimatedKwhPerDay)} kWh</strong>
-                    <small>{item.current.estimatedCostPerDay ?? 'Cost unavailable'}</small>
-                  </div>
-                </>
-              ) : (
-                <div className={styles.missingSettings}>
-                  <strong>No settings for today</strong>
-                  <span>
-                    {item.nextSettingFrom
-                      ? `Scheduled from ${humanDate(item.nextSettingFrom)}`
-                      : 'Add operating power and hours'}
-                  </span>
+              <div className={styles.equipmentBody}>
+                <div className={styles.equipmentIdentity}>
+                  <span>{item.reference}</span>
+                  <strong>{item.name}</strong>
                 </div>
-              )}
-              <Link className={styles.manageLink} href={`/equipment/${item.id}#energy`}>
-                Manage <ArrowRight size={15} aria-hidden="true" />
-              </Link>
+                {item.current ? (
+                  <div className={styles.equipmentFacts}>
+                    <div className={styles.equipmentValue}>
+                      <span>Settings</span>
+                      <strong>
+                        {compactDecimal(item.current.powerWatts)} W ·{' '}
+                        {compactDecimal(item.current.hoursPerDay)} h/day
+                      </strong>
+                    </div>
+                    <div className={styles.equipmentValue}>
+                      <span>Daily estimate</span>
+                      <strong>{compactDecimal(item.current.estimatedKwhPerDay)} kWh</strong>
+                      <small>{item.current.estimatedCostPerDay ?? 'Cost unavailable'}</small>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.missingSettings}>
+                    <strong>No settings for today</strong>
+                    <span>
+                      {item.nextSettingFrom
+                        ? `Scheduled from ${humanDate(item.nextSettingFrom)}`
+                        : 'Add operating power and hours'}
+                    </span>
+                  </div>
+                )}
+                <Link className={styles.manageLink} href={`/equipment/${item.id}#energy`}>
+                  Manage settings <ArrowRight size={15} aria-hidden="true" />
+                </Link>
+              </div>
             </article>
           ))}
         </div>
@@ -228,12 +230,49 @@ export function EnergyOverviewPage({ overview }: { overview: EnergyOverview }) {
         <div>
           <p className={styles.eyebrow}>Nursery utilities</p>
           <h1>Energy</h1>
-          <p>Understand your configured electricity use and keep every estimate honest.</p>
+          <p>See the cost of your nursery setup without mistaking estimates for live readings.</p>
         </div>
         <Link className={styles.secondaryButton} href="/energy/tariffs">
           <Settings2 size={17} aria-hidden="true" /> Manage tariffs
         </Link>
       </header>
+
+      <section className={styles.hero} aria-labelledby="energy-outlook-heading">
+        <div className={styles.heroCopy}>
+          <div className={styles.heroLabel}>
+            <PlugZap size={19} aria-hidden="true" />
+            <span>Current setup projection</span>
+          </div>
+          <h2 id="energy-outlook-heading">{totals.estimatedCost30Days ?? 'Cost not available'}</h2>
+          <p>{knownCostLabel} for the next 30 days</p>
+          <span className={styles.heroCoverage}>
+            {totals.costCoverageComplete ? (
+              <CheckCircle2 size={16} aria-hidden="true" />
+            ) : (
+              <AlertTriangle size={16} aria-hidden="true" />
+            )}
+            {totals.costCoverageComplete
+              ? 'Complete coverage'
+              : 'Known subtotal · setup incomplete'}
+          </span>
+        </div>
+        <dl className={styles.heroStats}>
+          <div>
+            <dt>Configured items</dt>
+            <dd>
+              {overview.configuredCount} of {overview.equipmentCount}
+            </dd>
+          </div>
+          <div>
+            <dt>Electricity rate</dt>
+            <dd>
+              {overview.currentTariff
+                ? `${compactDecimal(overview.currentTariff.unitRateMinorPerKwh)} p/kWh`
+                : 'Missing'}
+            </dd>
+          </div>
+        </dl>
+      </section>
 
       <ConfigurationStatus overview={overview} />
 
@@ -262,14 +301,14 @@ export function EnergyOverviewPage({ overview }: { overview: EnergyOverview }) {
         />
         <Metric
           icon={<PoundSterling size={21} />}
-          label={`${knownCostLabel} · 30 days`}
-          value={totals.estimatedCost30Days ?? 'Not available'}
+          label={`${knownCostLabel} · per day`}
+          value={totals.estimatedCostPerDay ?? 'Not available'}
           note={
             totals.costCoverageComplete ? 'Complete current coverage' : 'Coverage is incomplete'
           }
         />
         <Metric
-          icon={<CircleGauge size={21} />}
+          icon={<CalendarClock size={21} />}
           label={`${knownCostLabel} · 365 days`}
           value={totals.estimatedCost365Days ?? 'Not available'}
           note="Projection from today’s settings and rate"

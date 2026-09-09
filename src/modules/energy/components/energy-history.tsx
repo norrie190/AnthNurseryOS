@@ -57,33 +57,38 @@ export function EnergyHistory({ kind, equipmentId, token, rows, today, canRecord
   }
   return (
     <div className={styles.stack}>
-      <h3 ref={heading} tabIndex={-1}>
-        {kind === 'power' ? 'Power history' : 'Tariff history'}
-      </h3>
-      <p>
-        Earlier, scheduled, corrected, and voided records are retained here. Gaps mean unknown data,
-        not zero.
-      </p>
+      <div className={styles.historyHeader}>
+        <div>
+          <p className={styles.eyebrow}>Timeline</p>
+          <h3 ref={heading} tabIndex={-1}>
+            {kind === 'power' ? 'Power history' : 'Tariff history'}
+          </h3>
+          <p>
+            Earlier, scheduled, corrected, and voided records are retained here. Gaps mean unknown
+            data, not zero.
+          </p>
+        </div>
+        {!editor && canRecord && (
+          <div className={styles.actions}>
+            <button className={styles.primary} disabled={refreshing} onClick={() => open('record')}>
+              Record {subject}
+            </button>
+            {rows.some((row) => !row.voidedAt) && (
+              <button
+                className={styles.secondary}
+                disabled={refreshing}
+                onClick={() => open('change')}
+              >
+                Change {subject}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
       {message && (
         <InlineNotice variant="success" role="status">
           {message}
         </InlineNotice>
-      )}
-      {!editor && canRecord && (
-        <div className={styles.actions}>
-          <button className={styles.primary} disabled={refreshing} onClick={() => open('record')}>
-            Record {subject}
-          </button>
-          {rows.some((row) => !row.voidedAt) && (
-            <button
-              className={styles.secondary}
-              disabled={refreshing}
-              onClick={() => open('change')}
-            >
-              Change {subject}
-            </button>
-          )}
-        </div>
       )}
       {editor && (
         <EnergyEditor
@@ -109,7 +114,7 @@ export function EnergyHistory({ kind, equipmentId, token, rows, today, canRecord
         >
           {rows.map((row) => (
             <li key={row.id} className={styles.historyRow}>
-              <div className={styles.stack}>
+              <div className={styles.historyDetails}>
                 <strong>{humanRange(row.effectiveFrom, row.effectiveTo)}</strong>
                 <span>
                   {kind === 'power'
@@ -139,7 +144,7 @@ export function EnergyHistory({ kind, equipmentId, token, rows, today, canRecord
                     Correct
                   </button>
                   <button
-                    className={styles.secondary}
+                    className={styles.voidButton}
                     disabled={!!editor || refreshing}
                     aria-label={`Void record ${humanRange(row.effectiveFrom, row.effectiveTo)}`}
                     onClick={() => open('void', row)}

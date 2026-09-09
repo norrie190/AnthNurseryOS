@@ -26,19 +26,13 @@ export default async function ElectricityTariffsPage() {
         <div>
           <p className={styles.eyebrow}>Energy settings</p>
           <h1>Electricity tariffs</h1>
-          <p>
-            Keep a dated history of the unit rates used by nursery estimates. Enter rates in pence
-            per kWh; standing charges are not included.
-          </p>
+          <p>Keep the rate behind every estimate accurate without rewriting your history.</p>
         </div>
         <Link className={styles.overviewLink} href="/energy">
           View Energy overview
         </Link>
       </header>
-      <section
-        className={`${styles.currentSection} ${styles.stack}`}
-        aria-labelledby="current-tariff"
-      >
+      <section className={styles.currentSection} aria-labelledby="current-tariff">
         <div className={styles.tariffHeading}>
           <span className={styles.tariffIcon} aria-hidden="true">
             <Zap size={21} />
@@ -72,6 +66,10 @@ export default async function ElectricityTariffsPage() {
             )}
           </div>
         )}
+        <p className={styles.tariffGuidance}>
+          Enter unit rates in pence per kWh. Standing charges are not included in nursery
+          projections.
+        </p>
       </section>
       <section
         className={`${styles.section} ${styles.stack}`}
