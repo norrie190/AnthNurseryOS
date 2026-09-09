@@ -36,12 +36,7 @@ export default async function EquipmentDetailPage({
         <EquipmentPhotoImage
           src={
             primaryPhoto
-              ? equipmentPhotoImagePath(
-                  equipment.id,
-                  primaryPhoto.id,
-                  'thumbnail',
-                  primaryPhoto.derivativeRevision,
-                )
+              ? equipmentPhotoImagePath(equipment.id, primaryPhoto.id, 'display')
               : undefined
           }
           alt={`${equipment.reference} primary photo`}

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArrowUpRight, Bolt, CalendarDays, MapPin } from 'lucide-react';
 import { EmptyState } from '../../../components/ui/empty-state';
 import type { EquipmentListItem } from '../equipment-queries';
 import { equipmentPhotoImagePath } from '../equipment-photo-browser';
@@ -39,67 +40,61 @@ export function EquipmentList({
   const dateLabel = archived ? 'Archived' : 'Added';
   return (
     <div className={styles.collection}>
-      <div className={styles.columns} aria-hidden="true">
-        <span>Reference</span>
-        <span>Equipment</span>
-        <span>Category</span>
-        <span>Energy tracking</span>
-        <span>Location</span>
-        <span>{dateLabel}</span>
-      </div>
       <ul className={styles.list} aria-label={archived ? 'Archived Equipment' : 'Equipment'}>
         {equipment.map((item) => {
           const date = archived ? item.archivedAt : item.createdAt;
           return (
             <li key={item.id}>
               <Link className={styles.row} href={`/equipment/${item.id}`}>
-                <strong className={styles.reference}>{item.reference}</strong>
-                <span className={styles.name}>
-                  <span className={styles.listPhoto}>
-                    <EquipmentPhotoImage
-                      src={
-                        item.photos?.[0]
-                          ? equipmentPhotoImagePath(
-                              item.id,
-                              item.photos[0].id,
-                              'thumbnail',
-                              item.photos[0].derivativeRevision,
-                            )
-                          : undefined
-                      }
-                      alt={`${item.reference} primary photo`}
-                    />
-                  </span>
-                  <span>
-                    {item.name}
-                    {(item.brand || item.model) && (
-                      <span className={styles.manufacturer}>
-                        {[item.brand, item.model].filter(Boolean).join(' · ')}
-                      </span>
-                    )}
+                <span className={styles.listPhoto}>
+                  <EquipmentPhotoImage
+                    src={
+                      item.photos?.[0]
+                        ? equipmentPhotoImagePath(
+                            item.id,
+                            item.photos[0].id,
+                            'thumbnail',
+                            item.photos[0].derivativeRevision,
+                          )
+                        : undefined
+                    }
+                    alt={`${item.reference} primary photo`}
+                  />
+                  <span className={styles.powerBadge} data-powered={item.usesPower || undefined}>
+                    <Bolt aria-hidden="true" size={14} />
+                    Energy tracking: {item.usesPower ? 'Supported' : 'Not enabled'}
                   </span>
                 </span>
-                <span>
-                  <span className={styles.mobileLabel}>Category: </span>
-                  {item.category}
-                </span>
-                <span>
-                  <span className={styles.mobileLabel}>Energy tracking: </span>
-                  {item.usesPower ? 'Supported' : 'Not enabled'}
-                </span>
-                <span>
-                  <span className={styles.mobileLabel}>Location: </span>
-                  {item.location?.name ?? 'No location'}
-                  {item.location?.archivedAt ? ' (archived)' : ''}
-                </span>
-                <span>
-                  <span className={styles.mobileLabel}>{dateLabel}: </span>
-                  {date ? (
-                    <time dateTime={date.toISOString()}>{dateFormat.format(date)}</time>
-                  ) : (
-                    'Not recorded'
+                <span className={styles.cardBody}>
+                  <span className={styles.cardHeading}>
+                    <strong className={styles.reference}>{item.reference}</strong>
+                    <ArrowUpRight aria-hidden="true" size={18} />
+                  </span>
+                  <strong className={styles.name}>{item.name}</strong>
+                  <span className={styles.category}>{item.category}</span>
+                  {(item.brand || item.model) && (
+                    <span className={styles.manufacturer}>
+                      {[item.brand, item.model].filter(Boolean).join(' · ')}
+                    </span>
                   )}
-                  {archived && <span className={styles.manufacturer}>View details to restore</span>}
+                  <span className={styles.cardMeta}>
+                    <span>
+                      <MapPin aria-hidden="true" size={15} />
+                      <span className={styles.mobileLabel}>Location: </span>
+                      {item.location?.name ?? 'No location'}
+                      {item.location?.archivedAt ? ' (archived)' : ''}
+                    </span>
+                    <span>
+                      <CalendarDays aria-hidden="true" size={15} />
+                      <span className={styles.mobileLabel}>{dateLabel}: </span>
+                      {date ? (
+                        <time dateTime={date.toISOString()}>{dateFormat.format(date)}</time>
+                      ) : (
+                        'Not recorded'
+                      )}
+                    </span>
+                  </span>
+                  {archived && <span className={styles.restoreHint}>View details to restore</span>}
                 </span>
               </Link>
             </li>

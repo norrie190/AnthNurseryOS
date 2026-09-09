@@ -39,6 +39,26 @@ export function EquipmentForm({
   const submitting = useRef(false);
   const summary = useRef<HTMLDivElement>(null);
   const hasPurchase = !!opened.edit && opened.initialValues.recordPurchase === 'on';
+  const optionalFields: readonly EquipmentFormField[] = [
+    'brand',
+    'model',
+    'serialNumber',
+    'notes',
+    'recordPurchase',
+    'seller',
+    'orderReference',
+    'purchaseDate',
+    'equipmentPrice',
+    'shippingCost',
+    'otherCost',
+    'currency',
+  ];
+  const optionalValuesPresent = optionalFields.some((field) => {
+    const value = opened.initialValues[field];
+    return field === 'currency' ? false : value.trim().length > 0;
+  });
+  const optionalErrorsPresent = optionalFields.some((field) => !!state.fieldErrors[field]);
+  const [advancedOpen, setAdvancedOpen] = useState(!!edit || optionalValuesPresent);
   useEffect(() => {
     if (!pending) {
       submitting.current = false;
@@ -137,16 +157,18 @@ export function EquipmentForm({
           </ul>
         </InlineNotice>
       )}
-      <FormSection title="Equipment identity" className={styles.card} disabled={pending}>
+      <FormSection
+        title={opened.edit ? 'Equipment details' : 'Start with the essentials'}
+        className={`${styles.card} ${styles.essentialsCard}`}
+        disabled={pending}
+      >
         <p className={styles.sectionIntro}>
-          Start with the name that will identify this physical asset. Its EQP reference is assigned
-          when you save.
+          {opened.edit
+            ? `Update the everyday details for ${opened.edit.reference}.`
+            : 'Give this physical item a name. Its permanent EQP reference is assigned automatically.'}
         </p>
         <div className={styles.grid}>
           {textField('name')}
-          <div className={`${styles.formGroupLabel} ${styles.fullWidth}`}>
-            Category and manufacturer
-          </div>
           <div className={styles.field}>
             <label htmlFor="equipment-category">Category</label>
             <input
@@ -164,10 +186,6 @@ export function EquipmentForm({
               Choose a suggestion or type your own category.
             </p>
             {error('category')}
-          </div>
-          {(['brand', 'model', 'serialNumber'] as const).map((field) => textField(field))}
-          <div className={`${styles.formGroupLabel} ${styles.fullWidth}`}>
-            Location and tracking
           </div>
           <div className={styles.field}>
             <label htmlFor="equipment-usesPower">Track electricity use for this equipment</label>
@@ -199,85 +217,105 @@ export function EquipmentForm({
             )}
             {error('locationId')}
           </div>
-          <div className={`${styles.formGroupLabel} ${styles.fullWidth}`}>Notes</div>
-          <div className={`${styles.field} ${styles.fullWidth}`}>
-            <label htmlFor="equipment-notes">Notes</label>
-            <textarea {...control('notes')} rows={4} maxLength={10000} />
-            {error('notes')}
-          </div>
         </div>
       </FormSection>
-      <FormSection title="Purchase information" className={styles.card} disabled={pending}>
-        {hasPurchase ? (
-          <>
-            <input type="hidden" name="recordPurchase" value="on" />
-            <p className={styles.hint}>
-              A purchase is recorded. Clear individual fields when unknown; the purchase record will
-              be kept.
-            </p>
-          </>
-        ) : (
-          <>
-            <label className={styles.checkLabel} htmlFor="equipment-recordPurchase">
-              <input
-                id="equipment-recordPurchase"
-                type="checkbox"
-                name="recordPurchase"
-                checked={values.recordPurchase === 'on'}
-                onChange={(event) => change('recordPurchase', event.target.checked ? 'on' : '')}
-              />
-              Record purchase information
-            </label>
-            <p className={styles.hint}>
-              Optional. You can record a purchase even if all its details are unknown.
-            </p>
-            {error('recordPurchase')}
-          </>
-        )}
-        {values.recordPurchase === 'on' && (
-          <div className={`${styles.grid} ${styles.purchaseFields}`}>
-            {textField('seller')}
-            {textField('orderReference')}
-            {textField('purchaseDate', 'date')}
-            <div className={styles.field}>
-              <label htmlFor="equipment-currency">Currency</label>
-              <select {...control('currency')}>
-                {currencies.map((currency) => (
-                  <option key={currency} value={currency}>
-                    {currency === 'GBP' ? 'GBP — British pound' : currency}
-                  </option>
-                ))}
-              </select>
-              {error('currency')}
-              <p className={styles.hint}>Changing currency does not convert the amounts.</p>
-            </div>
-            {(['equipmentPrice', 'shippingCost', 'otherCost'] as const).map((field) => (
-              <div className={styles.field} key={field}>
-                <label htmlFor={`equipment-${field}`}>
-                  {equipmentFieldLabels[field]} ({values.currency === 'GBP' ? '£' : values.currency}
-                  )
-                </label>
-                <input
-                  {...control(
-                    field,
-                    field === 'shippingCost' ? 'cost-help shipping-help' : 'cost-help',
-                  )}
-                  inputMode="decimal"
-                  placeholder="0.00"
-                />
-                {error(field)}
+
+      <details
+        className={styles.advancedDetails}
+        open={advancedOpen || optionalErrorsPresent}
+        onToggle={(event) => setAdvancedOpen(event.currentTarget.open)}
+      >
+        <summary>
+          <span>
+            <strong>{opened.edit ? 'Manufacturer, purchase and notes' : 'Add more details'}</strong>
+            <small>Brand, model, serial number, purchase information and notes.</small>
+          </span>
+          {optionalErrorsPresent && <span className={styles.disclosureState}>Needs attention</span>}
+        </summary>
+        <div className={styles.advancedContent}>
+          <FormSection title="Manufacturer and notes" className={styles.card} disabled={pending}>
+            <div className={styles.grid}>
+              {(['brand', 'model', 'serialNumber'] as const).map((field) => textField(field))}
+              <div className={`${styles.field} ${styles.fullWidth}`}>
+                <label htmlFor="equipment-notes">Notes</label>
+                <textarea {...control('notes')} rows={4} maxLength={10000} />
+                {error('notes')}
               </div>
-            ))}
-            <p className={`${styles.hint} ${styles.fullWidth}`} id="cost-help">
-              Leave unknown amounts blank. Enter 0 for a known zero cost.
-            </p>
-            <p className={`${styles.hint} ${styles.fullWidth}`} id="shipping-help">
-              Allocated shipping is the amount assigned to this individual item, not necessarily the
-              full shipping cost of a shared order.
-            </p>
-          </div>
-        )}
-      </FormSection>
+            </div>
+          </FormSection>
+          <FormSection title="Purchase information" className={styles.card} disabled={pending}>
+            {hasPurchase ? (
+              <>
+                <input type="hidden" name="recordPurchase" value="on" />
+                <p className={styles.hint}>
+                  A purchase is recorded. Clear individual fields when unknown; the purchase record
+                  will be kept.
+                </p>
+              </>
+            ) : (
+              <>
+                <label className={styles.checkLabel} htmlFor="equipment-recordPurchase">
+                  <input
+                    id="equipment-recordPurchase"
+                    type="checkbox"
+                    name="recordPurchase"
+                    checked={values.recordPurchase === 'on'}
+                    onChange={(event) => change('recordPurchase', event.target.checked ? 'on' : '')}
+                  />
+                  Record purchase information
+                </label>
+                <p className={styles.hint}>
+                  Optional. You can record a purchase even if all its details are unknown.
+                </p>
+                {error('recordPurchase')}
+              </>
+            )}
+            {values.recordPurchase === 'on' && (
+              <div className={`${styles.grid} ${styles.purchaseFields}`}>
+                {textField('seller')}
+                {textField('orderReference')}
+                {textField('purchaseDate', 'date')}
+                <div className={styles.field}>
+                  <label htmlFor="equipment-currency">Currency</label>
+                  <select {...control('currency')}>
+                    {currencies.map((currency) => (
+                      <option key={currency} value={currency}>
+                        {currency === 'GBP' ? 'GBP — British pound' : currency}
+                      </option>
+                    ))}
+                  </select>
+                  {error('currency')}
+                  <p className={styles.hint}>Changing currency does not convert the amounts.</p>
+                </div>
+                {(['equipmentPrice', 'shippingCost', 'otherCost'] as const).map((field) => (
+                  <div className={styles.field} key={field}>
+                    <label htmlFor={`equipment-${field}`}>
+                      {equipmentFieldLabels[field]} (
+                      {values.currency === 'GBP' ? '£' : values.currency})
+                    </label>
+                    <input
+                      {...control(
+                        field,
+                        field === 'shippingCost' ? 'cost-help shipping-help' : 'cost-help',
+                      )}
+                      inputMode="decimal"
+                      placeholder="0.00"
+                    />
+                    {error(field)}
+                  </div>
+                ))}
+                <p className={`${styles.hint} ${styles.fullWidth}`} id="cost-help">
+                  Leave unknown amounts blank. Enter 0 for a known zero cost.
+                </p>
+                <p className={`${styles.hint} ${styles.fullWidth}`} id="shipping-help">
+                  Allocated shipping is the amount assigned to this individual item, not necessarily
+                  the full shipping cost of a shared order.
+                </p>
+              </div>
+            )}
+          </FormSection>
+        </div>
+      </details>
       <div className={styles.formFooter}>
         <p className={styles.hint} aria-live="polite">
           {pending
