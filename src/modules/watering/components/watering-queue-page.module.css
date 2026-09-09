@@ -1,12 +1,14 @@
 .page {
   display: grid;
-  gap: 1.25rem;
-  max-width: 68rem;
+  gap: clamp(1.25rem, 2.5vw, 2rem);
+  max-width: 82rem;
   min-width: 0;
 }
 .header h1 {
   margin: 0;
-  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.15rem, 4vw, 3.4rem);
+  line-height: 1.06;
   letter-spacing: -0.04em;
 }
 .header p:not(.eyebrow) {
@@ -16,65 +18,109 @@
 .eyebrow {
   margin: 0 0 0.5rem;
   color: var(--accent);
-  font-size: 0.8rem;
-  font-weight: 650;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .summary {
-  padding: 1.25rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-medium);
-  background: var(--surface);
-  box-shadow: var(--shadow-soft);
+  display: grid;
+  grid-template-columns: minmax(18rem, 1.3fr) minmax(21rem, 1fr);
+  gap: 1.5rem 2rem;
+  align-items: center;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid rgb(35 76 47 / 11%);
+  border-radius: var(--radius-large);
+  background:
+    radial-gradient(circle at 95% 5%, rgb(177 211 171 / 55%), transparent 18rem),
+    var(--surface-primary);
+  box-shadow: var(--shadow-card);
 }
-.total {
-  margin: 0 0 1rem;
+.summaryIntro {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.summaryIcon {
+  display: grid;
+  width: 3.5rem;
+  height: 3.5rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 1.1rem;
+  color: #f2f8ef;
+  background: var(--color-primary);
+  box-shadow: 0 8px 20px rgb(36 85 54 / 20%);
+}
+.summaryIntro h2 {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  letter-spacing: -0.025em;
+}
+.summaryIntro p:last-child {
+  margin: 0.4rem 0 0;
   color: var(--text-muted);
-}
-.total strong {
-  color: var(--text);
-  font-size: 1.4rem;
+  font-size: 0.9rem;
 }
 .summary dl {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 0.55rem;
   margin: 0;
 }
 .summarySecondary {
-  margin-top: 0.75rem !important;
-  padding-top: 0.75rem;
+  grid-column: 1 / -1;
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem !important;
+  padding-top: 0.9rem;
   border-top: 1px solid var(--border-subtle);
 }
 .summary dl div {
-  padding: 0.65rem 0.75rem;
-  border-left: 3px solid var(--border-strong);
+  padding: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-medium);
+  background: rgb(255 255 255 / 55%);
 }
 .summaryPrimary [data-status='OVERDUE'] {
-  border-left-color: var(--color-danger);
+  color: var(--color-danger);
 }
 .summaryPrimary [data-status='DUE_TODAY'] {
-  border-left-color: var(--color-attention);
+  color: var(--color-attention);
 }
 .summaryPrimary [data-status='NEEDS_FIRST_WATERING'] {
-  border-left-color: var(--color-info);
+  color: var(--color-info);
+}
+.summarySecondary div {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
 }
 .summary dt {
-  color: var(--text-muted);
+  color: currentColor;
   font-size: 0.78rem;
 }
 .summary dd {
   margin: 0.2rem 0 0;
-  font-size: 1.2rem;
+  color: var(--text-primary);
+  font-size: 1.35rem;
   font-weight: 700;
+}
+.summarySecondary dd {
+  margin: 0;
+  font-size: 0.78rem;
 }
 .category {
   min-width: 0;
-  padding: 1.25rem 0 0;
-  border-top: 1px solid var(--border-default);
+  padding-top: 0.25rem;
 }
 .category h2 {
-  margin: 0 0 0.65rem;
-  font-size: 1.1rem;
+  margin: 0 0 0.8rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.35rem;
 }
 .category h2 span {
   color: var(--text-muted);
@@ -93,48 +139,69 @@
 }
 .category ul {
   display: grid;
-  gap: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .entry {
+  position: relative;
   display: flex;
-  gap: 0.85rem;
+  gap: 1rem;
   min-width: 0;
-  padding: 0.85rem 0.25rem;
-  border-bottom: 1px solid var(--border-subtle);
-}
-.entry:first-child {
-  border-top: 1px solid var(--border-subtle);
+  padding: 0.8rem;
+  border: 1px solid rgb(35 76 47 / 10%);
+  border-radius: var(--radius-large);
+  background: var(--surface-primary);
+  box-shadow: 0 3px 14px rgb(22 48 30 / 4%);
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
 }
 .entry[data-selected='true'] {
-  margin-inline: -0.5rem;
-  padding-inline: 0.75rem;
-  border-radius: var(--radius-small);
-  background: var(--state-selected);
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary-soft) 50%, var(--surface-primary));
+  box-shadow: 0 0 0 3px rgb(36 85 54 / 10%);
+  transform: translateY(-1px);
 }
 .checkbox {
-  flex: 0 0 auto;
-  padding-top: 0.2rem;
+  position: absolute;
+  z-index: 2;
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgb(255 255 255 / 70%);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: rgb(255 255 255 / 90%);
+  box-shadow: 0 3px 12px rgb(20 45 27 / 13%);
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 .checkbox input {
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 1rem;
+  height: 1rem;
 }
 .batchPanel {
   display: grid;
   gap: 0.85rem;
   padding: 0.85rem 1rem;
   border: 1px solid var(--border);
-  border-radius: var(--radius-medium);
-  background: var(--surface);
+  border-radius: var(--radius-large);
+  background: color-mix(in srgb, var(--surface-primary) 94%, transparent);
+  backdrop-filter: blur(0.9rem);
 }
 .batchPanelActive {
   position: sticky;
-  z-index: 5;
+  z-index: 16;
   bottom: 1rem;
-  box-shadow: var(--shadow-soft);
+  box-shadow: 0 18px 40px rgb(18 42 25 / 18%);
 }
 .batchToolbar,
 .confirmActions {
@@ -161,7 +228,7 @@
 }
 .primaryButton {
   border: 1px solid var(--accent);
-  border-radius: var(--radius-small);
+  border-radius: 999px;
   background: var(--accent);
   color: #fff;
   font: inherit;
@@ -201,12 +268,17 @@
   background: var(--surface-muted);
 }
 .photo {
-  flex: 0 0 4.25rem;
-  width: 4.25rem;
-  height: 4.25rem;
+  flex: 0 0 7rem;
+  width: 7rem;
+  height: 7rem;
   overflow: hidden;
-  border-radius: var(--radius-small);
-  background: var(--surface-muted);
+  border-radius: calc(var(--radius-large) - 0.35rem);
+  background:
+    radial-gradient(circle at 65% 35%, rgb(177 207 167 / 60%), transparent 45%),
+    var(--surface-muted);
+}
+.photo img {
+  object-fit: cover;
 }
 .details {
   min-width: 0;
@@ -220,7 +292,10 @@
 }
 .name {
   color: var(--accent-strong);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.08rem;
   font-weight: 700;
+  text-decoration: none;
   overflow-wrap: anywhere;
 }
 .badge {
@@ -241,8 +316,19 @@
 .due {
   color: var(--text);
 }
+.due[data-status='OVERDUE'] {
+  color: var(--color-danger);
+}
+.due[data-status='DUE_TODAY'] {
+  color: var(--color-attention);
+}
+.due[data-status='NEEDS_FIRST_WATERING'] {
+  color: var(--color-info);
+}
 .action {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   margin-top: 0.45rem;
   color: var(--accent-strong);
   font-size: 0.86rem;
@@ -253,7 +339,8 @@
 .note {
   margin: 0;
   padding: 0.85rem 1rem;
-  border-left: 3px solid var(--accent);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-medium);
   color: var(--text-muted);
   background: var(--surface-muted);
 }
@@ -274,27 +361,32 @@
   outline-offset: 3px;
 }
 @media (max-width: 45rem) {
+  .summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .summary dl {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .batchPanelActive {
-    bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+    bottom: calc(env(safe-area-inset-bottom) + 5.5rem);
+  }
+  .category ul {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (max-width: 28rem) {
   .summary dl {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .entry {
-    padding: 0.7rem;
-  }
-  .entry[data-selected='true'] {
-    margin-inline: -0.25rem;
-    padding-inline: 0.5rem;
+    gap: 0.75rem;
   }
   .photo {
-    flex-basis: 3.5rem;
-    width: 3.5rem;
-    height: 3.5rem;
+    flex-basis: 5.5rem;
+    width: 5.5rem;
+    height: 5.5rem;
+  }
+  .checkbox span {
+    display: none;
   }
 }

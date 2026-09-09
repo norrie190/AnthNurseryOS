@@ -91,9 +91,9 @@ test('loads the read model server-side and presents all queue categories and ent
   expect(getWateringQueue).toHaveBeenCalledOnce();
   expect(screen.getByRole('heading', { level: 1, name: 'Watering' })).toBeInTheDocument();
   expect(screen.getAllByRole('checkbox')).toHaveLength(6);
-  expect(screen.getByText('0 Plants selected')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Water selected' })).toBeDisabled();
-  expect(screen.getByText('active-care Plants in queue')).toBeInTheDocument();
+  expect(screen.queryByText('0 Plants selected')).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Water selected' })).not.toBeInTheDocument();
+  expect(screen.getByText('6 active care Plants are being tracked.')).toBeInTheDocument();
   expect(screen.getByText('3 days overdue')).toBeInTheDocument();
   expect(screen.getAllByText('Due today').length).toBeGreaterThan(0);
   expect(screen.getByText('No watering recorded yet')).toBeInTheDocument();
@@ -157,7 +157,7 @@ test('keeps batch selection and confirmation language visible without changing q
   render(await WateringPage());
   const checkbox = screen.getAllByRole('checkbox')[0];
   fireEvent.click(checkbox);
-  expect(screen.getByText('1 Plants selected')).toBeInTheDocument();
+  expect(screen.getByText('1 Plant selected')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Water selected' })).toBeEnabled();
   expect(checkbox.closest('li')).toHaveAttribute('data-selected', 'true');
 

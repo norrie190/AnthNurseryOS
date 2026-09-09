@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Check, Droplets, Settings2 } from 'lucide-react';
 import { photoImagePath } from '../../plants/plant-photo-browser';
 import { PlantPhotoImage } from '../../plants/components/plant-photo-image';
 import { plantStatusLabels } from '../../plants/plant-form-state';
@@ -75,6 +76,7 @@ function QueueEntry({
           onChange={() => onToggle(plant.id)}
           aria-label={'Select ' + plant.reference + ' for batch watering'}
         />
+        <span>{selected ? 'Selected' : 'Select'}</span>
       </label>
       <span className={styles.photo}>
         <PlantPhotoImage
@@ -98,7 +100,7 @@ function QueueEntry({
         <p className={styles.meta}>
           {plant.reference} · {plant.location?.name || 'No location'}
         </p>
-        <p className={styles.due}>
+        <p className={styles.due} data-status={due.status}>
           <strong>{dueLabel(entry)}</strong>
           {due.latestWateredDate ? (
             <>
@@ -123,6 +125,7 @@ function QueueEntry({
           ) : null}
         </p>
         <Link href={`/plants/${plant.id}`} className={styles.action}>
+          <Settings2 aria-hidden="true" size={15} />
           Manage watering
         </Link>
       </div>
@@ -165,23 +168,32 @@ export function WateringQueuePage({
     ]),
   );
   const urgent = queue.counts.overdue + queue.counts.dueToday;
+  const nurseryDate = dateFormat.format(new Date(`${queue.nurseryDate}T00:00:00Z`));
   return (
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
           <p className={styles.eyebrow}>Nursery care</p>
           <h1>Watering</h1>
-          <p>Review active Plants and decide which need attention today.</p>
+          <p>{nurseryDate} · Choose the Plants you watered and record them together.</p>
         </div>
       </header>
       <section aria-labelledby="watering-summary-heading" className={styles.summary}>
-        <h2 id="watering-summary-heading" className="visually-hidden">
-          Watering summary
-        </h2>
-        <p className={styles.total}>
-          <strong>{queue.counts.totalEligible}</strong> active-care Plants in queue
-        </p>
-        <dl className={styles.summaryPrimary}>
+        <div className={styles.summaryIntro}>
+          <span className={styles.summaryIcon} aria-hidden="true">
+            {urgent === 0 ? <Check size={24} /> : <Droplets size={24} />}
+          </span>
+          <div>
+            <p className={styles.eyebrow}>Today&apos;s focus</p>
+            <h2 id="watering-summary-heading">
+              {urgent === 0
+                ? 'No urgent watering today'
+                : `${urgent} ${urgent === 1 ? 'Plant needs' : 'Plants need'} attention`}
+            </h2>
+            <p>{queue.counts.totalEligible} active care Plants are being tracked.</p>
+          </div>
+        </div>
+        <dl className={styles.summaryPrimary} aria-label="Watering attention counts">
           {categories.map(([status, label]) =>
             ['OVERDUE', 'DUE_TODAY', 'NEEDS_FIRST_WATERING'].includes(status) ? (
               <div key={status} data-status={status}>
@@ -191,7 +203,7 @@ export function WateringQueuePage({
             ) : null,
           )}
         </dl>
-        <dl className={styles.summarySecondary}>
+        <dl className={styles.summarySecondary} aria-label="Other watering counts">
           {categories.map(([status, label]) =>
             !['OVERDUE', 'DUE_TODAY', 'NEEDS_FIRST_WATERING'].includes(status) ? (
               <div key={status}>
@@ -202,7 +214,8 @@ export function WateringQueuePage({
           )}
         </dl>
       </section>
-      {queue.entries.length > 0 ? (
+      {queue.entries.length > 0 &&
+      (effectiveSelected.length > 0 || !!state.message || effectiveConfirming) ? (
         <form
           action={formAction}
           className={`${styles.batchPanel} ${effectiveSelected.length ? styles.batchPanelActive : ''}`}
@@ -211,7 +224,10 @@ export function WateringQueuePage({
             <input key={id} type="hidden" name="plantIds" value={id} />
           ))}
           <div className={styles.batchToolbar}>
-            <strong>{effectiveSelected.length} Plants selected</strong>
+            <strong>
+              {effectiveSelected.length} {effectiveSelected.length === 1 ? 'Plant' : 'Plants'}{' '}
+              selected
+            </strong>
             <button
               type="button"
               className={styles.secondaryButton}
