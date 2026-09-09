@@ -92,7 +92,7 @@ usesPower describes capability for consumption tracking, not current operation o
 
 The owner approved [Equipment energy history](equipment-energy.md) before Care. The schema and [data layer checkpoint](energy-data-layer.md) are committed. The current [browser checkpoint](energy-browser-flow.md) adds Equipment energy forms/history and electricity tariff management using those services and calculations. No development energy records are seeded.
 
-Decimal validation, Equipment stale protection, tariff timeline locking, explicit correction/void operations, exact derived calculations and missing coverage reporting are implemented and exposed in the browser. `/energy/tariffs` is the first Energy route; there is no Energy overview or main dashboard integration. Standing charges, time of use schedules, telemetry and cached monthly totals remain outside scope.
+Decimal validation, Equipment stale protection, tariff timeline locking, explicit correction and void operations, exact derived calculations and missing coverage reporting are implemented and exposed in the browser. `/energy` is now the main Energy workspace, while `/energy/tariffs` remains focused on tariff history and changes. The workspace shows setup gaps, projections and an Equipment breakdown without describing estimates as live consumption. Standing charges, time of use schedules, telemetry and cached monthly totals remain outside scope.
 
 ## 7. Equipment photos - schema checkpoint
 
@@ -127,7 +127,7 @@ Energy history and estimates have moved to the separate approved checkpoint abov
 
 The approved read-only coordination layer now provides Plant and Equipment counts, currency-separated acquisition coverage, current Energy projections through the existing exact calculator, the applicable tariff, and bounded recent-item metadata in one Repeatable Read snapshot. It does not contact photo storage and does not add schema, persistence, Care, Watering or homepage presentation.
 
-The homepage now renders that summary as a responsive nursery overview. It shows compact Plant and Equipment counts, currency-separated known acquisition spend and coverage, current-setting Energy projections, current tariff state and bounded recent items using safe thumbnail routes. Empty and incomplete states remain explicit. There are no charts, Locations, Care, Watering, configurable widgets or new persistence.
+The homepage now renders that summary as a responsive nursery home screen. It puts today’s Watering and Energy state first, followed by recent Plants and Equipment, then investment coverage and shortcuts. Energy links into the dedicated workspace, and empty, scheduled and incomplete states remain explicit. Existing safe thumbnail routes are reused. There are no charts, configurable widgets or new persistence.
 
 - Plant totals
 - Plant investment

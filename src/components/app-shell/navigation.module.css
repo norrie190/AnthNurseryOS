@@ -3,11 +3,14 @@
   z-index: 30;
   inset: 0 auto 0 0;
   display: flex;
-  width: 16.25rem;
+  width: 14.5rem;
   flex-direction: column;
-  padding: 1.5rem 1rem 1rem;
-  border-right: 1px solid var(--border);
-  background: var(--surface);
+  padding: 1.4rem 0.85rem 1rem;
+  color: #f3f7f1;
+  background:
+    radial-gradient(circle at 10% 4%, rgb(115 166 112 / 22%), transparent 12rem),
+    linear-gradient(165deg, var(--color-sidebar), var(--color-sidebar-deep));
+  box-shadow: 0 0 40px rgb(18 44 27 / 13%);
 }
 
 .brand {
@@ -16,7 +19,7 @@
   gap: 0.8rem;
   min-width: 0;
   padding: 0 0.35rem;
-  color: var(--text);
+  color: inherit;
   text-decoration: none;
 }
 
@@ -26,10 +29,10 @@
   height: 2.5rem;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-medium);
-  color: var(--accent-strong);
-  background: var(--accent-soft);
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 0.85rem;
+  color: #e0f0dd;
+  background: rgb(255 255 255 / 8%);
 }
 
 .brand strong,
@@ -46,7 +49,7 @@
 
 .brand small {
   margin-top: 0.16rem;
-  color: var(--text-muted);
+  color: rgb(236 244 232 / 62%);
   font-size: 0.74rem;
 }
 
@@ -63,7 +66,7 @@
 
 .groupLabel {
   padding: 0 0.75rem;
-  color: var(--text-muted);
+  color: rgb(236 244 232 / 50%);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -78,7 +81,7 @@
   padding: 0.65rem 0.75rem;
   border: 1px solid transparent;
   border-radius: var(--radius-medium);
-  color: var(--text-secondary);
+  color: rgb(244 248 241 / 72%);
   font-size: 0.87rem;
   font-weight: 520;
   text-decoration: none;
@@ -89,8 +92,8 @@
 }
 
 .navigationLink:hover {
-  color: var(--text);
-  background: var(--state-hover);
+  color: #fff;
+  background: rgb(255 255 255 / 8%);
 }
 
 .navigationLink:focus-visible,
@@ -102,9 +105,9 @@
 
 .navigationLink.activeLink {
   position: relative;
-  border-color: var(--border-strong);
-  color: var(--accent-strong);
-  background: var(--accent-soft);
+  border-color: rgb(255 255 255 / 12%);
+  color: #fff;
+  background: rgb(255 255 255 / 13%);
   font-weight: 650;
 }
 
@@ -114,7 +117,7 @@
   width: 3px;
   height: 1.35rem;
   border-radius: 0 999px 999px 0;
-  background: var(--accent-strong);
+  background: #9bc193;
   content: '';
 }
 
@@ -124,12 +127,12 @@
   gap: 0.7rem;
   margin-top: auto;
   padding: 1rem 0.35rem 0.1rem;
-  border-top: 1px solid var(--border);
-  color: var(--text-muted);
+  border-top: 1px solid rgb(255 255 255 / 12%);
+  color: rgb(244 248 241 / 60%);
 }
 
 .profile strong {
-  color: var(--text);
+  color: #fff;
   font-size: 0.8rem;
 }
 
@@ -139,6 +142,10 @@
 }
 
 .mobileNavigation {
+  display: none;
+}
+
+.mobileDock {
   display: none;
 }
 
@@ -185,6 +192,36 @@
   box-shadow: -18px 0 45px rgb(16 29 18 / 14%);
 }
 
+.mobileMenu .brand,
+.mobileMenu .profile strong {
+  color: var(--text-primary);
+}
+
+.mobileMenu .brand small,
+.mobileMenu .profile,
+.mobileMenu .groupLabel {
+  color: var(--text-muted);
+}
+
+.mobileMenu .navigationLink {
+  color: var(--text-secondary);
+}
+
+.mobileMenu .navigationLink:hover {
+  color: var(--text-primary);
+  background: var(--state-hover);
+}
+
+.mobileMenu .navigationLink.activeLink {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border-color: transparent;
+}
+
+.mobileMenu .profile {
+  border-top-color: var(--border-default);
+}
+
 .mobileMenuHeader {
   display: flex;
   min-height: 3.1rem;
@@ -203,23 +240,97 @@
 
   .mobileNavigation {
     display: flex;
+    width: 100%;
     align-items: center;
-    gap: 0.75rem;
+    justify-content: space-between;
   }
 
   .mobileNavigation > .brand {
-    display: none;
+    display: flex;
+    color: var(--text-primary);
+  }
+
+  .mobileNavigation > .brand .brandMark {
+    color: var(--color-primary);
+    background: var(--color-primary-soft);
+    border-color: transparent;
+  }
+
+  .mobileNavigation > .brand small {
+    color: var(--text-muted);
+  }
+
+  .mobileDock {
+    position: fixed;
+    z-index: 80;
+    right: 0.75rem;
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    left: 0.75rem;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    min-height: 4.25rem;
+    align-items: end;
+    padding: 0.35rem;
+    border: 1px solid rgb(255 255 255 / 65%);
+    border-radius: 1.3rem;
+    background: color-mix(in srgb, var(--surface-elevated) 92%, transparent);
+    box-shadow: 0 18px 45px rgb(18 42 25 / 22%);
+    backdrop-filter: blur(1rem);
+  }
+
+  .mobileDockLink,
+  .mobileDockButton,
+  .addDockLink {
+    display: flex;
+    min-height: 3.4rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    padding: 0.25rem;
+    border: 0;
+    border-radius: 0.9rem;
+    color: var(--text-muted);
+    background: transparent;
+    font-size: 0.65rem;
+    font-weight: 650;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .mobileDockActive {
+    color: var(--color-primary);
+    background: var(--color-primary-soft);
+  }
+
+  .addDockLink {
+    position: relative;
+    overflow: visible;
+    color: var(--color-primary);
+  }
+
+  .addDockLink > span {
+    display: grid;
+    width: 3.1rem;
+    height: 3.1rem;
+    margin-top: -1.15rem;
+    place-items: center;
+    border: 4px solid var(--surface-page);
+    border-radius: 999px;
+    color: #fff;
+    background: var(--color-primary);
+    box-shadow: 0 8px 18px rgb(36 85 54 / 28%);
+  }
+
+  .addDockLink small {
+    font-size: 0.65rem;
+    font-weight: 700;
   }
 }
 
 @media (max-width: 40rem) {
   .mobileNavigation {
     flex: 1;
-    justify-content: space-between;
-  }
-
-  .mobileNavigation > .brand {
-    display: flex;
   }
 }
 

@@ -14,36 +14,41 @@
   --text-size-section: 1.375rem;
   --text-size-page: clamp(1.8rem, 3vw, 2.5rem);
 
-  --surface-page: #f5f6f2;
-  --surface-primary: #ffffff;
-  --surface-subtle: #f7f8f5;
+  --surface-page: #f4f1e8;
+  --surface-primary: #fffdf8;
+  --surface-subtle: #ebe9df;
   --surface-elevated: #ffffff;
 
-  --text-primary: #1c251d;
-  --text-secondary: #4e584f;
-  --text-muted: #667066;
+  --text-primary: #18261b;
+  --text-secondary: #465148;
+  --text-muted: #6c756d;
 
-  --border-subtle: #e8ece5;
-  --border-default: #dde2da;
-  --border-strong: #cad2c7;
+  --border-subtle: #e7e3d8;
+  --border-default: #dcd8cc;
+  --border-strong: #c8c5b9;
 
-  --color-primary: #315d3a;
-  --color-primary-hover: #23482c;
-  --color-primary-soft: #e5efe5;
+  --color-primary: #245536;
+  --color-primary-hover: #173d26;
+  --color-primary-soft: #dcebdc;
   --color-success: #2f6b42;
-  --color-attention: #9a6b14;
+  --color-attention: #a26426;
   --color-danger: #9f2d2d;
   --color-info: #365c73;
+  --color-earth: #a85f3d;
+  --color-earth-soft: #f2dfd2;
+  --color-sidebar: #173422;
+  --color-sidebar-deep: #10291a;
 
   --state-hover: rgb(28 37 29 / 5%);
   --state-pressed: rgb(28 37 29 / 10%);
   --state-disabled: rgb(28 37 29 / 38%);
   --focus-ring: 3px solid rgb(49 93 58 / 28%);
 
-  --radius-small: 0.4rem;
-  --radius-medium: 0.65rem;
-  --radius-large: 0.9rem;
-  --shadow-soft: 0 6px 18px rgb(25 45 28 / 6%);
+  --radius-small: 0.55rem;
+  --radius-medium: 0.9rem;
+  --radius-large: 1.3rem;
+  --shadow-soft: 0 10px 30px rgb(26 43 30 / 7%);
+  --shadow-card: 0 1px 2px rgb(22 42 27 / 5%), 0 12px 32px rgb(22 42 27 / 7%);
 
   /* Compatibility aliases for current page styles. */
   --background: var(--surface-page);
@@ -78,7 +83,9 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--surface-page);
+  background:
+    radial-gradient(circle at 72% -10%, rgb(207 224 201 / 55%), transparent 28rem),
+    var(--surface-page);
 }
 
 button,

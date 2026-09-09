@@ -17,7 +17,7 @@ test('loads the collection at request time with Add Plant available in the empty
   render(await PlantsPage());
   expect(getPlantList).toHaveBeenCalledOnce();
   expect(screen.getByRole('heading', { level: 1, name: 'Plants' })).toBeInTheDocument();
-  expect(screen.getByText('Manage and view your nursery collection')).toBeInTheDocument();
+  expect(screen.getByText('Your living collection starts here.')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'No active Plants' })).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Archived Plants' })).toHaveAttribute(
     'href',

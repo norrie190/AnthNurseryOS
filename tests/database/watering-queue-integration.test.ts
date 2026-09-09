@@ -104,7 +104,7 @@ test('reads a mixed real queue from persisted Plants, schedules, events, locatio
     const today = await plant(tx, 'queue-today', { name: 'Alpha', status: 'QUARANTINE' });
     const soon = await plant(tx, 'queue-soon', { name: 'Bravo' });
     const first = await plant(tx, 'queue-first', { name: 'Charlie' });
-    const unconfigured = await plant(tx, 'queue-unconfigured', { name: 'Delta' });
+    await plant(tx, 'queue-unconfigured', { name: 'Delta' });
     await plant(tx, 'queue-sold', { status: 'SOLD' });
     await plant(tx, 'queue-deceased', { status: 'DECEASED' });
     await plant(tx, 'queue-archived', { archivedAt: new Date('2026-09-01T00:00:00.000Z') });

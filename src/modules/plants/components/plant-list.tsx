@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArrowUpRight, CalendarDays, MapPin } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import type { PlantListItem, ArchivedPlantListItem } from '../plant-queries';
@@ -45,54 +46,55 @@ export function PlantList(props: PlantListProps) {
 
   return (
     <div className={styles.collection}>
-      <div className={styles.columns} aria-hidden="true">
-        <span>Plant</span>
-        <span>Status</span>
-        <span>Location</span>
-        <span>{dateLabel}</span>
-      </div>
       <ul className={styles.list} aria-label={archived ? 'Archived Plants' : 'Plants'}>
         {rows.map((plant) => (
           <li key={plant.id}>
             <Link className={styles.row} href={`/plants/${plant.id}`}>
-              <span className={styles.identity}>
-                <span className={styles.photo}>
-                  <PlantPhotoImage
-                    src={
-                      plant.photos[0]
-                        ? photoImagePath(
-                            plant.id,
-                            plant.photos[0].id,
-                            'thumbnail',
-                            plant.photos[0].derivativeRevision,
-                          )
-                        : undefined
-                    }
-                    alt={`${plant.reference} primary photo`}
-                  />
+              <span className={styles.photo}>
+                <PlantPhotoImage
+                  src={
+                    plant.photos[0]
+                      ? photoImagePath(
+                          plant.id,
+                          plant.photos[0].id,
+                          'thumbnail',
+                          plant.photos[0].derivativeRevision,
+                        )
+                      : undefined
+                  }
+                  alt={`${plant.reference} primary photo`}
+                />
+                <span className={styles.photoStatus}>
+                  <StatusBadge variant={plantStatusVariant(plant.status)}>
+                    {plantStatusLabels[plant.status]}
+                  </StatusBadge>
                 </span>
-                <span className={styles.identityText}>
-                  <strong className={styles.name}>{plant.name || 'Unnamed Plant'}</strong>
+              </span>
+              <span className={styles.cardBody}>
+                <span className={styles.cardHeading}>
                   <span className={styles.reference}>{plant.reference}</span>
+                  <ArrowUpRight aria-hidden="true" size={18} />
                 </span>
-              </span>
-              <span className={styles.status}>
-                <StatusBadge variant={plantStatusVariant(plant.status)}>
-                  {plantStatusLabels[plant.status]}
-                </StatusBadge>
+                <strong className={styles.name}>{plant.name || 'Unnamed Plant'}</strong>
                 {archived ? <span className={styles.archiveContext}>Archived record</span> : null}
-              </span>
-              <span className={styles.location}>
-                <span className={styles.mobileLabel}>Location: </span>
-                {plant.location?.name || 'No location'}
-              </span>
-              <span className={styles.added}>
-                <span className={styles.mobileLabel}>{dateLabel}: </span>
-                {plant.date ? (
-                  <time dateTime={plant.date.toISOString()}>{addedDate.format(plant.date)}</time>
-                ) : (
-                  'Not recorded'
-                )}
+                <span className={styles.cardMeta}>
+                  <span className={styles.location}>
+                    <MapPin aria-hidden="true" size={15} />
+                    <span className={styles.mobileLabel}>Location: </span>
+                    {plant.location?.name || 'No location'}
+                  </span>
+                  <span className={styles.added}>
+                    <CalendarDays aria-hidden="true" size={15} />
+                    <span className={styles.mobileLabel}>{dateLabel}: </span>
+                    {plant.date ? (
+                      <time dateTime={plant.date.toISOString()}>
+                        {addedDate.format(plant.date)}
+                      </time>
+                    ) : (
+                      'Not recorded'
+                    )}
+                  </span>
+                </span>
               </span>
             </Link>
           </li>

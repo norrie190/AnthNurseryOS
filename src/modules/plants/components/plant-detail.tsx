@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { Camera, Droplets, Pencil } from 'lucide-react';
 import { LocalSectionNav } from '@/components/ui/local-section-nav';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import type { PlantDetailRecord } from '../plant-queries';
@@ -87,7 +88,16 @@ export function PlantDetail({
           </dl>
           <div className={styles.identityActions}>
             <Link href={`/plants/${plant.id}/edit`} className={styles.primaryButton}>
+              <Pencil aria-hidden="true" size={17} />
               Edit Plant
+            </Link>
+            <Link href="#care" className={styles.secondaryLink}>
+              <Droplets aria-hidden="true" size={17} />
+              View care
+            </Link>
+            <Link href="#photos" className={styles.secondaryLink}>
+              <Camera aria-hidden="true" size={17} />
+              View photos
             </Link>
           </div>
         </div>

@@ -27,8 +27,8 @@ describe('DesktopNavigation', () => {
     expect(screen.getByRole('link', { name: 'Watering' })).toHaveAttribute('href', '/watering');
     expect(screen.getByRole('link', { name: 'Breeding' })).toHaveAttribute('href', '/breeding');
     expect(screen.getByRole('link', { name: 'Equipment' })).toHaveAttribute('href', '/equipment');
-    expect(screen.getByRole('link', { name: 'Energy' })).toHaveAttribute('href', '/energy/tariffs');
-    expect(screen.getByRole('link', { name: 'Expenses' })).toHaveAttribute('href', '/expenses');
+    expect(screen.getByRole('link', { name: 'Energy' })).toHaveAttribute('href', '/energy');
+    expect(screen.queryByRole('link', { name: 'Expenses' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Care' })).not.toBeInTheDocument();
     expect(screen.getByText('Operations')).toBeInTheDocument();
     expect(screen.getByText('Workspace')).toBeInTheDocument();
@@ -62,7 +62,12 @@ describe('MobileNavigation', () => {
 
     render(<MobileNavigation />);
 
-    await user.click(screen.getByRole('button', { name: 'Open navigation' }));
+    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'Plants' })).toHaveAttribute('href', '/plants');
+    expect(screen.getByRole('link', { name: 'Add Plant' })).toHaveAttribute('href', '/plants/new');
+    expect(screen.getByRole('link', { name: 'Watering' })).toHaveAttribute('href', '/watering');
+
+    await user.click(screen.getByRole('button', { name: 'Open more navigation' }));
 
     expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument();
     expect(screen.getByRole('dialog', { name: 'Navigation menu' })).toBeInTheDocument();
@@ -70,17 +75,17 @@ describe('MobileNavigation', () => {
     await user.click(screen.getAllByRole('button', { name: 'Close navigation' })[1]);
 
     expect(screen.queryByRole('navigation', { name: 'Main navigation' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Open navigation' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Open more navigation' })).toHaveFocus();
   });
 
   it('closes with Escape', async () => {
     const user = userEvent.setup();
 
     render(<MobileNavigation />);
-    await user.click(screen.getByRole('button', { name: 'Open navigation' }));
+    await user.click(screen.getByRole('button', { name: 'Open more navigation' }));
     await user.keyboard('{Escape}');
 
     expect(screen.queryByRole('dialog', { name: 'Navigation menu' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Open navigation' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Open more navigation' })).toHaveFocus();
   });
 });

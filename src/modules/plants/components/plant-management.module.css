@@ -1,39 +1,115 @@
 .page {
   display: grid;
-  gap: 1.5rem;
+  gap: clamp(1.25rem, 2.4vw, 2rem);
   max-width: 82rem;
+}
+
+.createLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 19rem);
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+}
+
+.createAside {
+  position: sticky;
+  top: 6.5rem;
+  padding: 1.4rem;
+  border-radius: var(--radius-large);
+  color: #eef6eb;
+  background:
+    radial-gradient(circle at 90% 5%, rgb(151 196 141 / 24%), transparent 10rem),
+    var(--color-sidebar);
+  box-shadow: var(--shadow-card);
+}
+
+.createAsideIcon {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  place-items: center;
+  border-radius: 1rem;
+  color: #dcefd7;
+  background: rgb(255 255 255 / 10%);
+}
+
+.createAside h2 {
+  margin: 1rem 0 0.5rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.4rem;
+}
+
+.createAside p {
+  color: rgb(238 246 235 / 70%);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.createAside ul {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  padding: 1rem 0 0;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+  list-style: none;
+}
+
+.createAside li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  color: rgb(238 246 235 / 82%);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.createAside li svg {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+  color: #aacf9f;
 }
 .identityHeader {
   display: grid;
-  grid-template-columns: minmax(7rem, 9rem) minmax(0, 1fr);
-  gap: 1.5rem;
-  align-items: start;
-  padding: 0 0 1.75rem;
-  border-bottom: 1px solid var(--border-default);
+  grid-template-columns: minmax(17rem, 0.9fr) minmax(20rem, 1.1fr);
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  align-items: center;
+  overflow: hidden;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  border: 1px solid rgb(35 76 47 / 10%);
+  border-radius: var(--radius-large);
+  background:
+    radial-gradient(circle at 90% 10%, rgb(195 219 187 / 52%), transparent 18rem),
+    var(--surface-primary);
+  box-shadow: var(--shadow-card);
 }
 .identityPhoto {
   width: 100%;
   aspect-ratio: 1;
   overflow: hidden;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-medium);
+  border-radius: calc(var(--radius-large) - 0.35rem);
   background: var(--surface-subtle);
+}
+.identityPhoto img {
+  object-fit: cover;
 }
 .identityContent {
   min-width: 0;
 }
 .identityContent h1 {
   margin: 0;
-  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  max-width: 18ch;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2rem, 4vw, 3.6rem);
+  line-height: 1.04;
   letter-spacing: -0.04em;
   overflow-wrap: anywhere;
 }
 .identityContent .reference {
   margin: 0.4rem 0 0;
   color: var(--accent-strong);
-  font-size: 1rem;
-  font-weight: 650;
-  letter-spacing: 0.02em;
+  font-size: 0.82rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
 }
 .identityMeta {
   display: flex;
@@ -110,14 +186,18 @@
 }
 .heading h1 {
   margin: 0;
-  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2.15rem, 4vw, 3.4rem);
+  line-height: 1.06;
   letter-spacing: -0.04em;
 }
 .eyebrow {
   margin: 0 0 0.5rem;
   color: var(--accent);
-  font-size: 0.8rem;
-  font-weight: 650;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 .heading > p:not(.eyebrow) {
   max-width: 45rem;
@@ -133,13 +213,80 @@
 .form {
   display: grid;
   gap: 1.5rem;
-  max-width: 58rem;
+  max-width: 62rem;
 }
 .formSectionCard {
   min-width: 0;
   margin: 0;
   padding: 1.4rem 0 0;
   border: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.essentialsCard {
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: 1px solid rgb(35 76 47 / 11%);
+  border-radius: var(--radius-large);
+  background:
+    radial-gradient(circle at 95% 0%, rgb(198 222 190 / 45%), transparent 16rem),
+    var(--surface-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.advancedDetails {
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-large);
+  background: color-mix(in srgb, var(--surface-primary) 80%, transparent);
+}
+
+.advancedDetails > summary {
+  display: flex;
+  min-height: 5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.advancedDetails > summary::-webkit-details-marker {
+  display: none;
+}
+
+.advancedDetails > summary::after {
+  content: '+';
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  font-size: 1.25rem;
+}
+
+.advancedDetails[open] > summary::after {
+  content: '−';
+}
+
+.advancedDetails > summary span:first-child {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.advancedDetails > summary small {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  font-weight: 400;
+}
+
+.advancedContent {
+  display: grid;
+  gap: 1.5rem;
+  padding: 0 1.25rem 1.5rem;
   border-top: 1px solid var(--border-subtle);
 }
 .formSectionCard > legend {
@@ -203,11 +350,11 @@
 .field textarea {
   width: 100%;
   min-width: 0;
-  min-height: 2.85rem;
-  padding: 0.65rem 0.75rem;
+  min-height: 3.15rem;
+  padding: 0.75rem 0.9rem;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-small);
-  background: var(--surface);
+  background: #fff;
   color: var(--text);
   font: inherit;
   font-size: 0.95rem;
@@ -347,11 +494,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.45rem;
   min-height: 2.85rem;
   min-width: 9.5rem;
   padding: 0.75rem 1.25rem;
   border: 1px solid var(--accent);
-  border-radius: var(--radius-small);
+  border-radius: 999px;
   background: var(--accent);
   color: #fff;
   font: inherit;
@@ -368,14 +516,30 @@
   cursor: wait;
 }
 .secondaryLink {
-  font-size: 0.9rem;
-  text-underline-offset: 0.2em;
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--border-default);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-primary) 75%, transparent);
+  font-size: 0.87rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.secondaryLink:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-primary);
 }
 .secondaryButton {
   min-height: 2.85rem;
   padding: 0.65rem 1rem;
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-small);
+  border-radius: 999px;
   background: var(--surface);
   color: var(--text);
   font: inherit;
@@ -475,10 +639,23 @@
   white-space: pre-wrap;
 }
 @media (max-width: 44rem) {
+  .createLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .createAside {
+    position: static;
+    order: -1;
+  }
   .identityHeader {
-    grid-template-columns: 5rem minmax(0, 1fr);
-    gap: 1rem;
-    padding-bottom: 1.25rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.15rem;
+    padding: 0.75rem 0.75rem 1.25rem;
+  }
+  .identityPhoto {
+    max-height: min(65vh, 29rem);
+  }
+  .identityContent {
+    padding: 0 0.5rem;
   }
   .identityMeta {
     gap: 0.75rem 1.5rem;
@@ -503,12 +680,28 @@
   .formSectionCard {
     padding: 1.1rem 0 0;
   }
+  .essentialsCard {
+    padding: 1.2rem;
+  }
+  .advancedContent .formSectionCard {
+    padding-top: 1.2rem;
+  }
   .disclosure summary {
     width: 100%;
   }
   .formFooter {
+    position: sticky;
+    z-index: 15;
+    bottom: 5.6rem;
     flex-direction: column;
     align-items: stretch;
+    margin: 0 -0.35rem;
+    padding: 0.8rem;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-large);
+    background: color-mix(in srgb, var(--surface-primary) 94%, transparent);
+    box-shadow: 0 12px 30px rgb(18 42 25 / 14%);
+    backdrop-filter: blur(0.8rem);
   }
   .formFooter .actions {
     justify-content: flex-end;

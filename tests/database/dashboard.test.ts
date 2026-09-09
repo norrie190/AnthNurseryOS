@@ -9,6 +9,7 @@ import {
 } from '../../src/generated/prisma/client';
 import { getTestDatabaseUrl } from '../../scripts/test-database-target';
 import { getDashboardSummary } from '../../src/modules/dashboard';
+import { getEnergyOverview } from '../../src/modules/energy/energy-overview';
 
 vi.mock('server-only', () => ({}));
 vi.mock('../../src/lib/prisma', () => ({ getPrisma: () => binding ?? database }));
@@ -234,6 +235,7 @@ test('reads counts, investment, energy, tariff and recent metadata without mutat
 
     const before = await snapshot(tx);
     const result = await getDashboardSummary('2098-06-15');
+    const energyOverview = await getEnergyOverview('2098-06-15');
     const after = await snapshot(tx);
 
     expect(after).toEqual(before);
@@ -306,6 +308,39 @@ test('reads counts, investment, energy, tariff and recent metadata without mutat
     expect(result.recentlyAdded.equipment[0].primaryPhoto).toEqual({
       id: '40000000-0000-4000-8000-000000000001',
       derivativeRevision: '50000000-0000-4000-8000-000000000001',
+    });
+    expect(energyOverview).toMatchObject({
+      equipmentCount: 2,
+      configuredCount: 1,
+      archivedOngoingCount: 1,
+      currentTariff: { unitRateMinorPerKwh: '25.00000' },
+      totals: {
+        configuredOperatingDrawWatts: '100.00',
+        estimatedKwhPerDay: '1.2000000',
+        estimatedCostPerDay: '£0.30',
+        estimatedCost30Days: '£9.00',
+        estimatedCost365Days: '£109.50',
+        energyCoverageComplete: false,
+        costCoverageComplete: false,
+      },
+    });
+    expect(energyOverview.equipment[0]).toMatchObject({
+      id: configured.id,
+      reference: 'dashboard-equipment-1',
+      current: {
+        powerWatts: '100.00',
+        hoursPerDay: '12.00',
+        estimatedKwhPerDay: '1.2000000',
+        estimatedCostPerDay: '£0.30',
+      },
+      primaryPhoto: {
+        id: '40000000-0000-4000-8000-000000000001',
+        derivativeRevision: '50000000-0000-4000-8000-000000000001',
+      },
+    });
+    expect(energyOverview.equipment[1]).toMatchObject({
+      reference: 'dashboard-equipment-2',
+      current: null,
     });
   }));
 

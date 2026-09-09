@@ -12,6 +12,8 @@ vi.mock('@/modules/watering/watering-queue-queries', () => ({ getWateringQueue: 
 vi.mock('@/components/photos/photo-image', () => ({
   PhotoImage: ({ src, alt }: { src?: string; alt: string }) =>
     src ? (
+      // The real component owns image optimisation; this lightweight test mock only verifies rendering.
+      // eslint-disable-next-line @next/next/no-img-element
       <img src={src} alt={alt} />
     ) : (
       <span role="img" aria-label="No photo">

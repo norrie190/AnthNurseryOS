@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { Plus } from 'lucide-react';
+import Link from 'next/link';
 
 import { DesktopNavigation, MobileNavigation } from './navigation';
 import styles from './app-shell.module.css';
@@ -15,7 +17,16 @@ export function AppShell({ children }: AppShellProps) {
       <div className={styles.workspace}>
         <header className={styles.topBar}>
           <MobileNavigation />
-          <p className={styles.context}>Nursery operations</p>
+          <div className={styles.desktopTopBar}>
+            <p className={styles.context}>
+              <span aria-hidden="true" />
+              Your nursery workspace
+            </p>
+            <Link href="/plants/new" className={styles.quickAdd}>
+              <Plus aria-hidden="true" size={18} />
+              Add Plant
+            </Link>
+          </div>
         </header>
 
         <main className={styles.content}>{children}</main>

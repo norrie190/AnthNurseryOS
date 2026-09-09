@@ -404,7 +404,9 @@ function Energy({ summary }: { summary: DashboardSummary }) {
           <p className={styles.eyebrow}>Current settings</p>
           <h2 id="energy-heading">Energy estimates</h2>
         </div>
-        <PlugZap aria-hidden="true" size={22} />
+        <Link className={styles.headingLink} href="/energy">
+          Open Energy <ArrowRight aria-hidden="true" size={15} />
+        </Link>
       </div>
 
       <div className={styles.energyLayout}>
@@ -675,26 +677,37 @@ export function Dashboard({ summary }: { summary: DashboardSummary }) {
   return (
     <div className={styles.page}>
       <header className={styles.pageHeader}>
-        <h1>Dashboard</h1>
-        <p>Nursery overview and today’s priorities.</p>
+        <div>
+          <p className={styles.eyebrow}>My nursery</p>
+          <h1>Dashboard</h1>
+          <p>What needs attention and how the nursery is doing today.</p>
+        </div>
+        <div className={styles.headerActions}>
+          <Link className={styles.secondaryButton} href="/watering">
+            <Droplets aria-hidden="true" size={17} /> Open watering
+          </Link>
+          <Link className={styles.primaryButton} href="/plants/new">
+            <Leaf aria-hidden="true" size={17} /> New Plant
+          </Link>
+        </div>
       </header>
 
       <Snapshot summary={summary} />
 
-      <div className={styles.mainGrid}>
+      <div className={styles.commandGrid}>
         <Watering summary={summary} />
-        <div className={styles.sideStack}>
-          <RecentPlants summary={summary} />
-          <QuickActions />
-        </div>
-      </div>
-
-      <div className={styles.secondaryGrid}>
         <Energy summary={summary} />
-        <Investment summary={summary} />
       </div>
 
-      <RecentEquipment summary={summary} />
+      <div className={styles.collectionGrid}>
+        <RecentPlants summary={summary} />
+        <RecentEquipment summary={summary} />
+      </div>
+
+      <div className={styles.supportingGrid}>
+        <Investment summary={summary} />
+        <QuickActions />
+      </div>
     </div>
   );
 }

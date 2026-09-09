@@ -5,9 +5,10 @@ import {
   Droplets,
   Gauge,
   HeartHandshake,
-  Menu,
+  House,
+  MoreHorizontal,
+  Plus,
   Sprout,
-  WalletCards,
   Wrench,
   X,
   type LucideIcon,
@@ -33,8 +34,7 @@ const primaryNavigation: readonly NavigationItem[] = [
 ];
 
 const secondaryNavigation: readonly NavigationItem[] = [
-  { href: '/energy/tariffs', label: 'Energy', icon: Gauge },
-  { href: '/expenses', label: 'Expenses', icon: WalletCards },
+  { href: '/energy', label: 'Energy', icon: Gauge },
 ];
 
 function Brand() {
@@ -157,17 +157,29 @@ export function MobileNavigation() {
   return (
     <div className={styles.mobileNavigation}>
       <Brand />
-      <button
-        className={styles.menuButton}
-        type="button"
-        ref={menuButtonRef}
-        aria-controls="mobile-navigation-panel"
-        aria-expanded={isOpen}
-        aria-label="Open navigation"
-        onClick={() => setIsOpen(true)}
-      >
-        <Menu aria-hidden="true" size={22} />
-      </button>
+      <nav className={styles.mobileDock} aria-label="Mobile navigation">
+        <MobileDockLink href="/" label="Home" icon={House} />
+        <MobileDockLink href="/plants" label="Plants" icon={Sprout} />
+        <Link className={styles.addDockLink} href="/plants/new" aria-label="Add Plant">
+          <span aria-hidden="true">
+            <Plus size={24} strokeWidth={2.2} />
+          </span>
+          <small>Add</small>
+        </Link>
+        <MobileDockLink href="/watering" label="Watering" icon={Droplets} />
+        <button
+          className={styles.mobileDockButton}
+          type="button"
+          ref={menuButtonRef}
+          aria-controls="mobile-navigation-panel"
+          aria-expanded={isOpen}
+          aria-label="Open more navigation"
+          onClick={() => setIsOpen(true)}
+        >
+          <MoreHorizontal aria-hidden="true" size={21} />
+          <span>More</span>
+        </button>
+      </nav>
 
       {isOpen ? (
         <div className={styles.mobileMenuLayer}>
@@ -203,5 +215,20 @@ export function MobileNavigation() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+function MobileDockLink({ href, label, icon: Icon }: NavigationItem) {
+  const pathname = usePathname();
+  const active = href === '/' ? pathname === href : pathname.startsWith(href);
+  return (
+    <Link
+      className={`${styles.mobileDockLink} ${active ? styles.mobileDockActive : ''}`}
+      href={href}
+      aria-current={active ? 'page' : undefined}
+    >
+      <Icon aria-hidden="true" size={21} />
+      <span>{label}</span>
+    </Link>
   );
 }

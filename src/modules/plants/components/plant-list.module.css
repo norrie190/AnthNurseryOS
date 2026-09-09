@@ -4,203 +4,162 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
+  padding-bottom: 0.5rem;
 }
 
 .collection {
   min-width: 0;
 }
 
-.columns,
-.row {
-  display: grid;
-  grid-template-columns: minmax(15rem, 2fr) minmax(8rem, 1fr) minmax(0, 1.25fr) minmax(7rem, 1fr);
-  align-items: center;
-  gap: 1rem;
-  padding: 1.25rem;
-}
-
-.columns {
-  padding: 0.7rem 1rem;
-  border-bottom: 1px solid var(--border-strong);
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
 .list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
+  gap: clamp(1rem, 2vw, 1.5rem);
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.list li + li {
-  border-top: 1px solid var(--border);
+.list li {
+  min-width: 0;
 }
 
 .row {
+  display: grid;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid rgb(35 76 47 / 10%);
+  border-radius: var(--radius-large);
   color: var(--text);
   font-size: 0.9rem;
-  line-height: 1.6;
   text-decoration: none;
-  border-radius: var(--radius-small);
-  transition: background-color 120ms ease;
+  background: var(--surface-primary);
+  box-shadow: 0 4px 18px rgb(22 48 30 / 5%);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
 }
 
 .row:hover,
 .row:focus-visible {
-  background: var(--accent-soft);
+  transform: translateY(-3px);
+  border-color: rgb(36 85 54 / 24%);
+  box-shadow: var(--shadow-card);
 }
 
 .row:focus-visible {
   outline: 3px solid var(--accent);
-  outline-offset: -3px;
+  outline-offset: 3px;
 }
 
 .reference {
-  color: var(--accent-strong);
-  font-size: 0.8rem;
-  font-weight: 500;
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
   text-decoration: none;
 }
 
-.identity {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.85rem;
+.photo {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 65% 35%, rgb(177 207 167 / 60%), transparent 45%),
+    var(--surface-subtle);
 }
 
-.identityText {
+.photo img {
+  object-fit: cover;
+  transition: transform 280ms ease;
+}
+
+.row:hover .photo img {
+  transform: scale(1.025);
+}
+
+.photoStatus {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+}
+
+.cardBody {
   display: grid;
-  min-width: 0;
-  gap: 0.15rem;
+  gap: 0.55rem;
+  padding: 1rem 1.05rem 1.1rem;
+}
+
+.cardHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-muted);
 }
 
 .name {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.18rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .archiveContext {
-  display: block;
-  margin-top: 0.2rem;
   color: var(--text-muted);
   font-size: 0.75rem;
 }
 
-.status {
+.cardMeta {
   display: grid;
-  justify-items: start;
-  gap: 0.1rem;
+  gap: 0.35rem;
+  margin-top: 0.15rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font-size: 0.78rem;
 }
 
 .location,
 .added {
-  color: var(--text-muted);
-}
-
-.name,
-.location {
+  display: flex;
   min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.name {
-  font-size: 0.95rem;
-  font-weight: 650;
-}
-
-.photo {
-  flex: 0 0 4.5rem;
-  width: 4.5rem;
-  height: 4.5rem;
-  overflow: hidden;
-  border-radius: var(--radius-small);
-  background: var(--surface-muted);
-}
-
-/* Keep the existing safe placeholder legible without letting its label set row width. */
-.photo :global(.placeholder) {
-  font-size: 0.65rem;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .mobileLabel {
   display: none;
 }
 
-/* Reference remains a readable identity cue, not a spreadsheet column. */
-.reference {
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-  overflow-wrap: anywhere;
-}
-
-@media (max-width: 64rem) {
-  .collection {
-    border-top: 1px solid var(--border-strong);
-  }
-
-  .columns {
-    display: none;
-  }
-
+@media (max-width: 38rem) {
   .list {
-    display: grid;
-    gap: 1rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
   }
 
-  .list li,
-  .list li + li {
-    border: 0;
-    border-bottom: 1px solid var(--border);
-    border-radius: var(--radius-medium);
-    background: var(--surface-primary);
-  }
-
-  .row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.5rem 1rem;
-    padding: 1.1rem;
-    border-radius: var(--radius-medium);
-  }
-
-  .identity {
-    grid-column: 1 / -1;
-    grid-row: 1;
-  }
-
-  .status {
-    grid-column: 2;
-    grid-row: 2;
-    align-self: start;
-  }
-
-  .location,
-  .added {
-    grid-column: 1 / -1;
-    font-size: 0.85rem;
-  }
-
-  .location {
-    grid-row: 3;
-  }
-  .added {
-    grid-row: 4;
-  }
-
-  .photo {
-    flex-basis: 3.75rem;
-    width: 3.75rem;
-    height: 3.75rem;
+  .cardBody {
+    padding: 0.8rem;
   }
 
   .name {
-    white-space: normal;
+    font-size: 1rem;
   }
 
-  .mobileLabel {
-    display: inline;
+  .cardMeta {
+    display: none;
+  }
+
+  .photoStatus {
+    right: 0.5rem;
+    bottom: 0.5rem;
+  }
+
+  .photoStatus > span {
+    padding: 0.25rem 0.45rem;
+    font-size: 0.68rem;
   }
 }
