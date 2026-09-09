@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { ArrowRight, ArrowUpRight, Dna, Flower2, Sprout } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { BreedingAttentionItem, BreedingOverview } from '../breeding-overview-queries';
 import styles from './breeding-overview-page.module.css';
 import { EmptyState } from '../../../components/ui/empty-state';
@@ -74,27 +76,40 @@ function seedDescription(item: Extract<BreedingAttentionItem, { type: 'SEED_BATC
 }
 
 function AttentionItem({ item }: { item: BreedingAttentionItem }) {
+  const icon =
+    item.type === 'INFLORESCENCE' ? (
+      <Flower2 size={22} />
+    ) : item.type === 'POLLINATION' ? (
+      <Dna size={22} />
+    ) : (
+      <Sprout size={22} />
+    );
   return (
     <li className={styles.attentionItem}>
       <Link href={`/plants/${item.plant.id}`} className={styles.attentionLink}>
-        <span className={styles.itemTopline}>
-          <strong>{item.plant.reference}</strong>
-          <span className={styles.type}>{typeLabel(item)}</span>
+        <span className={styles.itemIcon} aria-hidden="true">
+          {icon}
         </span>
-        <span className={styles.itemTitle}>
-          <StatusBadge variant={statusVariant(item.status)}>{workflowLabel(item)}</StatusBadge>
+        <span className={styles.itemBody}>
+          <span className={styles.itemTopline}>
+            <strong>{item.plant.reference}</strong>
+            <span className={styles.type}>{typeLabel(item)}</span>
+          </span>
+          <span className={styles.itemTitle}>
+            <StatusBadge variant={statusVariant(item.status)}>{workflowLabel(item)}</StatusBadge>
+          </span>
+          <span className={styles.itemName}>{displayName(item)}</span>
+          <span className={styles.itemMeta}>
+            {formatDate(item.relevantDate)}
+            {item.plant.locationName ? ` · Location: ${item.plant.locationName}` : ''} · Plant:{' '}
+            {lifecycle(item)}
+          </span>
+          {item.type !== 'INFLORESCENCE' && <span className={styles.itemCross}>{item.cross}</span>}
+          {item.type === 'SEED_BATCH' && (
+            <span className={styles.itemMeta}>{seedDescription(item)}</span>
+          )}
         </span>
-        <span className={styles.itemMeta}>
-          {displayName(item)} · {formatDate(item.relevantDate)}
-        </span>
-        <span className={styles.itemMeta}>
-          {item.plant.locationName ? `Location: ${item.plant.locationName} · ` : ''}
-          Plant: {lifecycle(item)}
-        </span>
-        {item.type !== 'INFLORESCENCE' && <span className={styles.itemMeta}>{item.cross}</span>}
-        {item.type === 'SEED_BATCH' && (
-          <span className={styles.itemMeta}>{seedDescription(item)}</span>
-        )}
+        <ArrowUpRight className={styles.itemArrow} size={18} aria-hidden="true" />
       </Link>
     </li>
   );
@@ -102,16 +117,28 @@ function AttentionItem({ item }: { item: BreedingAttentionItem }) {
 
 function CountGroup({
   title,
+  icon,
+  step,
   primary,
   entries,
 }: {
   title: string;
+  icon: ReactNode;
+  step: string;
   primary: { label: string; value: number };
   entries: readonly { label: string; value: number }[];
 }) {
   return (
     <div className={styles.summaryCard}>
-      <h3>{title}</h3>
+      <div className={styles.summaryHeading}>
+        <span className={styles.summaryIcon} aria-hidden="true">
+          {icon}
+        </span>
+        <div>
+          <span>{step}</span>
+          <h3>{title}</h3>
+        </div>
+      </div>
       <p className={styles.primaryCount}>
         <strong>{primary.value}</strong>
         <span>{primary.label}</span>
@@ -137,24 +164,62 @@ function hasRecords(overview: BreedingOverview) {
 }
 
 export function BreedingOverviewPage({ overview }: { overview: BreedingOverview }) {
+  const activeSeedBatches =
+    overview.awaitingSowing + overview.awaitingGermination + overview.activelyGerminating;
   return (
     <div className={styles.page}>
       <header className={styles.pageHeader}>
-        <p className={styles.eyebrow}>Nursery operations</p>
-        <h1>Breeding overview</h1>
-        <p>See active breeding work across the nursery and follow each item back to its Plant.</p>
+        <div>
+          <p className={styles.eyebrow}>Your breeding programme</p>
+          <h1>Breeding overview</h1>
+          <p>Follow flowers, crosses and seed batches through one connected nursery workflow.</p>
+        </div>
+        <Link className={styles.plantLink} href="/plants">
+          Open Plant collection <ArrowRight size={16} aria-hidden="true" />
+        </Link>
       </header>
+
+      <section className={styles.hero} aria-labelledby="breeding-focus-heading">
+        <div>
+          <p className={styles.heroEyebrow}>Breeding focus</p>
+          <h2 id="breeding-focus-heading">
+            {overview.attention.length
+              ? `${overview.attention.length} ${overview.attention.length === 1 ? 'item needs' : 'items need'} attention`
+              : 'Everything is up to date'}
+          </h2>
+          <p>
+            The queue is ordered by the next useful nursery action, with the oldest work shown
+            first.
+          </p>
+        </div>
+        <dl className={styles.heroCounts}>
+          <div>
+            <dt>Active flowers</dt>
+            <dd>{overview.activeInflorescences}</dd>
+          </div>
+          <div>
+            <dt>Active crosses</dt>
+            <dd>{overview.activePollinations}</dd>
+          </div>
+          <div>
+            <dt>Seed batches in progress</dt>
+            <dd>{activeSeedBatches}</dd>
+          </div>
+        </dl>
+      </section>
 
       <section className={styles.section} aria-labelledby="breeding-summary-heading">
         <div className={styles.sectionHeading}>
           <div>
             <p className={styles.eyebrow}>Current records</p>
-            <h2 id="breeding-summary-heading">Summary</h2>
+            <h2 id="breeding-summary-heading">Breeding pipeline</h2>
           </div>
         </div>
         <div className={styles.summaryGrid}>
           <CountGroup
             title="Inflorescences"
+            icon={<Flower2 size={21} />}
+            step="Stage 01"
             primary={{ label: 'active', value: overview.activeInflorescences }}
             entries={[
               { label: inflorescenceStatus.OBSERVED, value: overview.inflorescences.OBSERVED },
@@ -165,6 +230,8 @@ export function BreedingOverviewPage({ overview }: { overview: BreedingOverview 
           />
           <CountGroup
             title="Pollination"
+            icon={<Dna size={21} />}
+            step="Stage 02"
             primary={{ label: 'active', value: overview.activePollinations }}
             entries={[
               { label: pollinationStatus.PENDING, value: overview.pollinationAttempts.PENDING },
@@ -178,6 +245,8 @@ export function BreedingOverviewPage({ overview }: { overview: BreedingOverview 
           />
           <CountGroup
             title="Seed batches"
+            icon={<Sprout size={21} />}
+            step="Stage 03"
             primary={{ label: 'awaiting sowing', value: overview.awaitingSowing }}
             entries={[
               { label: 'Awaiting germination', value: overview.awaitingGermination },

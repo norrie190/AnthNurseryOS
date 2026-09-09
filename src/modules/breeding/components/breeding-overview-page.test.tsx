@@ -76,10 +76,13 @@ test('renders read-model summaries, preserves attention order and links each ite
   expect(screen.getByText('Seed batch awaiting sowing')).toBeInTheDocument();
   expect(screen.getByText('ANT-0001 × ANT-0001')).toBeInTheDocument();
   expect(screen.getByText('ANT-0001 × External Parent')).toBeInTheDocument();
-  expect(screen.getAllByRole('link')).toHaveLength(3);
+  expect(screen.getByRole('link', { name: /Open Plant collection/ })).toHaveAttribute(
+    'href',
+    '/plants',
+  );
   expect(
-    screen.getAllByRole('link').every((link) => link.getAttribute('href') === '/plants/plant-1'),
-  ).toBe(true);
+    screen.getAllByRole('link').filter((link) => link.getAttribute('href') === '/plants/plant-1'),
+  ).toHaveLength(3);
   expect(screen.getAllByText(/Sold parent/).length).toBe(3);
   expect(screen.getAllByText(/Location: Glasshouse/).length).toBe(3);
 });
