@@ -158,6 +158,8 @@ test('detail displays immutable reference and optional fallbacks', () => {
     `/equipment/${item.id}/edit`,
   );
   expect(screen.getByRole('button', { name: 'Archive Equipment' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Power & cost' })).toHaveAttribute('href', '#energy');
+  expect(screen.getByRole('link', { name: 'Add a photo' })).toHaveAttribute('href', '#photos');
   expect(screen.queryByText(item.id)).not.toBeInTheDocument();
 });
 test('archived detail remains viewable and distinguishes unknown from zero purchase amounts', () => {

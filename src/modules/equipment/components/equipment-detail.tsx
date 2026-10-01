@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { Bolt, Camera, Pencil } from 'lucide-react';
+import { Bolt, Camera, Pencil, Wrench } from 'lucide-react';
 import { LocalSectionNav } from '../../../components/ui/local-section-nav';
 import { formatPurchaseMoney } from '../../../lib/purchase-money';
 import type { EquipmentDetailRecord } from '../equipment-queries';
@@ -48,9 +48,16 @@ export function EquipmentDetail({
       >
         ← {equipment.archivedAt ? 'Archived Equipment' : 'Equipment'}
       </Link>
-      <header className={styles.detailHeader}>
+      <header
+        className={`${styles.detailHeader} ${identityPhoto ? '' : styles.detailHeaderNoPhoto}`}
+      >
         {identityPhoto && <div className={styles.identityPhoto}>{identityPhoto}</div>}
         <div className={styles.detailIdentity}>
+          {!identityPhoto && (
+            <span className={styles.detailMark} aria-hidden="true">
+              <Wrench size={26} />
+            </span>
+          )}
           <p className={styles.eyebrow}>Equipment inventory</p>
           <h1>{equipment.name}</h1>
           <p className={styles.referenceLine}>{equipment.reference}</p>
@@ -68,19 +75,22 @@ export function EquipmentDetail({
             </p>
           )}
           <div className={styles.detailActions}>
-            <Link href={`/equipment/${equipment.id}/edit`} className={styles.primaryButton}>
+            {equipment.usesPower && (
+              <Link href="#energy" className={styles.primaryButton}>
+                <Bolt aria-hidden="true" size={17} />
+                Power &amp; cost
+              </Link>
+            )}
+            <Link
+              href={`/equipment/${equipment.id}/edit`}
+              className={equipment.usesPower ? styles.secondaryButton : styles.primaryButton}
+            >
               <Pencil aria-hidden="true" size={17} />
               Edit Equipment
             </Link>
-            {equipment.usesPower && (
-              <Link href="#energy" className={styles.secondaryButton}>
-                <Bolt aria-hidden="true" size={17} />
-                View energy
-              </Link>
-            )}
             <Link href="#photos" className={styles.secondaryButton}>
               <Camera aria-hidden="true" size={17} />
-              View photos
+              {identityPhoto ? 'View photos' : 'Add a photo'}
             </Link>
           </div>
         </div>

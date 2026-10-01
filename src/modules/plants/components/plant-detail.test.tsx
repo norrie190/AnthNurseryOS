@@ -50,6 +50,28 @@ test('provides accessible deep links for each Plant detail section', () => {
   expect(navigation).toBeInTheDocument();
 });
 
+test('puts watering within reach on an active Plant and keeps historical Plants read only', () => {
+  const { rerender } = render(
+    <PlantDetail plant={plant} watering={<form id="record-watering">Watering form</form>} />,
+  );
+  expect(screen.getByRole('link', { name: 'Record watering' })).toHaveAttribute(
+    'href',
+    '#record-watering',
+  );
+  expect(screen.getByRole('link', { name: 'Add a photo' })).toHaveAttribute('href', '#photos');
+  expect(
+    screen.getByRole('navigation', { name: 'Plant detail sections' }).querySelector('a'),
+  ).toHaveAttribute('href', '#care');
+
+  rerender(
+    <PlantDetail
+      plant={{ ...plant, status: 'SOLD' }}
+      watering={<form id="record-watering">Watering form</form>}
+    />,
+  );
+  expect(screen.queryByRole('link', { name: 'Record watering' })).not.toBeInTheDocument();
+});
+
 test('displays origin SeedBatch provenance and cross', () => {
   render(
     <PlantDetail

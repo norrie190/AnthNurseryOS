@@ -95,6 +95,7 @@
 .historyGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 1rem;
   margin-top: 1.5rem;
 }
@@ -383,4 +384,7 @@
   .fullWidth {
     grid-column: auto;
   }
+}
+.form {
+  scroll-margin-top: 7rem;
 }

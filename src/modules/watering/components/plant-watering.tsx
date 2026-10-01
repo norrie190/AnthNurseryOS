@@ -25,7 +25,7 @@ function dueLabel(due: PlantWateringDetail['due']) {
     case 'NOT_CONFIGURED':
       return 'Watering schedule not configured';
     case 'NEEDS_FIRST_WATERING':
-      return 'Schedule configured — no watering recorded yet';
+      return 'No watering recorded yet';
     case 'OVERDUE':
       return `${Math.abs(due.daysUntilDue!)} ${Math.abs(due.daysUntilDue!) === 1 ? 'day' : 'days'} overdue`;
     case 'DUE_TODAY':

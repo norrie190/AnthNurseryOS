@@ -60,23 +60,24 @@ export function EquipmentList({
                     }
                     alt={`${item.reference} primary photo`}
                   />
-                  <span className={styles.powerBadge} data-powered={item.usesPower || undefined}>
-                    <Bolt aria-hidden="true" size={14} />
-                    Energy tracking: {item.usesPower ? 'Supported' : 'Not enabled'}
-                  </span>
                 </span>
                 <span className={styles.cardBody}>
                   <span className={styles.cardHeading}>
                     <strong className={styles.reference}>{item.reference}</strong>
-                    <ArrowUpRight aria-hidden="true" size={18} />
+                    <span className={styles.category}>{item.category}</span>
                   </span>
                   <strong className={styles.name}>{item.name}</strong>
-                  <span className={styles.category}>{item.category}</span>
                   {(item.brand || item.model) && (
                     <span className={styles.manufacturer}>
                       {[item.brand, item.model].filter(Boolean).join(' · ')}
                     </span>
                   )}
+                </span>
+                <span className={styles.rowDetails}>
+                  <span className={styles.powerBadge} data-powered={item.usesPower || undefined}>
+                    <Bolt aria-hidden="true" size={14} />
+                    Energy tracking: {item.usesPower ? 'Supported' : 'Not enabled'}
+                  </span>
                   <span className={styles.cardMeta}>
                     <span>
                       <MapPin aria-hidden="true" size={15} />
@@ -96,6 +97,7 @@ export function EquipmentList({
                   </span>
                   {archived && <span className={styles.restoreHint}>View details to restore</span>}
                 </span>
+                <ArrowUpRight aria-hidden="true" className={styles.rowArrow} size={19} />
               </Link>
             </li>
           );

@@ -82,6 +82,27 @@
     var(--surface-primary);
   box-shadow: var(--shadow-card);
 }
+.identityHeaderNoPhoto {
+  grid-template-columns: minmax(0, 1fr);
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  background:
+    radial-gradient(circle at 92% 10%, rgb(190 220 182 / 60%), transparent 15rem),
+    linear-gradient(135deg, var(--surface-primary), #f2f7ed);
+}
+.identityMark {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-bottom: 1rem;
+  place-items: center;
+  border-radius: 1rem;
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+.identityHeaderNoPhoto .identityContent h1 {
+  max-width: 28ch;
+  font-size: clamp(2rem, 3.4vw, 3rem);
+}
 .identityPhoto {
   width: 100%;
   aspect-ratio: 1;

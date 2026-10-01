@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { Camera, Droplets, Pencil } from 'lucide-react';
+import { Camera, Droplets, Pencil, Sprout } from 'lucide-react';
 import { LocalSectionNav } from '@/components/ui/local-section-nav';
 import { StatusBadge, type StatusBadgeVariant } from '@/components/ui/status-badge';
 import type { PlantDetailRecord } from '../plant-queries';
@@ -51,20 +51,33 @@ export function PlantDetail({
 }) {
   const purchase = plant.purchase;
   const primaryPhoto = photos.find((photo) => photo.isPrimary);
+  const canRecordWatering =
+    !!watering &&
+    !plant.archivedAt &&
+    (plant.status === 'GROWING' || plant.status === 'QUARANTINE');
   return (
     <div className={styles.page}>
       <Link href={plant.archivedAt ? '/plants/archived' : '/plants'} className={styles.backLink}>
         {plant.archivedAt ? '← Archived Plants' : '← Plants'}
       </Link>
-      <header className={styles.identityHeader}>
-        <div className={styles.identityPhoto}>
-          <PlantPhotoImage
-            src={primaryPhoto ? photoImagePath(plant.id, primaryPhoto.id, 'display') : undefined}
-            alt={primaryPhoto?.caption || `${plant.reference} primary photo`}
-            prominent
-          />
-        </div>
+      <header
+        className={`${styles.identityHeader} ${primaryPhoto ? '' : styles.identityHeaderNoPhoto}`}
+      >
+        {primaryPhoto && (
+          <div className={styles.identityPhoto}>
+            <PlantPhotoImage
+              src={photoImagePath(plant.id, primaryPhoto.id, 'display')}
+              alt={primaryPhoto.caption || `${plant.reference} primary photo`}
+              prominent
+            />
+          </div>
+        )}
         <div className={styles.identityContent}>
+          {!primaryPhoto && (
+            <span className={styles.identityMark} aria-hidden="true">
+              <Sprout size={27} />
+            </span>
+          )}
           <p className={styles.eyebrow}>Plant record</p>
           <h1>{plant.name || 'Unnamed Plant'}</h1>
           <p className={styles.reference}>{plant.reference}</p>
@@ -87,17 +100,22 @@ export function PlantDetail({
             )}
           </dl>
           <div className={styles.identityActions}>
-            <Link href={`/plants/${plant.id}/edit`} className={styles.primaryButton}>
+            {canRecordWatering && (
+              <Link href="#record-watering" className={styles.primaryButton}>
+                <Droplets aria-hidden="true" size={17} />
+                Record watering
+              </Link>
+            )}
+            <Link
+              href={`/plants/${plant.id}/edit`}
+              className={canRecordWatering ? styles.secondaryLink : styles.primaryButton}
+            >
               <Pencil aria-hidden="true" size={17} />
               Edit Plant
             </Link>
-            <Link href="#care" className={styles.secondaryLink}>
-              <Droplets aria-hidden="true" size={17} />
-              View care
-            </Link>
             <Link href="#photos" className={styles.secondaryLink}>
               <Camera aria-hidden="true" size={17} />
-              View photos
+              {primaryPhoto ? 'View photos' : 'Add a photo'}
             </Link>
           </div>
         </div>
@@ -105,13 +123,21 @@ export function PlantDetail({
       <LocalSectionNav
         ariaLabel="Plant detail sections"
         items={[
-          { href: '#overview', label: 'Overview' },
           { href: '#care', label: 'Care' },
+          { href: '#overview', label: 'Overview' },
           { href: '#breeding', label: 'Breeding' },
           { href: '#photos', label: 'Photos' },
           { href: '#history', label: 'History' },
         ]}
       />
+
+      <section id="care" className={styles.pageSection} aria-labelledby="care-heading">
+        <div className={styles.sectionHeading}>
+          <p className={styles.eyebrow}>Current care</p>
+          <h2 id="care-heading">Care</h2>
+        </div>
+        {watering}
+      </section>
 
       <section id="overview" className={styles.pageSection} aria-labelledby="overview-heading">
         <div className={styles.sectionHeading}>
@@ -266,13 +292,6 @@ export function PlantDetail({
             )}
           </section>
         </div>
-      </section>
-      <section id="care" className={styles.pageSection} aria-labelledby="care-heading">
-        <div className={styles.sectionHeading}>
-          <p className={styles.eyebrow}>Current care</p>
-          <h2 id="care-heading">Care</h2>
-        </div>
-        {watering}
       </section>
       <section
         id="breeding"

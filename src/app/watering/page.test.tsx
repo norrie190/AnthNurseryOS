@@ -93,7 +93,7 @@ test('loads the read model server-side and presents all queue categories and ent
   expect(screen.getAllByRole('checkbox')).toHaveLength(6);
   expect(screen.queryByText('0 Plants selected')).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Water selected' })).not.toBeInTheDocument();
-  expect(screen.getByText('6 active care Plants are being tracked.')).toBeInTheDocument();
+  expect(screen.getByText('6 active Plants are being tracked for care.')).toBeInTheDocument();
   expect(screen.getByText('3 days overdue')).toBeInTheDocument();
   expect(screen.getAllByText('Due today').length).toBeGreaterThan(0);
   expect(screen.getByText('No watering recorded yet')).toBeInTheDocument();

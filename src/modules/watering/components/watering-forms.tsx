@@ -69,6 +69,7 @@ export function RecordWateringForm({
 
   return (
     <form
+      id="record-watering"
       className={styles.form}
       action={formAction}
       noValidate

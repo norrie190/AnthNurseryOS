@@ -33,14 +33,12 @@ export default async function EquipmentDetailPage({
     <EquipmentDetail
       equipment={equipment}
       identityPhoto={
-        <EquipmentPhotoImage
-          src={
-            primaryPhoto
-              ? equipmentPhotoImagePath(equipment.id, primaryPhoto.id, 'display')
-              : undefined
-          }
-          alt={`${equipment.reference} primary photo`}
-        />
+        primaryPhoto ? (
+          <EquipmentPhotoImage
+            src={equipmentPhotoImagePath(equipment.id, primaryPhoto.id, 'display')}
+            alt={`${equipment.reference} primary photo`}
+          />
+        ) : undefined
       }
       photos={
         <EquipmentPhotos

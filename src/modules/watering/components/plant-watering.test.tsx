@@ -54,7 +54,7 @@ beforeEach(() => {
 
 test.each([
   ['NOT_CONFIGURED', null, 'Watering schedule not configured'],
-  ['NEEDS_FIRST_WATERING', null, 'Schedule configured — no watering recorded yet'],
+  ['NEEDS_FIRST_WATERING', null, 'No watering recorded yet'],
   ['OVERDUE', -3, '3 days overdue'],
   ['DUE_TODAY', 0, 'Due today'],
   ['DUE_SOON', 2, 'Due in 2 days'],

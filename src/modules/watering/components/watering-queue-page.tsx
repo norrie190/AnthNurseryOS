@@ -224,16 +224,25 @@ export function WateringQueuePage({
       <section aria-labelledby="watering-summary-heading" className={styles.summary}>
         <div className={styles.summaryIntro}>
           <span className={styles.summaryIcon} aria-hidden="true">
-            {urgent === 0 ? <Check size={24} /> : <Droplets size={24} />}
+            {urgent === 0 && queue.counts.needsFirstWatering === 0 ? (
+              <Check size={24} />
+            ) : (
+              <Droplets size={24} />
+            )}
           </span>
           <div>
             <p className={styles.eyebrow}>Today&apos;s focus</p>
             <h2 id="watering-summary-heading">
-              {urgent === 0
-                ? 'No urgent watering today'
-                : `${urgent} ${urgent === 1 ? 'Plant needs' : 'Plants need'} attention`}
+              {urgent > 0
+                ? `${urgent} ${urgent === 1 ? 'Plant needs' : 'Plants need'} attention`
+                : queue.counts.needsFirstWatering > 0
+                  ? `${queue.counts.needsFirstWatering} ${queue.counts.needsFirstWatering === 1 ? 'Plant awaits' : 'Plants await'} first watering`
+                  : 'No urgent watering today'}
             </h2>
-            <p>{queue.counts.totalEligible} active care Plants are being tracked.</p>
+            <p>
+              {queue.counts.totalEligible} active{' '}
+              {queue.counts.totalEligible === 1 ? 'Plant is' : 'Plants are'} being tracked for care.
+            </p>
           </div>
         </div>
         <dl className={styles.summaryPrimary} aria-label="Watering attention counts">
@@ -393,7 +402,7 @@ export function WateringQueuePage({
         />
       ) : (
         <>
-          {urgent === 0 ? (
+          {urgent === 0 && queue.counts.needsFirstWatering === 0 ? (
             <p className={styles.quiet} role="status">
               No urgent watering tasks today.
             </p>
