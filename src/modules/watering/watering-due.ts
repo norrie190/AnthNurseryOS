@@ -45,6 +45,24 @@ export function calculateWateringDueState(input: {
 }): WateringDueState {
   const nurseryDate = calendarDateSchema.parse(input.nurseryDate);
   const latestWateredDate = latestQualifyingDate(input.events, nurseryDate);
+  const parsedInterval = input.schedule
+    ? intervalSchema.safeParse(input.schedule.intervalDays)
+    : null;
+  if (parsedInterval && !parsedInterval.success) {
+    throw new WateringError('VALIDATION_FAILED', 'The watering interval is invalid.', {
+      cause: parsedInterval.error,
+    });
+  }
+  if (!latestWateredDate) {
+    return {
+      status: 'NEEDS_FIRST_WATERING',
+      nurseryDate,
+      intervalDays: parsedInterval?.data ?? null,
+      latestWateredDate: null,
+      nextDueDate: null,
+      daysUntilDue: null,
+    };
+  }
   if (!input.schedule) {
     return {
       status: 'NOT_CONFIGURED',
@@ -55,23 +73,7 @@ export function calculateWateringDueState(input: {
       daysUntilDue: null,
     };
   }
-  const parsedInterval = intervalSchema.safeParse(input.schedule.intervalDays);
-  if (!parsedInterval.success) {
-    throw new WateringError('VALIDATION_FAILED', 'The watering interval is invalid.', {
-      cause: parsedInterval.error,
-    });
-  }
-  const intervalDays = parsedInterval.data;
-  if (!latestWateredDate) {
-    return {
-      status: 'NEEDS_FIRST_WATERING',
-      nurseryDate,
-      intervalDays,
-      latestWateredDate: null,
-      nextDueDate: null,
-      daysUntilDue: null,
-    };
-  }
+  const intervalDays = parsedInterval!.data;
   const nextDueDate = addCalendarDays(latestWateredDate, intervalDays);
   const daysUntilDue = calendarDaysBetween(nurseryDate, nextDueDate);
   const status: WateringDueStatus =

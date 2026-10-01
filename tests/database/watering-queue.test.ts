@@ -34,7 +34,7 @@ describe('watering queue query architecture', () => {
     expect(tx.plant.findMany).toHaveBeenCalledOnce();
     expect(tx.wateringSchedulePeriod.findMany).toHaveBeenCalledOnce();
     expect(tx.wateringEvent.findMany).toHaveBeenCalledOnce();
-    expect(result.counts).toMatchObject({ totalEligible: 1, notConfigured: 1 });
+    expect(result.counts).toMatchObject({ totalEligible: 1, needsFirstWatering: 1 });
   });
 
   test('batches due inputs and returns only minimal location/photo metadata', async () => {
@@ -80,6 +80,10 @@ describe('watering queue query architecture', () => {
     const result = await getWateringQueue('2026-09-03');
     expect(result.entries).toHaveLength(2);
     expect(result.entries[0]).toMatchObject({
+      plant: { id: 'p2', reference: 'ANT-0003', location: null, primaryPhoto: null },
+      due: { status: 'NEEDS_FIRST_WATERING' },
+    });
+    expect(result.entries[1]).toMatchObject({
       plant: {
         id: 'p1',
         location: { id: 'loc', name: 'Shelf A' },
@@ -87,18 +91,14 @@ describe('watering queue query architecture', () => {
       },
       due: { status: 'UPCOMING' },
     });
-    expect(result.entries[1]).toMatchObject({
-      plant: { id: 'p2', reference: 'ANT-0003', location: null, primaryPhoto: null },
-      due: { status: 'NOT_CONFIGURED' },
-    });
     expect(result.counts).toEqual({
       totalEligible: 2,
       overdue: 0,
       dueToday: 0,
       dueSoon: 0,
-      needsFirstWatering: 0,
+      needsFirstWatering: 1,
       upcoming: 1,
-      notConfigured: 1,
+      notConfigured: 0,
     });
     expect(tx.wateringSchedulePeriod.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ voidedAt: null }) }),

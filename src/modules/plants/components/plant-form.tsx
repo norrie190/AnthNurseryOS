@@ -58,6 +58,7 @@ export function PlantForm({
   );
   const submitting = useRef(false);
   const summary = useRef<HTMLDivElement>(null);
+  const nameInput = useRef<HTMLInputElement>(null);
 
   const parentageError = Object.keys(state.fieldErrors).some(
     (field) => field.startsWith('seedParent') || field.startsWith('pollenParent'),
@@ -80,9 +81,28 @@ export function PlantForm({
   useEffect(() => {
     if (!pending) {
       submitting.current = false;
-      if (state.message) summary.current?.focus();
+      if (state.createdPlant && !edit) {
+        const keepPurchaseOpen = values.recordPurchase === 'on';
+        const reset = window.setTimeout(() => {
+          setValues((previous) => ({
+            ...initialPlantFormValues,
+            status: previous.status,
+            locationId: previous.locationId,
+            recordPurchase: previous.recordPurchase,
+            seller: previous.seller,
+            orderReference: previous.orderReference,
+            purchaseDate: previous.purchaseDate,
+            currency: previous.currency,
+          }));
+          setParentageOpen(false);
+          setPurchaseOpen(keepPurchaseOpen);
+          setAdvancedOpen(keepPurchaseOpen);
+          nameInput.current?.focus();
+        }, 0);
+        return () => window.clearTimeout(reset);
+      } else if (state.message) summary.current?.focus();
     }
-  }, [state, pending]);
+  }, [edit, pending, state, values.recordPurchase]);
 
   function change(field: PlantFormField, value: string) {
     setValues((previous) => ({ ...previous, [field]: value }));
@@ -120,10 +140,33 @@ export function PlantForm({
         // Dispatch explicitly so React does not reset parent/purchase choices on errors.
         // Capture the form before pending disables its controls.
         const data = new FormData(event.currentTarget);
+        const submitter = (event.nativeEvent as SubmitEvent).submitter;
+        if (submitter instanceof HTMLButtonElement && submitter.name === 'submitIntent') {
+          data.set('submitIntent', submitter.value);
+        }
         startTransition(() => formAction(data));
       }}
     >
-      {state.message && (
+      {state.createdPlant && !edit ? (
+        <InlineNotice
+          ref={summary}
+          tabIndex={-1}
+          role="status"
+          variant="success"
+          className={styles.intakeSuccess}
+        >
+          <h2>{state.createdPlant.reference} added</h2>
+          <p>
+            {state.createdPlant.name || 'Unnamed Plant'} is safely in your collection. Status,
+            Location and purchase context have been kept ready for the next Plant.
+          </p>
+          <p>
+            <Link href={`/plants/${state.createdPlant.id}`}>Open the saved Plant</Link>
+            {' · '}
+            <Link href="/watering">View the watering queue</Link>
+          </p>
+        </InlineNotice>
+      ) : state.message ? (
         <InlineNotice
           ref={summary}
           tabIndex={-1}
@@ -180,7 +223,7 @@ export function PlantForm({
             </ul>
           )}
         </InlineNotice>
-      )}
+      ) : null}
 
       <FormSection
         title={edit ? 'Plant details' : 'Start with the essentials'}
@@ -201,6 +244,8 @@ export function PlantForm({
             </label>
             <input
               {...control('name')}
+              ref={nameInput}
+              autoFocus={!edit}
               autoComplete="off"
               placeholder="e.g. Anthurium crystallinum"
             />
@@ -471,15 +516,32 @@ export function PlantForm({
           >
             Cancel
           </Link>
-          <button className={styles.primaryButton} type="submit" disabled={pending}>
-            {pending
-              ? edit
-                ? 'Saving Changes…'
-                : 'Creating Plant…'
-              : edit
-                ? 'Save Changes'
-                : 'Create Plant'}
-          </button>
+          {edit ? (
+            <button className={styles.primaryButton} type="submit" disabled={pending}>
+              {pending ? 'Saving Changes…' : 'Save Changes'}
+            </button>
+          ) : (
+            <>
+              <button
+                className={styles.secondaryButton}
+                type="submit"
+                name="submitIntent"
+                value="view"
+                disabled={pending}
+              >
+                {pending ? 'Saving Plant…' : 'Save & view Plant'}
+              </button>
+              <button
+                className={styles.primaryButton}
+                type="submit"
+                name="submitIntent"
+                value="addAnother"
+                disabled={pending}
+              >
+                {pending ? 'Saving Plant…' : 'Save & add another'}
+              </button>
+            </>
+          )}
         </ActionBar>
       </div>
     </form>

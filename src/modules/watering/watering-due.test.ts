@@ -14,6 +14,17 @@ const event = (wateredAt: string, voided = false) => ({
 });
 
 describe('pure watering due states', () => {
+  test('a new Plant without a schedule remains visible for its first watering', () => {
+    expect(calculateWateringDueState({ nurseryDate: target, schedule: null, events: [] })).toEqual({
+      status: 'NEEDS_FIRST_WATERING',
+      nurseryDate: target,
+      intervalDays: null,
+      latestWateredDate: null,
+      nextDueDate: null,
+      daysUntilDue: null,
+    });
+  });
+
   test('no schedule is explicitly not configured without inventing a due date', () => {
     expect(
       calculateWateringDueState({

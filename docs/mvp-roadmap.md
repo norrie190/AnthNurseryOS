@@ -66,6 +66,8 @@ Planned checkpoints:
 5. Archive and restore Plant, complete and committed
 6. Plant photos, storage, browser gallery, list images, thumbnail crops and confirmed photo deletion, complete
 
+The Plant intake workflow now supports saving and immediately adding another Plant. It keeps shared status, Location and purchase context while clearing Plant-specific values, making a delivery quicker to enter without weakening the existing creation boundary. New active Plants are surfaced in the Watering queue until their first watering is recorded, even when no recurring schedule exists yet.
+
 Each checkpoint should include the tests needed for its rules and regressions.
 
 The owner has also approved square thumbnail crops during upload and on saved photos. This checkpoint adds four nullable photo fields in a new reviewed migration, an accessible shared selector and safe thumbnail revision replacement. Originals and full gallery display images remain unchanged. Legacy photos are not backfilled. See [thumbnail crops](plant-photo-crops.md).

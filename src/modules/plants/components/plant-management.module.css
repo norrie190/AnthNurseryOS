@@ -583,6 +583,29 @@
   background: #fff7f5;
   color: #84231b;
 }
+.intakeSuccess {
+  padding: 1.25rem;
+  border: 1px solid rgb(50 116 66 / 30%);
+  border-radius: var(--radius-medium);
+  background: linear-gradient(135deg, #f2f8ef, #fff);
+  color: var(--text);
+  box-shadow: var(--shadow-soft);
+}
+.intakeSuccess h2 {
+  margin: 0 0 0.35rem;
+  color: var(--accent-strong);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.35rem;
+}
+.intakeSuccess p {
+  margin: 0.25rem 0 0;
+  line-height: 1.55;
+}
+.intakeSuccess a {
+  color: var(--accent-strong);
+  font-weight: 700;
+  text-underline-offset: 0.18em;
+}
 .errorSummary h2 {
   margin: 0 0 0.5rem;
   font-size: 1rem;

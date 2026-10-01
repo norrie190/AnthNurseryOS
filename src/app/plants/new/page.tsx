@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Camera, Check, Sprout } from 'lucide-react';
+import { Camera, Check, Droplets, Sprout } from 'lucide-react';
 import { connection } from 'next/server';
 import { AddPlantForm } from '@/modules/plants/components/add-plant-form';
 import { getPlantParentOptions, getUsableLocationOptions } from '@/modules/plants/plant-queries';
@@ -23,7 +23,10 @@ export default async function AddPlantPage() {
       <header className={styles.heading}>
         <p className={styles.eyebrow}>New arrival</p>
         <h1>Add Plant</h1>
-        <p>Save the essentials now. Parentage, purchase details and notes can be added later.</p>
+        <p>
+          Add one Plant or work through a whole delivery. Parentage, photos and notes can always be
+          completed later.
+        </p>
       </header>
       <div className={styles.createLayout}>
         <AddPlantForm parents={parents} locations={locations} currencies={currencies} />
@@ -42,6 +45,10 @@ export default async function AddPlantPage() {
             </li>
             <li>
               <Camera aria-hidden="true" size={16} /> Take you to its profile to add photos
+            </li>
+            <li>
+              <Droplets aria-hidden="true" size={16} /> Put it in the watering queue until its first
+              watering is recorded
             </li>
           </ul>
         </aside>

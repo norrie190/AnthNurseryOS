@@ -136,17 +136,17 @@ test('reads a mixed real queue from persisted Plants, schedules, events, locatio
       ['queue-overdue', 'OVERDUE'],
       ['queue-today', 'DUE_TODAY'],
       ['queue-first', 'NEEDS_FIRST_WATERING'],
+      ['queue-unconfigured', 'NEEDS_FIRST_WATERING'],
       ['queue-soon', 'DUE_SOON'],
-      ['queue-unconfigured', 'NOT_CONFIGURED'],
     ]);
     expect(result.counts).toEqual({
       totalEligible: 5,
       overdue: 1,
       dueToday: 1,
       dueSoon: 1,
-      needsFirstWatering: 1,
+      needsFirstWatering: 2,
       upcoming: 0,
-      notConfigured: 1,
+      notConfigured: 0,
     });
     expect(result.entries[0]).toMatchObject({
       plant: {
@@ -157,7 +157,7 @@ test('reads a mixed real queue from persisted Plants, schedules, events, locatio
       due: { intervalDays: 1, latestWateredDate: '2026-09-01', nextDueDate: '2026-09-02' },
     });
     expect(result.entries[1].due).toMatchObject({ latestWateredDate: '2026-09-03' });
-    expect(result.entries[3].due).toMatchObject({ latestWateredDate: '2026-09-05' });
+    expect(result.entries[4].due).toMatchObject({ latestWateredDate: '2026-09-05' });
   }));
 
 test('uses persisted half-open periods, gaps, voids and nursery-day event boundary semantics', () =>
@@ -200,8 +200,8 @@ test('uses persisted half-open periods, gaps, voids and nursery-day event bounda
       status: 'NEEDS_FIRST_WATERING',
       intervalDays: 3,
     });
-    expect(byReference.get('boundary-gap')?.due.status).toBe('NOT_CONFIGURED');
-    expect(byReference.get('boundary-voided-schedule')?.due.status).toBe('NOT_CONFIGURED');
+    expect(byReference.get('boundary-gap')?.due.status).toBe('NEEDS_FIRST_WATERING');
+    expect(byReference.get('boundary-voided-schedule')?.due.status).toBe('NEEDS_FIRST_WATERING');
     expect(byReference.get('boundary-voided-event')?.due).toMatchObject({
       status: 'DUE_TODAY',
       latestWateredDate: '2026-09-03',

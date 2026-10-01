@@ -20,7 +20,8 @@ test('loads the form options on request with no prerequisite Plants or Locations
   expect(getPlantParentOptions).toHaveBeenCalledOnce();
   expect(getUsableLocationOptions).toHaveBeenCalledOnce();
   expect(screen.getByRole('heading', { name: 'Add Plant' })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Create Plant' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Save & add another' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Save & view Plant' })).toBeEnabled();
   expect(
     within(screen.getByRole('combobox', { name: /Location/ })).getAllByRole('option'),
   ).toHaveLength(1);

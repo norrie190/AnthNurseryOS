@@ -25,13 +25,14 @@ test('works with no existing Plants or Locations and does not request identity f
   ).toBe(true);
   expect(screen.getByRole('combobox', { name: 'Status' })).toHaveValue('GROWING');
   expect(screen.getByText(/ANT reference will be assigned/)).toBeInTheDocument();
-  await user.click(screen.getByRole('button', { name: 'Create Plant' }));
+  await user.click(screen.getByRole('button', { name: 'Save & view Plant' }));
   await waitFor(() => expect(createPlantAction).toHaveBeenCalledOnce());
   const data = vi.mocked(createPlantAction).mock.calls[0][1];
   expect(data.get('name')).toBe('');
   expect(data.has('id')).toBe(false);
   expect(data.has('reference')).toBe(false);
   expect(data.has('recordPurchase')).toBe(false);
+  expect(data.get('submitIntent')).toBe('view');
 });
 
 test('preserves entered values and focuses accessible errors after validation fails', async () => {
@@ -45,7 +46,7 @@ test('preserves entered values and focuses accessible errors after validation fa
   await user.click(screen.getByText('Add purchase and cost details'));
   await user.click(screen.getByRole('checkbox', { name: 'Record purchase information' }));
   await user.type(screen.getByRole('textbox', { name: 'Plant price (GBP)' }), '125.555');
-  await user.click(screen.getByRole('button', { name: 'Create Plant' }));
+  await user.click(screen.getByRole('button', { name: 'Save & view Plant' }));
   await waitFor(() => expect(screen.getByRole('alert')).toHaveFocus());
   expect(screen.getByRole('textbox', { name: /^Name/ })).toHaveValue('My real Plant');
   expect(screen.getByRole('checkbox', { name: 'Record purchase information' })).toBeChecked();
@@ -79,7 +80,7 @@ test('keeps inactive parent text locally but submits only the active mode', asyn
     seed.getByRole('combobox', { name: 'Existing seed parent' }),
     'parent-id',
   );
-  await user.click(screen.getByRole('button', { name: 'Create Plant' }));
+  await user.click(screen.getByRole('button', { name: 'Save & view Plant' }));
   await waitFor(() => expect(createPlantAction).toHaveBeenCalledOnce());
   const data = vi.mocked(createPlantAction).mock.calls[0][1];
   expect(data.get('seedParentPlantId')).toBe('parent-id');
@@ -96,7 +97,7 @@ test('preserves purchase details when toggled off but omits them from submission
   await user.click(screen.getByRole('checkbox', { name: 'Record purchase information' }));
   await user.type(screen.getByRole('textbox', { name: 'Seller' }), 'Nursery');
   await user.click(screen.getByRole('checkbox', { name: 'Record purchase information' }));
-  await user.click(screen.getByRole('button', { name: 'Create Plant' }));
+  await user.click(screen.getByRole('button', { name: 'Save & view Plant' }));
   await waitFor(() => expect(createPlantAction).toHaveBeenCalledOnce());
   expect(vi.mocked(createPlantAction).mock.calls[0][1].has('seller')).toBe(false);
   await user.click(screen.getByRole('checkbox', { name: 'Record purchase information' }));
@@ -115,11 +116,53 @@ test('shows pending feedback and blocks ordinary repeated submissions', async ()
   fireEvent.submit(form);
   fireEvent.submit(form);
   await waitFor(() =>
-    expect(screen.getByRole('button', { name: 'Creating Plant…' })).toBeDisabled(),
+    expect(screen.getAllByRole('button', { name: 'Saving Plant…' })).toHaveLength(2),
   );
   expect(createPlantAction).toHaveBeenCalledOnce();
   expect(screen.getByRole('textbox', { name: /^Name/ })).toBeDisabled();
   await act(async () => complete({ message: 'A safe server error.', fieldErrors: {} }));
-  expect(screen.getByRole('button', { name: 'Create Plant' })).toBeEnabled();
+  expect(screen.getByRole('button', { name: 'Save & add another' })).toBeEnabled();
   expect(screen.getByRole('alert')).toHaveTextContent('A safe server error.');
+});
+
+test('rapid intake clears Plant details while retaining shared intake context', async () => {
+  vi.mocked(createPlantAction).mockResolvedValue({
+    message: 'ANT-0042 was added. You can enter the next Plant now.',
+    fieldErrors: {},
+    createdPlant: { id: 'plant-42', reference: 'ANT-0042', name: 'First arrival' },
+  });
+  const user = userEvent.setup();
+  render(
+    <AddPlantForm
+      {...props}
+      locations={[{ id: 'location-1', label: 'Grow Tent 1 / Top Shelf' }]}
+    />,
+  );
+  await user.type(screen.getByRole('textbox', { name: /^Name/ }), 'First arrival');
+  await user.selectOptions(screen.getByRole('combobox', { name: /Location/ }), 'location-1');
+  await user.click(screen.getByText('Add purchase and cost details'));
+  await user.click(screen.getByRole('checkbox', { name: 'Record purchase information' }));
+  await user.type(screen.getByRole('textbox', { name: 'Seller' }), 'Grow Tropical');
+  await user.type(screen.getByRole('textbox', { name: 'Order reference' }), 'ORDER-7');
+  await user.type(screen.getByLabelText('Purchase date'), '2026-09-30');
+  await user.type(screen.getByRole('textbox', { name: 'Plant price (GBP)' }), '50');
+
+  await user.click(screen.getByRole('button', { name: 'Save & add another' }));
+
+  await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('ANT-0042 added'));
+  expect(screen.getByRole('link', { name: 'Open the saved Plant' })).toHaveAttribute(
+    'href',
+    '/plants/plant-42',
+  );
+  await waitFor(() => {
+    expect(screen.getByRole('textbox', { name: /^Name/ })).toHaveValue('');
+    expect(screen.getByRole('textbox', { name: /^Name/ })).toHaveFocus();
+  });
+  expect(screen.getByRole('combobox', { name: /Location/ })).toHaveValue('location-1');
+  expect(screen.getByRole('checkbox', { name: 'Record purchase information' })).toBeChecked();
+  expect(screen.getByRole('textbox', { name: 'Seller' })).toHaveValue('Grow Tropical');
+  expect(screen.getByRole('textbox', { name: 'Order reference' })).toHaveValue('ORDER-7');
+  expect(screen.getByLabelText('Purchase date')).toHaveValue('2026-09-30');
+  expect(screen.getByRole('textbox', { name: 'Plant price (GBP)' })).toHaveValue('');
+  expect(vi.mocked(createPlantAction).mock.calls[0][1].get('submitIntent')).toBe('addAnother');
 });
