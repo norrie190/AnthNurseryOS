@@ -143,12 +143,55 @@ export function WateringQueuePage({
   const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
   const [confirming, setConfirming] = useState(false);
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [search, setSearch] = useState('');
   const [state, formAction, pending] = useActionState(batchAction, initialBatchWateringState);
   useEffect(() => {
-    if (state.success) router.refresh();
+    if (state.success) {
+      router.refresh();
+      const timer = setTimeout(() => {
+        setSelected([]);
+        setConfirming(false);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
   }, [router, state.success]);
-  const effectiveSelected = state.success ? [] : selected;
-  const effectiveConfirming = confirming && !state.success;
+  const locations = Array.from(
+    new Map(
+      queue.entries
+        .filter((entry) => entry.plant.location)
+        .map((entry) => [
+          entry.plant.location!.id,
+          entry.plant.location!.parentName
+            ? `${entry.plant.location!.parentName} / ${entry.plant.location!.name}`
+            : entry.plant.location!.name,
+        ]),
+    ),
+  ).sort((a, b) => a[1].localeCompare(b[1]) || a[0].localeCompare(b[0]));
+  const searchTerm = search.trim().toLocaleLowerCase();
+  const visibleEntries = queue.entries.filter((entry) => {
+    if (locationFilter === 'none' && entry.plant.location) return false;
+    if (
+      locationFilter !== 'all' &&
+      locationFilter !== 'none' &&
+      entry.plant.location?.id !== locationFilter
+    )
+      return false;
+    if (statusFilter !== 'all' && entry.due.status !== statusFilter) return false;
+    return (
+      !searchTerm ||
+      entry.plant.reference.toLocaleLowerCase().includes(searchTerm) ||
+      entry.plant.name?.toLocaleLowerCase().includes(searchTerm)
+    );
+  });
+  const visibleIds = new Set(visibleEntries.map((entry) => entry.plant.id));
+  const effectiveSelected = selected.filter((id) => visibleIds.has(id));
+  const changeFilter = (change: () => void) => {
+    change();
+    setSelected([]);
+    setConfirming(false);
+  };
   const toggle = (id: string) =>
     setSelected((current) =>
       current.includes(id)
@@ -164,7 +207,7 @@ export function WateringQueuePage({
   const grouped = new Map(
     categories.map(([status]) => [
       status,
-      queue.entries.filter((entry) => entry.due.status === status),
+      visibleEntries.filter((entry) => entry.due.status === status),
     ]),
   );
   const urgent = queue.counts.overdue + queue.counts.dueToday;
@@ -214,8 +257,70 @@ export function WateringQueuePage({
           )}
         </dl>
       </section>
+      {queue.entries.length > 0 ? (
+        <section className={styles.filters} aria-label="Find Plants to water">
+          <div className={styles.filterField}>
+            <label htmlFor="watering-location">Location</label>
+            <select
+              id="watering-location"
+              value={locationFilter}
+              onChange={(event) => changeFilter(() => setLocationFilter(event.target.value))}
+            >
+              <option value="all">All locations</option>
+              {locations.map(([id, name]) => (
+                <option value={id} key={id}>
+                  {name}
+                </option>
+              ))}
+              <option value="none">No location</option>
+            </select>
+          </div>
+          <div className={styles.filterField}>
+            <label htmlFor="watering-status">Watering state</label>
+            <select
+              id="watering-status"
+              value={statusFilter}
+              onChange={(event) => changeFilter(() => setStatusFilter(event.target.value))}
+            >
+              <option value="all">All states</option>
+              {categories.map(([status, label]) => (
+                <option value={status} key={status}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.filterField}>
+            <label htmlFor="watering-search">Plant name or ANT reference</label>
+            <input
+              id="watering-search"
+              type="search"
+              value={search}
+              onChange={(event) => changeFilter(() => setSearch(event.target.value))}
+              placeholder="Find a Plant"
+            />
+          </div>
+          <div className={styles.filterActions}>
+            <span>
+              Showing {visibleEntries.length} of {queue.entries.length} Plants
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelected(visibleEntries.map((entry) => entry.plant.id))}
+              disabled={pending || visibleEntries.length === 0 || visibleEntries.length > 100}
+            >
+              Select visible
+            </button>
+          </div>
+          {visibleEntries.length > 100 ? (
+            <p className={styles.filterHelp}>
+              Narrow the view to 100 Plants or fewer to select them together.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
       {queue.entries.length > 0 &&
-      (effectiveSelected.length > 0 || !!state.message || effectiveConfirming) ? (
+      (effectiveSelected.length > 0 || !!state.message || confirming) ? (
         <form
           action={formAction}
           className={`${styles.batchPanel} ${effectiveSelected.length ? styles.batchPanelActive : ''}`}
@@ -257,7 +362,7 @@ export function WateringQueuePage({
               {state.message}
             </InlineNotice>
           ) : null}
-          {effectiveConfirming ? (
+          {confirming ? (
             <section className={styles.confirmation} aria-labelledby="batch-confirm-heading">
               <h2 id="batch-confirm-heading">
                 Water {effectiveSelected.length} selected Plants now?
@@ -292,6 +397,26 @@ export function WateringQueuePage({
             <p className={styles.quiet} role="status">
               No urgent watering tasks today.
             </p>
+          ) : null}
+          {visibleEntries.length === 0 ? (
+            <EmptyState
+              title="No Plants match these filters."
+              description="Try another Location, watering state or search."
+              action={
+                <button
+                  type="button"
+                  onClick={() =>
+                    changeFilter(() => {
+                      setLocationFilter('all');
+                      setStatusFilter('all');
+                      setSearch('');
+                    })
+                  }
+                >
+                  Clear filters
+                </button>
+              }
+            />
           ) : null}
           {categories.map(([status, label]) => {
             const entries = grouped.get(status)!;

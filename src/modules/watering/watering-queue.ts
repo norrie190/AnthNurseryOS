@@ -6,7 +6,7 @@ export type WateringQueueEntry = {
     reference: string;
     name: string | null;
     status: 'GROWING' | 'QUARANTINE';
-    location: { id: string; name: string } | null;
+    location: { id: string; name: string; parentName?: string | null } | null;
     primaryPhoto: { id: string; derivativeRevision: string | null } | null;
   };
   due: WateringDueState;

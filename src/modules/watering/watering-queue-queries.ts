@@ -16,7 +16,9 @@ const plantSelect = {
   reference: true,
   name: true,
   status: true,
-  location: { select: { id: true, name: true } },
+  location: {
+    select: { id: true, name: true, parentLocation: { select: { name: true } } },
+  },
   photos: { where: { isPrimary: true }, take: 1, select: { id: true, derivativeRevision: true } },
 } satisfies Prisma.PlantSelect;
 const scheduleSelect = {
@@ -77,7 +79,13 @@ export async function readWateringQueue(
         reference: plant.reference,
         name: plant.name,
         status: plant.status as 'GROWING' | 'QUARANTINE',
-        location: plant.location,
+        location: plant.location
+          ? {
+              id: plant.location.id,
+              name: plant.location.name,
+              parentName: plant.location.parentLocation?.name ?? null,
+            }
+          : null,
         primaryPhoto: plant.photos[0] ?? null,
       },
       due,

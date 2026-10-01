@@ -166,3 +166,36 @@ test('keeps batch selection and confirmation language visible without changing q
   expect(screen.getByText(/recorded together using one timestamp/)).toBeInTheDocument();
   expect(screen.getByLabelText(/Shared note/)).toBeInTheDocument();
 });
+
+test('filters the queue and selects only visible Plants', async () => {
+  render(await WateringPage());
+  fireEvent.change(screen.getByRole('combobox', { name: 'Location' }), {
+    target: { value: 'none' },
+  });
+  expect(screen.getByText('Showing 1 of 6 Plants')).toBeInTheDocument();
+  expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+  fireEvent.click(screen.getByRole('button', { name: 'Select visible' }));
+  expect(screen.getByText('1 Plant selected')).toBeInTheDocument();
+  expect(screen.getByRole('checkbox')).toBeChecked();
+
+  fireEvent.change(screen.getByRole('combobox', { name: 'Watering state' }), {
+    target: { value: 'OVERDUE' },
+  });
+  expect(screen.getByText('Showing 0 of 6 Plants')).toBeInTheDocument();
+  expect(screen.queryByText('1 Plant selected')).not.toBeInTheDocument();
+  expect(screen.getByText('No Plants match these filters.')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+  expect(screen.getByText('Showing 6 of 6 Plants')).toBeInTheDocument();
+});
+
+test('searches by reference and clears selection when the search changes', async () => {
+  render(await WateringPage());
+  fireEvent.click(screen.getByRole('button', { name: 'Select visible' }));
+  expect(screen.getByText('6 Plants selected')).toBeInTheDocument();
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Plant name or ANT reference' }), {
+    target: { value: 'ANT-5' },
+  });
+  expect(screen.getByText('Showing 1 of 6 Plants')).toBeInTheDocument();
+  expect(screen.queryByText('6 Plants selected')).not.toBeInTheDocument();
+  expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+});
