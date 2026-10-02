@@ -59,7 +59,9 @@ test.each([true, false])('empty Equipment section usesPower=%s', (usesPower) => 
   );
   expect(screen.getByRole('heading', { name: 'Power / Energy' })).toBeInTheDocument();
   if (usesPower) {
-    expect(screen.getByRole('button', { name: 'Record power settings' })).toBeInTheDocument();
+    const record = screen.getByRole('button', { name: 'Record power settings' });
+    const month = screen.getByRole('heading', { name: 'This calendar month' });
+    expect(record.compareDocumentPosition(month) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText(/No power settings are recorded for part/)).toBeInTheDocument();
   } else {
     expect(screen.queryByRole('button', { name: 'Record power settings' })).not.toBeInTheDocument();

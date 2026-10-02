@@ -63,10 +63,12 @@ export function EnergyHistory({ kind, equipmentId, token, rows, today, canRecord
           <h3 ref={heading} tabIndex={-1}>
             {kind === 'power' ? 'Power history' : 'Tariff history'}
           </h3>
-          <p>
-            Earlier, scheduled, corrected, and voided records are retained here. Gaps mean unknown
-            data, not zero.
-          </p>
+          {rows.length > 0 && (
+            <p>
+              Earlier, scheduled, corrected, and voided records are retained here. Gaps mean unknown
+              data, not zero.
+            </p>
+          )}
         </div>
         {!editor && canRecord && (
           <div className={styles.actions}>
@@ -104,9 +106,7 @@ export function EnergyHistory({ kind, equipmentId, token, rows, today, canRecord
         />
       )}
       {!rows.length ? (
-        <p>
-          No {kind === 'power' ? 'operating settings' : 'electricity tariffs'} have been recorded.
-        </p>
+        kind === 'tariff' && <p>No electricity tariffs have been recorded.</p>
       ) : (
         <ol
           className={styles.history}

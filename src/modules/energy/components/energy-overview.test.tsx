@@ -99,7 +99,7 @@ describe('EnergyOverviewPage', () => {
       />,
     );
 
-    expect(screen.getByRole('heading', { name: 'Finish setting up Energy' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '1 item needs settings' })).toBeInTheDocument();
     expect(screen.getByText('No tariff applies today')).toBeInTheDocument();
     expect(
       screen.getByText((_, element) =>
@@ -111,6 +111,52 @@ describe('EnergyOverviewPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('No settings for today')).toBeInTheDocument();
     expect(screen.getByText('Scheduled from 10 Sept 2026')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '1 item needs settings' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Review EQP-0001/i })).toHaveAttribute(
+      'href',
+      '/equipment/equipment-id#energy',
+    );
+    expect(screen.getByRole('link', { name: /Review settings/i })).toHaveAttribute(
+      'href',
+      '/equipment/equipment-id#energy',
+    );
+  });
+
+  it('leads with missing setup rather than presenting a partial cost as the total', () => {
+    const partial = overview();
+    render(
+      <EnergyOverviewPage
+        overview={overview({
+          equipmentCount: 2,
+          configuredCount: 1,
+          totals: { ...partial.totals, costCoverageComplete: false },
+          equipment: [
+            ...partial.equipment,
+            {
+              id: 'second',
+              reference: 'EQP-0002',
+              name: 'Fan',
+              primaryPhoto: null,
+              current: null,
+              nextSettingFrom: null,
+            },
+          ],
+        })}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: '1 item needs settings' })).toBeInTheDocument();
+    expect(
+      screen.getByText('£6.30 known variable cost for the next 30 days so far'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Set up EQP-0002/i })).toHaveAttribute(
+      'href',
+      '/equipment/second#energy',
+    );
+    expect(screen.getByRole('link', { name: /Set up power/i })).toHaveAttribute(
+      'href',
+      '/equipment/second#energy',
+    );
   });
 
   it('keeps archived ongoing settings outside active totals and visible as a warning', () => {
@@ -121,6 +167,30 @@ describe('EnergyOverviewPage', () => {
     expect(screen.getByRole('link', { name: 'Review archived Equipment' })).toHaveAttribute(
       'href',
       '/equipment/archived',
+    );
+  });
+
+  it('offers a clear start when no powered Equipment exists', () => {
+    const base = overview();
+    render(
+      <EnergyOverviewPage
+        overview={overview({
+          equipmentCount: 0,
+          configuredCount: 0,
+          equipment: [],
+          totals: {
+            ...base.totals,
+            estimatedCost30Days: null,
+            costCoverageComplete: false,
+          },
+        })}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: 'Add powered Equipment' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Add Equipment' })[0]).toHaveAttribute(
+      'href',
+      '/equipment/new',
     );
   });
 });

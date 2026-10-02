@@ -35,8 +35,8 @@ export function EquipmentEnergy({ view }: { view: EquipmentEnergyView }) {
         <div className={styles.configurationState}>
           <strong>Power configuration not recorded</strong>
           <p>
-            No settings apply today. Record settings below, or review future dates and gaps in the
-            history.
+            No settings apply today. Record the operating power and hours below to start estimating
+            this item’s electricity use.
           </p>
         </div>
       )}
@@ -82,9 +82,16 @@ export function EquipmentEnergy({ view }: { view: EquipmentEnergyView }) {
           )}
         </div>
       )}
-      <Link className={styles.tariffLink} href="/energy/tariffs">
-        Manage electricity tariffs <ArrowRight size={16} aria-hidden="true" />
-      </Link>
+      <div className={styles.historyShell}>
+        <EnergyHistory
+          kind="power"
+          equipmentId={view.equipmentId}
+          token={view.token}
+          rows={view.rows}
+          today={view.today}
+          canRecord={view.usesPower}
+        />
+      </div>
       {report.applicable && (
         <div className={styles.monthPanel}>
           <div className={styles.monthHeading}>
@@ -123,16 +130,9 @@ export function EquipmentEnergy({ view }: { view: EquipmentEnergyView }) {
           )}
         </div>
       )}
-      <div className={styles.historyShell}>
-        <EnergyHistory
-          kind="power"
-          equipmentId={view.equipmentId}
-          token={view.token}
-          rows={view.rows}
-          today={view.today}
-          canRecord={view.usesPower}
-        />
-      </div>
+      <Link className={styles.tariffLink} href="/energy/tariffs">
+        Manage electricity tariffs <ArrowRight size={16} aria-hidden="true" />
+      </Link>
     </section>
   );
 }

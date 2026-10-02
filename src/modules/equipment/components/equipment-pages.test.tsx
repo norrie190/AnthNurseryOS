@@ -148,7 +148,7 @@ test('archived list shows archive date and a clear path to restore', () => {
   expect(screen.getByRole('link')).toHaveTextContent('View details to restore');
 });
 test('detail displays immutable reference and optional fallbacks', () => {
-  render(<EquipmentDetail equipment={item} />);
+  render(<EquipmentDetail equipment={item} energy={<section>Energy workspace</section>} />);
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(item.name);
   expect(screen.getByText('serial')).toBeInTheDocument();
   expect(screen.getByText('Nursery light')).toBeInTheDocument();
@@ -161,6 +161,12 @@ test('detail displays immutable reference and optional fallbacks', () => {
   expect(screen.getByRole('link', { name: 'Power & cost' })).toHaveAttribute('href', '#energy');
   expect(screen.getByRole('link', { name: 'Add a photo' })).toHaveAttribute('href', '#photos');
   expect(screen.queryByText(item.id)).not.toBeInTheDocument();
+  expect(
+    screen
+      .getByText('Energy workspace')
+      .compareDocumentPosition(screen.getByRole('heading', { name: 'Overview' })) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
 });
 test('archived detail remains viewable and distinguishes unknown from zero purchase amounts', () => {
   render(

@@ -22,7 +22,6 @@
 }
 
 .pageHeader > div > p:last-child,
-.readiness p,
 .missingTariff p,
 .emptyState p,
 .disclaimer,
@@ -106,6 +105,12 @@
   line-height: 0.9;
 }
 
+.hero .heroSetupHeading {
+  max-width: 12ch;
+  font-size: clamp(2.55rem, 5vw, 4.4rem);
+  line-height: 1.02;
+}
+
 .heroCopy > p {
   margin: 0.35rem 0 1rem;
   color: #d7ead8;
@@ -120,6 +125,30 @@
   color: #f4f7ef;
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.heroAction {
+  display: inline-flex;
+  min-height: 2.7rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+  padding: 0.65rem 1rem;
+  border-radius: 999px;
+  background: #f4f7ef;
+  color: #16432c;
+  font-size: 0.87rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.heroAction:hover {
+  background: #fff;
+}
+
+.heroAction:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
 }
 
 .heroStats {
@@ -150,7 +179,6 @@
   font-weight: 750;
 }
 
-.readiness,
 .metric,
 .equipmentPanel,
 .tariffCard,
@@ -161,21 +189,6 @@
   box-shadow: var(--shadow-soft);
 }
 
-.readiness {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.42fr);
-  align-items: center;
-  gap: 2rem;
-  padding: 1.15rem 1.25rem;
-}
-
-.readinessCopy {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.85rem;
-}
-
-.readinessCopy h2,
 .sectionHeader h2 {
   margin: 0.18rem 0 0.35rem;
   font-family: Georgia, 'Times New Roman', serif;
@@ -183,8 +196,6 @@
   letter-spacing: -0.03em;
 }
 
-.readyIcon,
-.attentionIcon,
 .metricIcon {
   display: grid;
   width: 2.65rem;
@@ -194,41 +205,9 @@
   border-radius: 50%;
 }
 
-.readyIcon,
 .metricIcon {
   color: var(--color-primary);
   background: var(--color-primary-soft);
-}
-
-.attentionIcon {
-  color: var(--color-attention);
-  background: #fbf2dd;
-}
-
-.progressBlock {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.progressLabel {
-  display: flex;
-  justify-content: space-between;
-  color: var(--text-secondary);
-  font-size: 0.84rem;
-}
-
-.progressTrack {
-  height: 0.55rem;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--surface-subtle);
-}
-
-.progressTrack span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--color-primary), #82a85c);
 }
 
 .metricsGrid {
@@ -498,18 +477,13 @@
 }
 
 @media (max-width: 58rem) {
-  .hero,
-  .readiness {
+  .hero {
     grid-template-columns: 1fr;
   }
 
   .hero {
     min-height: 0;
     gap: 2rem;
-  }
-
-  .readiness {
-    gap: 1rem;
   }
 
   .equipmentList {
@@ -536,10 +510,6 @@
   .hero {
     padding: 1.35rem;
     border-radius: 1.2rem;
-  }
-
-  .heroStats {
-    grid-template-columns: 1fr;
   }
 
   .metricsGrid {

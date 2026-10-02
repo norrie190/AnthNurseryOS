@@ -103,7 +103,11 @@
   .localSectionNav {
     top: 4rem;
     overflow-x: auto;
-    scrollbar-width: thin;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .localSectionNav::-webkit-scrollbar {
+    display: none;
   }
   .actionBar {
     justify-content: stretch;

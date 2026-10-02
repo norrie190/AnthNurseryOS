@@ -98,13 +98,14 @@ export function EquipmentDetail({
       <LocalSectionNav
         ariaLabel="Equipment detail sections"
         items={[
+          ...(equipment.usesPower ? [{ href: '#energy', label: 'Energy' }] : []),
           { href: '#overview', label: 'Overview' },
           { href: '#purchase', label: 'Purchase' },
-          { href: '#energy', label: 'Energy' },
+          ...(!equipment.usesPower ? [{ href: '#energy', label: 'Energy' }] : []),
           { href: '#photos', label: 'Photos' },
-          { href: '#history', label: 'History' },
         ]}
       />
+      {equipment.usesPower && energy && <div id="energy">{energy}</div>}
       <section id="overview" className={styles.card} aria-labelledby="equipment-details-heading">
         <p className={styles.eyebrow}>Current asset context</p>
         <h2 id="equipment-details-heading">Overview</h2>
@@ -174,7 +175,7 @@ export function EquipmentDetail({
           <p className={styles.sectionIntro}>No purchase information recorded.</p>
         )}
       </section>
-      {energy && <div id="energy">{energy}</div>}
+      {!equipment.usesPower && energy && <div id="energy">{energy}</div>}
       {photos && <div id="photos">{photos}</div>}
       <div id="history">
         <EquipmentArchiveControls

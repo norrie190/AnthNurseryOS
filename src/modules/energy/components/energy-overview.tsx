@@ -44,52 +44,6 @@ function Metric({
   );
 }
 
-function ConfigurationStatus({ overview }: { overview: EnergyOverview }) {
-  const hasEquipment = overview.equipmentCount > 0;
-  const complete = overview.totals.energyCoverageComplete && overview.totals.costCoverageComplete;
-  const percentage = overview.equipmentCount
-    ? Math.round((overview.configuredCount / overview.equipmentCount) * 100)
-    : 100;
-
-  return (
-    <section className={styles.readiness} aria-labelledby="energy-readiness-heading">
-      <div className={styles.readinessCopy}>
-        <span className={complete ? styles.readyIcon : styles.attentionIcon} aria-hidden="true">
-          {complete ? <CheckCircle2 size={22} /> : <AlertTriangle size={22} />}
-        </span>
-        <div>
-          <p className={styles.eyebrow}>Configuration health</p>
-          <h2 id="energy-readiness-heading">
-            {!hasEquipment
-              ? 'No powered Equipment yet'
-              : complete
-                ? 'Energy estimates are ready'
-                : 'Finish setting up Energy'}
-          </h2>
-          <p>
-            {!hasEquipment
-              ? 'No active Equipment is marked for power tracking.'
-              : `${overview.configuredCount} of ${overview.equipmentCount} power-tracking items have settings for today.`}
-            {hasEquipment &&
-              overview.currentTariff === null &&
-              !overview.totals.costCoverageComplete &&
-              ' A current electricity tariff is still needed.'}
-          </p>
-        </div>
-      </div>
-      <div className={styles.progressBlock}>
-        <div className={styles.progressLabel}>
-          <span>Equipment configured</span>
-          <strong>{percentage}%</strong>
-        </div>
-        <div className={styles.progressTrack} aria-hidden="true">
-          <span style={{ width: `${percentage}%` }} />
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function TariffCard({ overview }: { overview: EnergyOverview }) {
   return (
     <section className={styles.tariffCard} aria-labelledby="tariff-card-heading">
@@ -209,7 +163,12 @@ function EquipmentTable({ overview }: { overview: EnergyOverview }) {
                   </div>
                 )}
                 <Link className={styles.manageLink} href={`/equipment/${item.id}#energy`}>
-                  Manage settings <ArrowRight size={15} aria-hidden="true" />
+                  {item.current
+                    ? 'Manage settings'
+                    : item.nextSettingFrom
+                      ? 'Review settings'
+                      : 'Set up power'}{' '}
+                  <ArrowRight size={15} aria-hidden="true" />
                 </Link>
               </div>
             </article>
@@ -223,6 +182,17 @@ function EquipmentTable({ overview }: { overview: EnergyOverview }) {
 export function EnergyOverviewPage({ overview }: { overview: EnergyOverview }) {
   const totals = overview.totals;
   const knownCostLabel = totals.costCoverageComplete ? 'Estimated cost' : 'Known cost estimate';
+  const itemsToConfigure = overview.equipmentCount - overview.configuredCount;
+  const setupHeadline =
+    overview.equipmentCount === 0
+      ? 'Add powered Equipment'
+      : itemsToConfigure > 0
+        ? `${itemsToConfigure} ${itemsToConfigure === 1 ? 'item needs' : 'items need'} settings`
+        : overview.currentTariff === null
+          ? 'Add a tariff'
+          : 'Review missing dates';
+  const complete = overview.equipmentCount > 0 && totals.costCoverageComplete;
+  const firstUnconfigured = overview.equipment.find((item) => !item.current);
 
   return (
     <div className={styles.page}>
@@ -243,18 +213,46 @@ export function EnergyOverviewPage({ overview }: { overview: EnergyOverview }) {
             <PlugZap size={19} aria-hidden="true" />
             <span>Current setup projection</span>
           </div>
-          <h2 id="energy-outlook-heading">{totals.estimatedCost30Days ?? 'Cost not available'}</h2>
-          <p>{knownCostLabel} for the next 30 days</p>
+          <h2
+            id="energy-outlook-heading"
+            className={complete ? undefined : styles.heroSetupHeading}
+          >
+            {complete ? (totals.estimatedCost30Days ?? 'Cost not available') : setupHeadline}
+          </h2>
+          <p>
+            {complete
+              ? 'Estimated variable cost for the next 30 days'
+              : totals.estimatedCost30Days
+                ? `${totals.estimatedCost30Days} known variable cost for the next 30 days so far`
+                : 'Set up operating history and a tariff to estimate the full cost.'}
+          </p>
           <span className={styles.heroCoverage}>
-            {totals.costCoverageComplete ? (
+            {complete ? (
               <CheckCircle2 size={16} aria-hidden="true" />
             ) : (
               <AlertTriangle size={16} aria-hidden="true" />
             )}
-            {totals.costCoverageComplete
-              ? 'Complete coverage'
-              : 'Known subtotal · setup incomplete'}
+            {complete ? 'Complete coverage' : 'Cost coverage incomplete'}
           </span>
+          {!complete && (
+            <Link
+              className={styles.heroAction}
+              href={
+                overview.equipmentCount === 0
+                  ? '/equipment/new'
+                  : firstUnconfigured
+                    ? `/equipment/${firstUnconfigured.id}#energy`
+                    : '/energy/tariffs'
+              }
+            >
+              {overview.equipmentCount === 0
+                ? 'Add Equipment'
+                : firstUnconfigured
+                  ? `${firstUnconfigured.nextSettingFrom ? 'Review' : 'Set up'} ${firstUnconfigured.reference}`
+                  : 'Set up electricity tariff'}{' '}
+              <ArrowRight size={17} aria-hidden="true" />
+            </Link>
+          )}
         </div>
         <dl className={styles.heroStats}>
           <div>
@@ -274,7 +272,10 @@ export function EnergyOverviewPage({ overview }: { overview: EnergyOverview }) {
         </dl>
       </section>
 
-      <ConfigurationStatus overview={overview} />
+      <div className={styles.contentGrid}>
+        <EquipmentTable overview={overview} />
+        <TariffCard overview={overview} />
+      </div>
 
       <section className={styles.metricsGrid} aria-label="Current Energy estimates">
         <Metric
@@ -319,11 +320,6 @@ export function EnergyOverviewPage({ overview }: { overview: EnergyOverview }) {
         These are planning estimates from configured operating settings, not live measurements or
         household bills. Standing charges are not included.
       </p>
-
-      <div className={styles.contentGrid}>
-        <EquipmentTable overview={overview} />
-        <TariffCard overview={overview} />
-      </div>
 
       {overview.archivedOngoingCount > 0 && (
         <aside className={styles.archivedWarning} aria-label="Archived Equipment warning">
